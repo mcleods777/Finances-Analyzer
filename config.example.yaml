@@ -45,3 +45,8 @@ recurring_bills:
   day_of_month: 1
   match_criteria:
   - example bill
+
+temporary_expenses: []
+budget_overrides:
+  first_half: null
+  second_half: null

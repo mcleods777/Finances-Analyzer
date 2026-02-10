@@ -388,6 +388,377 @@
             border-radius: 2px;
         }
 
+        /* Monthly Half Runway */
+        .monthly-halves-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 16px;
+        }
+
+        .monthly-half-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .monthly-half-card.is-current {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2);
+        }
+
+        .monthly-half-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .monthly-half-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .monthly-half-label .current-tag {
+            font-size: 0.65rem;
+            background: #3b82f6;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            vertical-align: middle;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .monthly-half-days {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .budget-input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .budget-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+        }
+
+        .budget-input {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            width: 100px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .budget-input:focus {
+            border-color: #3b82f6;
+        }
+
+        .budget-save-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .budget-save-btn:hover {
+            background: #2563eb;
+        }
+
+        .monthly-half-stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .half-stat {
+            font-size: 0.78rem;
+            color: #94a3b8;
+        }
+
+        .half-stat strong {
+            color: #f1f5f9;
+        }
+
+        .half-stat.free-cash strong {
+            color: #22c55e;
+        }
+
+        .half-stat.free-cash.negative strong {
+            color: #ef4444;
+        }
+
+        .half-stat.spent strong {
+            color: #f87171;
+        }
+
+        /* Simulator Panel */
+        .simulator-section {
+            margin-top: 20px;
+            border-top: 1px solid #334155;
+            padding-top: 16px;
+        }
+
+        .simulator-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .simulator-header h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .simulator-content {
+            margin-top: 16px;
+        }
+
+        .simulator-delta {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            background: #0f172a;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .simulator-delta.active {
+            display: block;
+        }
+
+        .simulator-delta .delta-amount {
+            font-weight: 600;
+        }
+
+        .simulator-delta .delta-positive {
+            color: #22c55e;
+        }
+
+        .simulator-delta .delta-negative {
+            color: #ef4444;
+        }
+
+        .slider-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 20px;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 0;
+        }
+
+        .slider-label {
+            font-size: 0.8rem;
+            color: #e2e8f0;
+            width: 100px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-shrink: 0;
+        }
+
+        .slider-input {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            background: #334155;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .slider-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .slider-input::-webkit-slider-thumb:hover {
+            background: #2563eb;
+        }
+
+        .slider-value {
+            font-size: 0.78rem;
+            color: #f1f5f9;
+            font-weight: 500;
+            width: 55px;
+            text-align: right;
+            flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .slider-diff {
+            font-size: 0.7rem;
+            width: 50px;
+            text-align: right;
+            flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .slider-diff.positive {
+            color: #22c55e;
+        }
+
+        .slider-diff.negative {
+            color: #ef4444;
+        }
+
+        .slider-diff.neutral {
+            color: #64748b;
+        }
+
+        /* Temp Expenses section */
+        .temp-expenses-section {
+            margin-top: 16px;
+            border-top: 1px solid rgba(51, 65, 85, 0.5);
+            padding-top: 12px;
+        }
+
+        .temp-expenses-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .temp-expense-form {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .temp-expense-form input,
+        .temp-expense-form select {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #f1f5f9;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.82rem;
+            outline: none;
+        }
+
+        .temp-expense-form input:focus,
+        .temp-expense-form select:focus {
+            border-color: #3b82f6;
+        }
+
+        .temp-expense-form select {
+            cursor: pointer;
+        }
+
+        .temp-expense-form button {
+            background: #a855f7;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .temp-expense-form button:hover {
+            background: #9333ea;
+        }
+
+        .temp-expense-list {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .temp-expense-card {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 0.8rem;
+        }
+
+        .temp-expense-name {
+            color: #c084fc;
+            font-weight: 500;
+        }
+
+        .temp-expense-amount {
+            color: #e2e8f0;
+        }
+
+        .temp-expense-half {
+            color: #64748b;
+            font-size: 0.72rem;
+        }
+
+        .temp-expense-delete {
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0 2px;
+            transition: color 0.2s;
+        }
+
+        .temp-expense-delete:hover {
+            color: #f87171;
+        }
+
+        @media (max-width: 768px) {
+            .monthly-halves-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .slider-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* Recurring Bills Table Styles */
         #recurring-bills-table {
             width: 100%;
@@ -522,41 +893,104 @@
 
     <!-- Runway Section -->
     <div class="runway-section" id="runway-section">
+        <!-- Compact biweekly summary -->
         <div class="runway-header">
             <div class="runway-info">
                 <h3>Budget Runway</h3>
                 <p>
                     <strong>{{ runway.budget_remaining_this_period | currency }}</strong>
-                    remaining this period
+                    remaining this pay period
                     ({{ runway.days_left_in_period }} days left)
-                </p>
-            </div>
-            <div class="runway-info">
-                <h3>Total Runway</h3>
-                <p>
-                    <strong>{{ runway.runway_days }} days</strong>
-                    ({{ runway.runway_periods }} pay periods)
-                    {% if runway.runway_date != 'N/A' %}
-                    &mdash; until {{ runway.runway_date }}
-                    {% endif %}
+                    &bull;
+                    Total runway: <strong>{{ runway.runway_days }} days</strong>
+                    ({{ runway.runway_periods }} periods)
                 </p>
             </div>
         </div>
-        <div class="runway-bar-container">
-            <div class="runway-bar" id="runway-bar" style="width: 0%"></div>
+
+        <!-- Monthly Half Runway Bars -->
+        <div class="monthly-halves-grid" id="monthly-halves-grid">
+            <!-- Half 1 -->
+            <div class="monthly-half-card" id="monthly-half-1">
+                <div class="monthly-half-header">
+                    <span class="monthly-half-label" id="half1-label">Loading...</span>
+                    <span class="monthly-half-days" id="half1-days"></span>
+                </div>
+                <div class="budget-input-row">
+                    <span class="budget-label">Budget:</span>
+                    <span>$</span>
+                    <input type="number" class="budget-input" id="half1-budget" step="0.01" min="0">
+                    <button class="budget-save-btn" onclick="saveBudgetOverride(1)">Save</button>
+                </div>
+                <div class="monthly-half-stats" id="half1-stats"></div>
+                <div class="runway-bar-container">
+                    <div class="runway-bar" id="half1-bar" style="width: 0%"></div>
+                </div>
+                <div class="runway-bar-legend" id="half1-legend"></div>
+            </div>
+
+            <!-- Half 2 -->
+            <div class="monthly-half-card" id="monthly-half-2">
+                <div class="monthly-half-header">
+                    <span class="monthly-half-label" id="half2-label">Loading...</span>
+                    <span class="monthly-half-days" id="half2-days"></span>
+                </div>
+                <div class="budget-input-row">
+                    <span class="budget-label">Budget:</span>
+                    <span>$</span>
+                    <input type="number" class="budget-input" id="half2-budget" step="0.01" min="0">
+                    <button class="budget-save-btn" onclick="saveBudgetOverride(2)">Save</button>
+                </div>
+                <div class="monthly-half-stats" id="half2-stats"></div>
+                <div class="runway-bar-container">
+                    <div class="runway-bar" id="half2-bar" style="width: 0%"></div>
+                </div>
+                <div class="runway-bar-legend" id="half2-legend"></div>
+            </div>
         </div>
-        <p class="runway-period-label">
-            Period: {{ runway.period_start }} to {{ runway.period_end }}
-        </p>
 
         <!-- Pending Recurring Bills -->
         <div id="pending-bills-container" style="display: none; margin-top: 16px;">
             <div class="pending-bills-header">
-                <h3 class="pending-bills-title">Upcoming Bills This Period</h3>
+                <h3 class="pending-bills-title">Upcoming Bills This Month</h3>
                 <span id="pending-bills-total" class="pending-bills-total"></span>
             </div>
             <div id="pending-bills-list" class="pending-bills-list">
                 <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Budget Simulator -->
+        <div class="simulator-section">
+            <div class="simulator-header" onclick="toggleSimulator()">
+                <h3>Budget Simulator</h3>
+                <span class="toggle-icon" id="simulator-toggle">+</span>
+            </div>
+            <div class="simulator-content" id="simulator-content" style="display: none;">
+                <div class="simulator-delta" id="simulator-delta">
+                    Adjusting by <span class="delta-amount" id="sim-delta-amount">$0.00</span> per half
+                </div>
+                <div class="slider-grid" id="simulator-sliders">
+                    <!-- Populated by JS -->
+                </div>
+                <button onclick="resetSimulator()" style="margin-top:10px; background:none; border:1px solid #475569; color:#94a3b8; padding:4px 12px; border-radius:4px; font-size:0.78rem; cursor:pointer;">Reset All</button>
+
+                <!-- Temporary Expenses -->
+                <div class="temp-expenses-section">
+                    <div class="temp-expenses-title">Temporary Expenses</div>
+                    <form class="temp-expense-form" onsubmit="submitTempExpense(event)">
+                        <input type="text" id="temp-name" placeholder="Name (e.g. 2nd Rent)" required style="flex:1; min-width:120px;">
+                        <input type="number" id="temp-amount" placeholder="Amount" step="0.01" min="0" required style="width:90px;">
+                        <select id="temp-half">
+                            <option value="1">1st Half</option>
+                            <option value="2">2nd Half</option>
+                        </select>
+                        <button type="submit">+ Add</button>
+                    </form>
+                    <div class="temp-expense-list" id="temp-expense-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>

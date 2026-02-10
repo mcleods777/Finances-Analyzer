@@ -6,12 +6,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-        const [netWorthData, spendingData, incomeData, runwayData, breakdownData] = await Promise.all([
+        const [netWorthData, spendingData, incomeData, runwayData, breakdownData, monthlyRunwayData] = await Promise.all([
             fetch('/api/net-worth').then(r => r.json()),
             fetch('/api/biweekly-spending').then(r => r.json()),
             fetch('/api/biweekly-income').then(r => r.json()),
             fetch('/api/runway').then(r => r.json()),
             fetch('/api/spending-breakdown?days=30').then(r => r.json()),
+            fetch('/api/monthly-runway').then(r => r.json()),
         ]);
 
         renderNetWorthChart(netWorthData);
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderBiweeklyChart(spendingData);
         updateRunwayBar(runwayData);
         renderSpendingChart(breakdownData, 30);
+        updateMonthlyRunwayBars(monthlyRunwayData);
     } catch (err) {
         console.error('Failed to load dashboard data:', err);
     }
@@ -43,38 +45,94 @@ async function updateSpendingChart(days) {
 }
 
 function updateRunwayBar(data) {
-    const bar = document.getElementById('runway-bar');
-    if (!bar || !data.avg_biweekly_spending) return;
+    // Store runway data globally so recurring bills table can use it
+    window._runwayData = data;
+}
 
-    const fmtCurrency = (v) => v < 0 ? `-$${Math.abs(v).toFixed(2)}` : `$${v.toFixed(2)}`;
+// --- Monthly Half Runway ---
 
-    // Calculate what percentage of the budget has been used this period
-    const totalBudget = data.avg_biweekly_spending;
-    const remaining = data.budget_remaining_this_period;
-    const spent = totalBudget - remaining;
-    const pctRemaining = Math.max(0, Math.min(100, (remaining / totalBudget) * 100));
+const BILL_COLORS = [
+    '#f59e0b', '#f97316', '#ef4444', '#ec4899',
+    '#a855f7', '#6366f1', '#0ea5e9', '#14b8a6',
+];
 
-    // Get pending bills only
-    const allBills = data.recurring_bills || [];
-    const pendingBills = allBills.filter(b => b.status === 'pending');
-    const pendingTotal = data.pending_bills_total || 0;
-    const freeCash = data.free_cash || remaining;
+const fmtCurrency = (v) => v < 0 ? `-$${Math.abs(v).toFixed(2)}` : `$${v.toFixed(2)}`;
 
-    // Free cash health color
-    const healthPct = remaining > 0 ? (freeCash / totalBudget) * 100 : 0;
-    const freeColor = healthPct > 35 ? '#22c55e' : (healthPct > 15 ? '#f59e0b' : '#ef4444');
+function updateMonthlyRunwayBars(data) {
+    if (!data || !data.halves) return;
 
-    // Distinct colors for each bill segment
-    const billColors = [
-        '#f59e0b', '#f97316', '#ef4444', '#ec4899',
-        '#a855f7', '#6366f1', '#0ea5e9', '#14b8a6',
-    ];
+    window._monthlyRunwayData = data;
 
-    // Build segmented bar
-    bar.style.width = pctRemaining + '%';
+    const halves = data.halves;
+
+    halves.forEach((half, i) => {
+        const idx = i + 1;
+        const card = document.getElementById(`monthly-half-${idx}`);
+        const labelEl = document.getElementById(`half${idx}-label`);
+        const daysEl = document.getElementById(`half${idx}-days`);
+        const budgetInput = document.getElementById(`half${idx}-budget`);
+        const statsEl = document.getElementById(`half${idx}-stats`);
+        const bar = document.getElementById(`half${idx}-bar`);
+        const legendEl = document.getElementById(`half${idx}-legend`);
+
+        if (!card) return;
+
+        // Current half highlight
+        if (half.is_current) {
+            card.classList.add('is-current');
+        }
+
+        // Label
+        labelEl.innerHTML = half.label + (half.is_current ? '<span class="current-tag">Current</span>' : '');
+
+        // Days
+        if (half.is_current) {
+            daysEl.textContent = `${half.days_remaining} days left`;
+        } else {
+            daysEl.textContent = `${half.days_remaining} days`;
+        }
+
+        // Budget input
+        budgetInput.value = half.budget.toFixed(2);
+
+        // Stats
+        const freeCashClass = half.free_cash >= 0 ? 'free-cash' : 'free-cash negative';
+        statsEl.innerHTML = `
+            <span class="half-stat spent">Spent: <strong>${fmtCurrency(half.spent_so_far)}</strong></span>
+            <span class="half-stat">Committed: <strong>${fmtCurrency(half.committed)}</strong></span>
+            <span class="half-stat ${freeCashClass}">Free: <strong>${fmtCurrency(half.free_cash)}</strong></span>
+        `;
+
+        // Render segmented bar
+        renderHalfBar(bar, legendEl, half);
+    });
+
+    // Populate pending bills cards across both halves
+    populatePendingBillCards(halves);
+
+    // Init simulator
+    initSimulator(data);
+
+    // Populate temp expenses list
+    renderTempExpenses(data.temporary_expenses || []);
+}
+
+function renderHalfBar(bar, legendEl, half, delta) {
+    const budget = half.budget;
+    if (budget <= 0) {
+        bar.style.width = '0%';
+        return;
+    }
+
+    const adjustedFreeCash = delta !== undefined ? half.free_cash + delta : half.free_cash;
+    const totalUsed = half.spent_so_far + half.committed;
+    const adjustedTotalUsed = delta !== undefined ? totalUsed - delta : totalUsed;
+    const pctUsed = Math.min(100, Math.max(0, (adjustedTotalUsed / budget) * 100));
+    const pctBar = 100; // always show full bar
+
+    bar.style.width = pctBar + '%';
     bar.style.background = 'none';
 
-    // Create segments container
     let segmentsEl = bar.querySelector('.runway-segments');
     if (!segmentsEl) {
         bar.innerHTML = '';
@@ -84,127 +142,364 @@ function updateRunwayBar(data) {
     }
     segmentsEl.innerHTML = '';
 
-    if (remaining <= 0) {
-        bar.style.width = '0%';
-    } else if (pendingBills.length === 0) {
-        // No pending bills — full green bar
-        segmentsEl.innerHTML = `
-            <div class="runway-segment" style="width: 100%; background: ${freeColor};">
+    // Calculate segment sizes as percent of budget
+    const spentPct = Math.max(0, (half.spent_so_far / budget) * 100);
+
+    const pendingBills = (half.pending_bills || []).filter(b => b.status === 'pending');
+    const tempExpenses = half.temporary_expenses || [];
+
+    // Free cash color
+    const freeVal = adjustedFreeCash;
+    const freePct = Math.max(0, (freeVal / budget) * 100);
+    const freeColor = freeVal > budget * 0.35 ? '#22c55e' : (freeVal > budget * 0.15 ? '#f59e0b' : '#ef4444');
+
+    // Spent (dark gray)
+    if (spentPct > 0) {
+        segmentsEl.innerHTML += `
+            <div class="runway-segment" style="width: ${Math.min(spentPct, 100)}%; background: #475569;">
                 <div class="segment-tooltip">
-                    <div class="segment-tooltip-name">Free Cash</div>
-                    <div class="segment-tooltip-amount">${fmtCurrency(remaining)}</div>
+                    <div class="segment-tooltip-name">Already Spent</div>
+                    <div class="segment-tooltip-amount">${fmtCurrency(half.spent_so_far)}</div>
                 </div>
             </div>`;
-    } else {
-        // Free cash segment
-        const freePct = Math.max(0, (freeCash / remaining) * 100);
-
-        if (freePct > 0) {
-            segmentsEl.innerHTML += `
-                <div class="runway-segment" style="width: ${freePct}%; background: ${freeColor};">
-                    <div class="segment-tooltip">
-                        <div class="segment-tooltip-name">Free Cash</div>
-                        <div class="segment-tooltip-amount">${fmtCurrency(freeCash)}</div>
-                    </div>
-                </div>`;
-        }
-
-        // Individual bill segments — sorted by due date
-        const sortedBills = [...pendingBills].sort((a, b) => {
-            return new Date(a.due_date) - new Date(b.due_date);
-        });
-
-        sortedBills.forEach((bill, i) => {
-            const billPct = Math.max(0.5, (bill.amount / remaining) * 100); // min 0.5% so tiny bills are visible
-            const color = billColors[i % billColors.length];
-            const dueDate = new Date(bill.due_date + 'T00:00:00');
-            const dateStr = dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-
-            segmentsEl.innerHTML += `
-                <div class="runway-segment" style="width: ${billPct}%; background: ${color};">
-                    <div class="segment-tooltip">
-                        <div class="segment-tooltip-name">${escapeHtml(bill.name)}</div>
-                        <div class="segment-tooltip-amount">${fmtCurrency(bill.amount)}</div>
-                        <div class="segment-tooltip-date">Due ${dateStr}</div>
-                    </div>
-                </div>`;
-        });
     }
 
-    // Update bar legend — show free cash + count of pending
-    const barContainer = bar.parentElement;
-    let legendEl = barContainer.parentElement.querySelector('.runway-bar-legend');
+    // Pending bills
+    pendingBills.forEach((bill, bi) => {
+        const billPct = Math.max(0.5, (bill.amount / budget) * 100);
+        const color = BILL_COLORS[bi % BILL_COLORS.length];
+        const dueDate = new Date(bill.due_date + 'T00:00:00');
+        const dateStr = dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+        segmentsEl.innerHTML += `
+            <div class="runway-segment" style="width: ${billPct}%; background: ${color};">
+                <div class="segment-tooltip">
+                    <div class="segment-tooltip-name">${escapeHtml(bill.name)}</div>
+                    <div class="segment-tooltip-amount">${fmtCurrency(bill.amount)}</div>
+                    <div class="segment-tooltip-date">Due ${dateStr}</div>
+                </div>
+            </div>`;
+    });
+
+    // Temp expenses (purple)
+    tempExpenses.forEach(te => {
+        const tePct = Math.max(0.5, (te.amount / budget) * 100);
+        segmentsEl.innerHTML += `
+            <div class="runway-segment" style="width: ${tePct}%; background: #a855f7;">
+                <div class="segment-tooltip">
+                    <div class="segment-tooltip-name">${escapeHtml(te.name)}</div>
+                    <div class="segment-tooltip-amount">${fmtCurrency(te.amount)}</div>
+                    <div class="segment-tooltip-date">Temporary</div>
+                </div>
+            </div>`;
+    });
+
+    // Free cash
+    if (freePct > 0) {
+        segmentsEl.innerHTML += `
+            <div class="runway-segment" style="width: ${Math.min(freePct, 100 - spentPct)}%; background: ${freeColor};">
+                <div class="segment-tooltip">
+                    <div class="segment-tooltip-name">Free Cash</div>
+                    <div class="segment-tooltip-amount">${fmtCurrency(freeVal)}</div>
+                </div>
+            </div>`;
+    }
+
+    // Legend
+    legendEl.innerHTML = '';
+    const items = [];
+    if (spentPct > 0) {
+        items.push(`<span class="runway-bar-legend-item"><span class="runway-bar-legend-dot" style="background:#475569;"></span>Spent: ${fmtCurrency(half.spent_so_far)}</span>`);
+    }
     if (pendingBills.length > 0) {
-        if (!legendEl) {
-            legendEl = document.createElement('div');
-            legendEl.className = 'runway-bar-legend';
-            barContainer.parentElement.insertBefore(legendEl, barContainer.nextSibling);
-        }
-        legendEl.innerHTML = `
-            <span class="runway-bar-legend-item">
-                <span class="runway-bar-legend-dot" style="background: ${freeColor};"></span>
-                Free: ${fmtCurrency(freeCash)}
-            </span>
-            <span class="runway-bar-legend-item">
-                <span class="runway-bar-legend-dot" style="background: #f59e0b;"></span>
-                ${pendingBills.length} pending bill${pendingBills.length !== 1 ? 's' : ''}: ${fmtCurrency(pendingTotal)}
-            </span>
-        `;
-    } else if (legendEl) {
-        legendEl.remove();
+        items.push(`<span class="runway-bar-legend-item"><span class="runway-bar-legend-dot" style="background:#f59e0b;"></span>${pendingBills.length} bill${pendingBills.length !== 1 ? 's' : ''}: ${fmtCurrency(half.pending_total)}</span>`);
     }
+    if (tempExpenses.length > 0) {
+        const tempSum = tempExpenses.reduce((s, t) => s + t.amount, 0);
+        items.push(`<span class="runway-bar-legend-item"><span class="runway-bar-legend-dot" style="background:#a855f7;"></span>Temp: ${fmtCurrency(tempSum)}</span>`);
+    }
+    items.push(`<span class="runway-bar-legend-item"><span class="runway-bar-legend-dot" style="background:${freeColor};"></span>Free: ${fmtCurrency(freeVal)}</span>`);
+    legendEl.innerHTML = items.join('');
+}
 
-    // Populate Pending Bills Cards
+function populatePendingBillCards(halves) {
     const container = document.getElementById('pending-bills-container');
     const list = document.getElementById('pending-bills-list');
     const totalEl = document.getElementById('pending-bills-total');
 
-    if (container && list) {
-        if (allBills.length > 0) {
-            container.style.display = 'block';
+    if (!container || !list) return;
 
-            const pendingCount = pendingBills.length;
-            if (totalEl) {
-                totalEl.textContent = pendingTotal > 0
-                    ? `${pendingCount} pending \u2022 $${pendingTotal.toFixed(2)} committed`
-                    : 'All paid \u2714';
-                totalEl.style.color = pendingTotal > 0 ? '#fbbf24' : '#4ade80';
+    // Merge all bills from both halves
+    const allBills = [];
+    halves.forEach(h => {
+        (h.pending_bills || []).forEach(b => allBills.push(b));
+    });
+
+    if (allBills.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+    const pendingBills = allBills.filter(b => b.status === 'pending');
+    const pendingTotal = pendingBills.reduce((s, b) => s + b.amount, 0);
+
+    if (totalEl) {
+        totalEl.textContent = pendingTotal > 0
+            ? `${pendingBills.length} pending \u2022 $${pendingTotal.toFixed(2)} committed`
+            : 'All paid \u2714';
+        totalEl.style.color = pendingTotal > 0 ? '#fbbf24' : '#4ade80';
+    }
+
+    list.innerHTML = allBills.map((b) => {
+        const isPaid = b.status === 'paid';
+        const statusClass = isPaid ? 'paid' : 'pending';
+        const dueDate = new Date(b.due_date + 'T00:00:00');
+        const dateStr = dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        const dotColor = isPaid ? '#4ade80' : '#f59e0b';
+
+        return `<div class="bill-card ${statusClass}">
+            <div class="bill-card-name">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${dotColor};margin-right:6px;vertical-align:middle;"></span>
+                ${escapeHtml(b.name)}
+            </div>
+            <div class="bill-card-row">
+                <span class="bill-card-amount ${statusClass}">$${b.amount.toFixed(2)}</span>
+                <span class="bill-card-date">Due ${dateStr}</span>
+            </div>
+            <span class="bill-card-status ${statusClass}">
+                ${isPaid ? '\u2714 Paid' + (b.paid_date ? ' ' + new Date(b.paid_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '') : '\u25CB Pending'}
+            </span>
+        </div>`;
+    }).join('');
+}
+
+// --- Budget Simulator ---
+
+function toggleSimulator() {
+    const content = document.getElementById('simulator-content');
+    const toggle = document.getElementById('simulator-toggle');
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        toggle.textContent = '\u2212';
+    } else {
+        content.style.display = 'none';
+        toggle.textContent = '+';
+    }
+}
+
+function initSimulator(data) {
+    const grid = document.getElementById('simulator-sliders');
+    if (!grid) return;
+
+    const cats = data.category_averages || [];
+    if (cats.length === 0) {
+        grid.innerHTML = '<p style="color:#64748b; font-size:0.82rem;">No category data available for simulation.</p>';
+        return;
+    }
+
+    window._simulatorOriginals = {};
+
+    grid.innerHTML = cats.map(cat => {
+        const avg = cat.avg_per_half;
+        const maxVal = Math.round(avg * 3);
+        window._simulatorOriginals[cat.category] = avg;
+
+        return `<div class="slider-row">
+            <span class="slider-label" title="${escapeHtml(cat.category)}">${escapeHtml(cat.category)}</span>
+            <input type="range" class="slider-input" min="0" max="${maxVal}" step="1" value="${Math.round(avg)}"
+                   data-category="${escapeAttr(cat.category)}" data-original="${avg}"
+                   oninput="onSimulatorSliderChange()">
+            <span class="slider-value" data-slider-value="${escapeAttr(cat.category)}">${fmtCurrency(avg)}</span>
+            <span class="slider-diff neutral" data-slider-diff="${escapeAttr(cat.category)}">$0</span>
+        </div>`;
+    }).join('');
+}
+
+function onSimulatorSliderChange() {
+    const sliders = document.querySelectorAll('#simulator-sliders .slider-input');
+    let totalDelta = 0;
+
+    sliders.forEach(slider => {
+        const cat = slider.dataset.category;
+        const original = parseFloat(slider.dataset.original);
+        const current = parseFloat(slider.value);
+        const diff = current - original;
+        totalDelta += diff;
+
+        // Update value display
+        const valEl = document.querySelector(`[data-slider-value="${CSS.escape(cat)}"]`);
+        if (valEl) valEl.textContent = fmtCurrency(current);
+
+        // Update diff display
+        const diffEl = document.querySelector(`[data-slider-diff="${CSS.escape(cat)}"]`);
+        if (diffEl) {
+            const absDiff = Math.abs(diff);
+            if (diff > 0.5) {
+                diffEl.textContent = `+$${absDiff.toFixed(0)}`;
+                diffEl.className = 'slider-diff negative';
+            } else if (diff < -0.5) {
+                diffEl.textContent = `-$${absDiff.toFixed(0)}`;
+                diffEl.className = 'slider-diff positive';
+            } else {
+                diffEl.textContent = '$0';
+                diffEl.className = 'slider-diff neutral';
             }
+        }
+    });
 
-            list.innerHTML = allBills.map((b, idx) => {
-                const isPaid = b.status === 'paid';
-                const statusClass = isPaid ? 'paid' : 'pending';
-                const dueDate = new Date(b.due_date + 'T00:00:00');
-                const dateStr = dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-
-                // Match color to bar segment for pending bills
-                let dotColor = '#4ade80'; // green for paid
-                if (!isPaid) {
-                    const pendingIdx = pendingBills.findIndex(pb => pb.name === b.name);
-                    dotColor = billColors[pendingIdx % billColors.length];
-                }
-
-                return `<div class="bill-card ${statusClass}">
-                    <div class="bill-card-name">
-                        <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${dotColor};margin-right:6px;vertical-align:middle;"></span>
-                        ${escapeHtml(b.name)}
-                    </div>
-                    <div class="bill-card-row">
-                        <span class="bill-card-amount ${statusClass}">$${b.amount.toFixed(2)}</span>
-                        <span class="bill-card-date">Due ${dateStr}</span>
-                    </div>
-                    <span class="bill-card-status ${statusClass}">
-                        ${isPaid ? '\u2714 Paid' + (b.paid_date ? ' ' + new Date(b.paid_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '') : '\u25CB Pending'}
-                    </span>
-                </div>`;
-            }).join('');
+    // Update delta display
+    const deltaEl = document.getElementById('simulator-delta');
+    const deltaAmountEl = document.getElementById('sim-delta-amount');
+    if (deltaEl && deltaAmountEl) {
+        if (Math.abs(totalDelta) > 0.5) {
+            deltaEl.classList.add('active');
+            const sign = totalDelta > 0 ? '+' : '-';
+            deltaAmountEl.textContent = `${sign}$${Math.abs(totalDelta).toFixed(0)}`;
+            deltaAmountEl.className = totalDelta > 0 ? 'delta-amount delta-negative' : 'delta-amount delta-positive';
         } else {
-            container.style.display = 'none';
+            deltaEl.classList.remove('active');
         }
     }
 
-    // Store runway data globally so recurring bills table can use it
-    window._runwayData = data;
+    // Update bars with delta (negative delta = spending less = more free cash)
+    updateBarsWithDelta(-totalDelta);
+}
+
+function updateBarsWithDelta(delta) {
+    const data = window._monthlyRunwayData;
+    if (!data || !data.halves) return;
+
+    data.halves.forEach((half, i) => {
+        const idx = i + 1;
+        const bar = document.getElementById(`half${idx}-bar`);
+        const legendEl = document.getElementById(`half${idx}-legend`);
+        const statsEl = document.getElementById(`half${idx}-stats`);
+
+        if (!bar) return;
+
+        const adjustedFreeCash = half.free_cash + delta;
+        const freeCashClass = adjustedFreeCash >= 0 ? 'free-cash' : 'free-cash negative';
+
+        statsEl.innerHTML = `
+            <span class="half-stat spent">Spent: <strong>${fmtCurrency(half.spent_so_far)}</strong></span>
+            <span class="half-stat">Committed: <strong>${fmtCurrency(half.committed)}</strong></span>
+            <span class="half-stat ${freeCashClass}">Free: <strong>${fmtCurrency(adjustedFreeCash)}</strong></span>
+        `;
+
+        renderHalfBar(bar, legendEl, half, delta);
+    });
+}
+
+function resetSimulator() {
+    const sliders = document.querySelectorAll('#simulator-sliders .slider-input');
+    sliders.forEach(slider => {
+        slider.value = Math.round(parseFloat(slider.dataset.original));
+    });
+    onSimulatorSliderChange();
+}
+
+// --- Budget Override Save ---
+
+async function saveBudgetOverride(halfNum) {
+    const input = document.getElementById(`half${halfNum}-budget`);
+    const value = parseFloat(input.value);
+
+    if (isNaN(value) || value < 0) {
+        alert('Please enter a valid budget amount.');
+        return;
+    }
+
+    const body = {};
+    if (halfNum === 1) body.first_half = value;
+    if (halfNum === 2) body.second_half = value;
+
+    try {
+        const resp = await fetch('/api/budget-overrides', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        const result = await resp.json();
+        if (result.status === 'ok') {
+            location.reload();
+        } else {
+            alert('Save failed: ' + (result.message || 'Unknown error'));
+        }
+    } catch (err) {
+        alert('Save failed: ' + err.message);
+    }
+}
+
+// --- Temporary Expenses ---
+
+async function submitTempExpense(event) {
+    event.preventDefault();
+
+    const name = document.getElementById('temp-name').value.trim();
+    const amount = parseFloat(document.getElementById('temp-amount').value);
+    const half = parseInt(document.getElementById('temp-half').value, 10);
+
+    if (!name || isNaN(amount) || amount <= 0) {
+        alert('Please fill in name and amount.');
+        return;
+    }
+
+    try {
+        const resp = await fetch('/api/temporary-expenses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, amount, half }),
+        });
+        const result = await resp.json();
+        if (result.status === 'ok') {
+            location.reload();
+        } else {
+            alert('Save failed: ' + (result.message || 'Unknown error'));
+        }
+    } catch (err) {
+        alert('Save failed: ' + err.message);
+    }
+}
+
+async function deleteTempExpense(name) {
+    if (!confirm(`Remove temporary expense "${name}"?`)) return;
+
+    try {
+        const resp = await fetch('/api/temporary-expenses', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name }),
+        });
+        const result = await resp.json();
+        if (result.status === 'ok') {
+            location.reload();
+        } else {
+            alert('Delete failed: ' + (result.message || 'Unknown error'));
+        }
+    } catch (err) {
+        alert('Delete failed: ' + err.message);
+    }
+}
+
+function renderTempExpenses(expenses) {
+    const list = document.getElementById('temp-expense-list');
+    if (!list) return;
+
+    if (!expenses || expenses.length === 0) {
+        list.innerHTML = '<span style="color:#64748b; font-size:0.8rem;">No temporary expenses configured.</span>';
+        return;
+    }
+
+    list.innerHTML = expenses.map(te => {
+        const halfLabel = te.half === 1 ? '1st half' : '2nd half';
+        return `<div class="temp-expense-card">
+            <span class="temp-expense-name">${escapeHtml(te.name)}</span>
+            <span class="temp-expense-amount">${fmtCurrency(te.amount)}</span>
+            <span class="temp-expense-half">${halfLabel}</span>
+            <button class="temp-expense-delete" onclick="deleteTempExpense('${escapeAttr(te.name)}')" title="Remove">&times;</button>
+        </div>`;
+    }).join('');
 }
 
 async function refreshData() {

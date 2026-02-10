@@ -4,7 +4,14 @@ from datetime import date, timedelta
 
 import pandas as pd
 
-from finance.config_loader import PayPeriodConfig, RecurringBill
+import calendar
+
+from finance.config_loader import (
+    BudgetOverrides,
+    PayPeriodConfig,
+    RecurringBill,
+    TemporaryExpense,
+)
 
 
 def biweekly_spending(
@@ -379,3 +386,225 @@ def get_recurring_bill_status(
     # Sort checks by due date
     results.sort(key=lambda x: x["due_date"])
     return results
+
+
+def _get_bill_status_for_range(
+    df: pd.DataFrame,
+    start_date: date,
+    end_date: date,
+    recurring_bills: list[RecurringBill],
+) -> list[dict]:
+    """
+    Check status of recurring bills within an arbitrary date range.
+    Generalised version of get_recurring_bill_status().
+    """
+    if not recurring_bills:
+        return []
+
+    # Filter applicable transactions (expenses in this range)
+    period_txns = df[
+        (df["date"].dt.date >= start_date)
+        & (df["date"].dt.date <= end_date)
+        & (df["category"] == "expense")
+    ].copy()
+
+    if not period_txns.empty:
+        period_txns["desc_lower"] = period_txns["description"].str.lower()
+
+    results = []
+    last_day = end_date.day
+
+    for bill in recurring_bills:
+        # Determine if this bill's day falls in the range
+        bill_day = bill.day_of_month
+        # Clamp to last day of month if needed
+        if bill_day > last_day and end_date.day == calendar.monthrange(end_date.year, end_date.month)[1]:
+            bill_day = last_day
+
+        if bill_day < start_date.day or bill_day > end_date.day:
+            continue
+
+        bill_due_date = date(start_date.year, start_date.month, bill_day)
+
+        # Check for payment
+        is_paid = False
+        paid_details = {}
+
+        if not period_txns.empty:
+            for criteria in bill.match_criteria:
+                match = period_txns[period_txns["desc_lower"].str.contains(criteria, na=False)]
+                if not match.empty:
+                    is_paid = True
+                    row = match.iloc[0]
+                    paid_details = {
+                        "paid_date": row["date"].strftime("%Y-%m-%d"),
+                        "paid_amount": abs(row["amount"]),
+                    }
+                    break
+
+        results.append({
+            "name": bill.name,
+            "amount": bill.amount,
+            "due_date": bill_due_date.isoformat(),
+            "status": "paid" if is_paid else "pending",
+            **paid_details,
+        })
+
+    results.sort(key=lambda x: x["due_date"])
+    return results
+
+
+def get_category_averages(df: pd.DataFrame, days: int = 90) -> list[dict]:
+    """
+    Get average spending per ~half-month for top categories over the last N days.
+    Returns sorted list: [{category, avg_per_half, total}]
+    """
+    if df.empty:
+        return []
+
+    today = pd.Timestamp(date.today())
+    start_date = today - pd.Timedelta(days=days)
+
+    expenses = df[
+        (df["date"] >= start_date) & (df["category"] == "expense")
+    ].copy()
+
+    if expenses.empty:
+        return []
+
+    expenses["subcategory"] = expenses["subcategory"].fillna("Uncategorized")
+    expenses.loc[expenses["subcategory"] == "", "subcategory"] = "Uncategorized"
+
+    grouped = expenses.groupby("subcategory")["amount"].agg(lambda x: x.abs().sum()).reset_index()
+    grouped.columns = ["category", "total"]
+
+    # Half-months in the period (~2 per month)
+    num_halves = max(1, days / 15)
+    grouped["avg_per_half"] = (grouped["total"] / num_halves).round(2)
+    grouped["total"] = grouped["total"].round(2)
+
+    grouped = grouped.sort_values("total", ascending=False)
+
+    # Return top 10
+    return grouped.head(10).to_dict(orient="records")
+
+
+def compute_monthly_half_runway(
+    current_balance: float,
+    avg_biweekly_spending: float,
+    df: pd.DataFrame,
+    recurring_bills: list[RecurringBill],
+    temporary_expenses: list[TemporaryExpense],
+    budget_overrides: BudgetOverrides,
+) -> dict:
+    """
+    Compute runway data for two monthly halves (1st-15th and 16th-end).
+    """
+    today = date.today()
+    year = today.year
+    month = today.month
+    last_day_of_month = calendar.monthrange(year, month)[1]
+
+    # Default budget per half = biweekly average (a good approximation)
+    default_half_budget = round(avg_biweekly_spending, 2)
+
+    # Date ranges for each half
+    half1_start = date(year, month, 1)
+    half1_end = date(year, month, 15)
+    half2_start = date(year, month, 16)
+    half2_end = date(year, month, last_day_of_month)
+
+    halves_config = [
+        {
+            "start": half1_start,
+            "end": half1_end,
+            "label": f"{half1_start.strftime('%b')} 1-15",
+            "budget_override": budget_overrides.first_half,
+            "half_num": 1,
+        },
+        {
+            "start": half2_start,
+            "end": half2_end,
+            "label": f"{half2_start.strftime('%b')} 16-{last_day_of_month}",
+            "budget_override": budget_overrides.second_half,
+            "half_num": 2,
+        },
+    ]
+
+    halves = []
+    for hc in halves_config:
+        h_start = hc["start"]
+        h_end = hc["end"]
+        half_num = hc["half_num"]
+
+        # Budget
+        budget = hc["budget_override"] if hc["budget_override"] is not None else default_half_budget
+        budget_is_custom = hc["budget_override"] is not None
+
+        # Spending so far in this half
+        if not df.empty:
+            mask = (
+                (df["date"].dt.date >= h_start)
+                & (df["date"].dt.date <= h_end)
+                & (df["category"] == "expense")
+            )
+            spent_so_far = round(float(df[mask]["amount"].abs().sum()), 2)
+        else:
+            spent_so_far = 0.0
+
+        # Bills in this half
+        bills = _get_bill_status_for_range(df, h_start, h_end, recurring_bills)
+        pending_bills = [b for b in bills if b["status"] == "pending"]
+        pending_total = sum(b["amount"] for b in pending_bills)
+
+        # Temporary expenses for this half
+        half_temp = [te for te in temporary_expenses if te.half == half_num]
+        temp_total = sum(te.amount for te in half_temp)
+
+        # Committed = pending bills + temp expenses
+        committed = round(pending_total + temp_total, 2)
+
+        # Free cash = budget - spent so far - committed
+        free_cash = round(budget - spent_so_far - committed, 2)
+
+        # Is this the current half?
+        is_current = h_start <= today <= h_end
+        days_remaining = max(0, (h_end - today).days + 1) if is_current else (h_end - h_start).days + 1
+
+        halves.append({
+            "label": hc["label"],
+            "start": h_start.isoformat(),
+            "end": h_end.isoformat(),
+            "budget": round(budget, 2),
+            "budget_is_custom": budget_is_custom,
+            "spent_so_far": spent_so_far,
+            "pending_bills": bills,
+            "temporary_expenses": [
+                {"name": te.name, "amount": te.amount, "half": te.half}
+                for te in half_temp
+            ],
+            "pending_total": round(pending_total, 2),
+            "temp_total": round(temp_total, 2),
+            "committed": committed,
+            "free_cash": free_cash,
+            "is_current": is_current,
+            "days_remaining": days_remaining,
+        })
+
+    # Category averages for the simulator
+    category_averages = get_category_averages(df)
+
+    # All temp expenses for UI
+    all_temp = [
+        {"name": te.name, "amount": te.amount, "half": te.half}
+        for te in temporary_expenses
+    ]
+
+    return {
+        "halves": halves,
+        "category_averages": category_averages,
+        "temporary_expenses": all_temp,
+        "default_half_budget": default_half_budget,
+        "current_balance": round(current_balance, 2),
+        "avg_biweekly_spending": round(avg_biweekly_spending, 2),
+    }

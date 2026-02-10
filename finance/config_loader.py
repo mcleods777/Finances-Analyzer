@@ -57,12 +57,27 @@ class RecurringBill:
 
 
 @dataclass
+class TemporaryExpense:
+    name: str
+    amount: float
+    half: int  # 1 = 1st-15th, 2 = 16th-end
+
+
+@dataclass
+class BudgetOverrides:
+    first_half: float | None = None
+    second_half: float | None = None
+
+
+@dataclass
 class AppConfig:
     pay_period: PayPeriodConfig
     accounts: list[AccountConfig]
     classification: ClassificationConfig
     categorization_rules: list[CategorizationRule] = field(default_factory=list)
     recurring_bills: list[RecurringBill] = field(default_factory=list)
+    temporary_expenses: list[TemporaryExpense] = field(default_factory=list)
+    budget_overrides: BudgetOverrides = field(default_factory=BudgetOverrides)
 
 
 def _parse_column_mapping(raw: dict) -> ColumnMapping:
@@ -145,6 +160,28 @@ def _parse_recurring_bills(raw: list[dict] | None) -> list[RecurringBill]:
     return bills
 
 
+def _parse_temporary_expenses(raw: list[dict] | None) -> list[TemporaryExpense]:
+    if not raw:
+        return []
+    expenses = []
+    for e in raw:
+        expenses.append(TemporaryExpense(
+            name=e["name"],
+            amount=float(e["amount"]),
+            half=int(e.get("half", 1)),
+        ))
+    return expenses
+
+
+def _parse_budget_overrides(raw: dict | None) -> BudgetOverrides:
+    if not raw:
+        return BudgetOverrides()
+    return BudgetOverrides(
+        first_half=float(raw["first_half"]) if raw.get("first_half") is not None else None,
+        second_half=float(raw["second_half"]) if raw.get("second_half") is not None else None,
+    )
+
+
 def load_config(config_path: str) -> AppConfig:
     """Load and parse config.yaml into typed dataclasses."""
     with open(config_path, "r", encoding="utf-8") as f:
@@ -155,6 +192,8 @@ def load_config(config_path: str) -> AppConfig:
     classification = _parse_classification(raw.get("classification"))
     categorization_rules = _parse_rules(raw.get("categorization_rules"))
     recurring_bills = _parse_recurring_bills(raw.get("recurring_bills"))
+    temporary_expenses = _parse_temporary_expenses(raw.get("temporary_expenses"))
+    budget_overrides = _parse_budget_overrides(raw.get("budget_overrides"))
 
     return AppConfig(
         pay_period=pay_period,
@@ -162,6 +201,8 @@ def load_config(config_path: str) -> AppConfig:
         classification=classification,
         categorization_rules=categorization_rules,
         recurring_bills=recurring_bills,
+        temporary_expenses=temporary_expenses,
+        budget_overrides=budget_overrides,
     )
 
 

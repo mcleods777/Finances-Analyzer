@@ -8,6 +8,7 @@ from flask import Flask, jsonify, render_template, request
 from finance.analytics import (
     biweekly_income,
     biweekly_spending,
+    compute_monthly_half_runway,
     compute_runway,
     get_recurring_bill_status,
     get_spending_breakdown,
@@ -118,6 +119,16 @@ def refresh_data() -> dict:
     runway["free_cash"] = round(runway.get("budget_remaining_this_period", 0) - pending_total, 2)
     runway["recurring_bills"] = recurring_status
 
+    # Monthly-half runway
+    monthly_runway = compute_monthly_half_runway(
+        current_balance=current_balance,
+        avg_biweekly_spending=avg_stats["overall_average"],
+        df=df if not df.empty else _empty_classified_df(),
+        recurring_bills=config.recurring_bills,
+        temporary_expenses=config.temporary_expenses,
+        budget_overrides=config.budget_overrides,
+    )
+
     summary = summary_statistics(
         df if not df.empty else _empty_classified_df(),
         nw_series,
@@ -132,6 +143,7 @@ def refresh_data() -> dict:
     _cache["biweekly_income_df"] = biweekly_inc_df
     _cache["avg_stats"] = avg_stats
     _cache["runway"] = runway
+    _cache["monthly_runway"] = monthly_runway
     _cache["summary"] = summary
     _cache["config"] = config
 
@@ -949,4 +961,130 @@ def register_routes(app: Flask) -> None:
         
         except Exception as e:
             logger.exception("Failed to delete recurring bill")
+            return jsonify({"status": "error", "message": str(e)}), 500
+
+    # --- Monthly Runway & Budget Simulator API ---
+
+    @app.route("/api/monthly-runway")
+    def api_monthly_runway():
+        return jsonify(_cache.get("monthly_runway", {}))
+
+    @app.route("/api/budget-overrides", methods=["POST"])
+    def api_save_budget_overrides():
+        """
+        Save budget overrides for monthly halves.
+        Body: { "first_half": 1500.00, "second_half": null }
+        """
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": "error", "message": "No JSON body"}), 400
+
+        try:
+            import yaml
+            config_path = _get_config_path()
+
+            with open(config_path, "r", encoding="utf-8") as f:
+                config_data = yaml.safe_load(f)
+
+            if "budget_overrides" not in config_data:
+                config_data["budget_overrides"] = {}
+
+            # Update only the fields that were sent
+            if "first_half" in data:
+                val = data["first_half"]
+                config_data["budget_overrides"]["first_half"] = float(val) if val is not None else None
+            if "second_half" in data:
+                val = data["second_half"]
+                config_data["budget_overrides"]["second_half"] = float(val) if val is not None else None
+
+            with open(config_path, "w", encoding="utf-8") as f:
+                yaml.dump(config_data, f, sort_keys=False)
+
+            refresh_data()
+            return jsonify({"status": "ok"})
+
+        except Exception as e:
+            logger.exception("Failed to save budget overrides")
+            return jsonify({"status": "error", "message": str(e)}), 500
+
+    @app.route("/api/temporary-expenses", methods=["POST"])
+    def api_save_temporary_expense():
+        """
+        Add a temporary expense.
+        Body: { "name": "2nd Rent", "amount": 800, "half": 1 }
+        """
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": "error", "message": "No JSON body"}), 400
+
+        name = data.get("name", "").strip()
+        try:
+            amount = float(data.get("amount", 0))
+            half = int(data.get("half", 1))
+        except (TypeError, ValueError):
+            return jsonify({"status": "error", "message": "Invalid amount or half"}), 400
+
+        if not name or amount <= 0 or half not in (1, 2):
+            return jsonify({"status": "error", "message": "Name, positive amount, and half (1 or 2) are required"}), 400
+
+        try:
+            import yaml
+            config_path = _get_config_path()
+
+            with open(config_path, "r", encoding="utf-8") as f:
+                config_data = yaml.safe_load(f)
+
+            if "temporary_expenses" not in config_data or not config_data["temporary_expenses"]:
+                config_data["temporary_expenses"] = []
+
+            config_data["temporary_expenses"].append({
+                "name": name,
+                "amount": amount,
+                "half": half,
+            })
+
+            with open(config_path, "w", encoding="utf-8") as f:
+                yaml.dump(config_data, f, sort_keys=False)
+
+            refresh_data()
+            return jsonify({"status": "ok"})
+
+        except Exception as e:
+            logger.exception("Failed to save temporary expense")
+            return jsonify({"status": "error", "message": str(e)}), 500
+
+    @app.route("/api/temporary-expenses", methods=["DELETE"])
+    def api_delete_temporary_expense():
+        """
+        Delete a temporary expense by name.
+        Body: { "name": "2nd Rent" }
+        """
+        data = request.get_json()
+        if not data or "name" not in data:
+            return jsonify({"status": "error", "message": "Name is required"}), 400
+
+        name = data["name"].strip()
+
+        try:
+            import yaml
+            config_path = _get_config_path()
+
+            with open(config_path, "r", encoding="utf-8") as f:
+                config_data = yaml.safe_load(f)
+
+            if "temporary_expenses" in config_data and config_data["temporary_expenses"]:
+                original_len = len(config_data["temporary_expenses"])
+                config_data["temporary_expenses"] = [
+                    e for e in config_data["temporary_expenses"] if e["name"] != name
+                ]
+
+                if len(config_data["temporary_expenses"]) < original_len:
+                    with open(config_path, "w", encoding="utf-8") as f:
+                        yaml.dump(config_data, f, sort_keys=False)
+                    refresh_data()
+
+            return jsonify({"status": "ok"})
+
+        except Exception as e:
+            logger.exception("Failed to delete temporary expense")
             return jsonify({"status": "error", "message": str(e)}), 500
