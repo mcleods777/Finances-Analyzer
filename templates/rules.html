@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rules - Personal Finance Dashboard</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <style>
+        .rules-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .rules-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .category-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .category-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            color: #e2e8f0;
+            background: #334155;
+        }
+
+        .action-btn.delete:hover {
+            color: #f87171;
+            background: rgba(248, 113, 113, 0.1);
+        }
+
+        .keywords-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            flex-grow: 1;
+            align-content: flex-start;
+        }
+
+        .keyword-tag {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .show-more-btn:hover {
+            text-decoration: underline;
+        }
+
+        .keyword-remove {
+            cursor: pointer;
+            color: #64748b;
+            font-weight: bold;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .keyword-remove:hover {
+            color: #f87171;
+        }
+
+        .empty-keywords {
+            font-style: italic;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .view-tx-link {
+            display: block;
+            margin-top: 16px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #3b82f6;
+            text-decoration: none;
+            padding: 8px;
+            border-top: 1px solid #334155;
+            transition: background 0.2s;
+            border-radius: 0 0 8px 8px;
+            margin: 16px -20px -20px -20px;
+            background: #0f172a;
+        }
+
+        .view-tx-link:hover {
+            background: #1e293b;
+            text-decoration: underline;
+        }
+
+        /* Modal Overrides */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Card Colors */
+        .card-variant-0 {
+            --card-accent: #f472b6;
+            --card-bg: rgba(244, 114, 182, 0.1);
+        }
+
+        /* Pink */
+        .card-variant-1 {
+            --card-accent: #c084fc;
+            --card-bg: rgba(192, 132, 252, 0.1);
+        }
+
+        /* Purple */
+        .card-variant-2 {
+            --card-accent: #818cf8;
+            --card-bg: rgba(129, 140, 248, 0.1);
+        }
+
+        /* Indigo */
+        .card-variant-3 {
+            --card-accent: #60a5fa;
+            --card-bg: rgba(96, 165, 250, 0.1);
+        }
+
+        /* Blue */
+        .card-variant-4 {
+            --card-accent: #34d399;
+            --card-bg: rgba(52, 211, 153, 0.1);
+        }
+
+        /* Emerald */
+        .card-variant-5 {
+            --card-accent: #fbbf24;
+            --card-bg: rgba(251, 191, 36, 0.1);
+        }
+
+        /* Amber */
+        .card-variant-6 {
+            --card-accent: #f87171;
+            --card-bg: rgba(248, 113, 113, 0.1);
+        }
+
+        /* Red */
+        .card-variant-7 {
+            --card-accent: #2dd4bf;
+            --card-bg: rgba(45, 212, 191, 0.1);
+        }
+
+        /* Teal */
+
+        .category-card {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 1px solid #334155;
+            border-left: 4px solid var(--card-accent);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .category-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--card-bg);
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .category-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            border-color: var(--card-accent);
+        }
+
+        /* Ensure content is above the background overlay */
+        .category-card>* {
+            position: relative;
+            z-index: 1;
+        }
+
+        .category-card .category-name {
+            color: var(--card-accent);
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            font-size: 1.2rem;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="rules-container">
+        <div class="rules-header">
+            <div>
+                <h1>Categorization Rules</h1>
+                <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 4px;">Define keyword rules that automatically categorize transactions</p>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button onclick="openAddModal()" class="btn-primary"
+                    style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">+
+                    New Rule</button>
+                <a href="/categories"
+                    style="text-decoration: none; color: #94a3b8; padding: 10px 20px; border: 1px solid #334155; border-radius: 6px; display: inline-block;">View
+                    Categories</a>
+                <a href="/"
+                    style="text-decoration: none; color: #94a3b8; padding: 10px 20px; border: 1px solid #334155; border-radius: 6px; display: inline-block;">&larr;
+                    Dashboard</a>
+            </div>
+        </div>
+
+        <div id="loading" style="text-align: center; color: #94a3b8; margin-top: 40px;">
+            Loading categorization rules...
+        </div>
+
+        <div id="rulesGrid" class="category-grid">
+            <!-- Rules injected here -->
+        </div>
+    </div>
+
+    <!-- Rename Modal -->
+    <div id="renameModal" class="modal-overlay">
+        <div class="modal-card">
+            <h2 style="margin-top: 0; margin-bottom: 16px; color: #f1f5f9; font-size: 1.2rem;">Rename Category</h2>
+            <input type="hidden" id="oldCategoryName">
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: #94a3b8; font-size: 0.85rem; margin-bottom: 6px;">New Name</label>
+                <input type="text" id="newCategoryName"
+                    style="width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; color: #f1f5f9; border-radius: 6px; outline: none;">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button onclick="closeRenameModal()"
+                    style="background: transparent; border: 1px solid #475569; color: #94a3b8; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Cancel</button>
+                <button onclick="submitRename()"
+                    style="background: #3b82f6; border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Rename</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Category Modal -->
+    <div id="addModal" class="modal-overlay">
+        <div class="modal-card">
+            <h2 style="margin-top: 0; margin-bottom: 16px; color: #f1f5f9; font-size: 1.2rem;">Add New Rule</h2>
+            <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 16px;">Create a new categorization rule. Transactions
+                matching the keyword will be assigned to this category.</p>
+
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; color: #94a3b8; font-size: 0.85rem; margin-bottom: 6px;">Category
+                    Name</label>
+                <input type="text" id="addCategoryName" placeholder="e.g. Groceries"
+                    style="width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; color: #f1f5f9; border-radius: 6px; outline: none;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: #94a3b8; font-size: 0.85rem; margin-bottom: 6px;">Initial
+                    Keyword</label>
+                <input type="text" id="addCategoryKeyword" placeholder="e.g. walmart"
+                    style="width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; color: #f1f5f9; border-radius: 6px; outline: none;">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button onclick="closeAddModal()"
+                    style="background: transparent; border: 1px solid #475569; color: #94a3b8; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Cancel</button>
+                <button onclick="submitAdd()"
+                    style="background: #3b82f6; border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', fetchRules);
+
+        async function fetchRules() {
+            try {
+                const response = await fetch('/api/rules');
+                const data = await response.json();
+                renderRules(data.rules);
+            } catch (error) {
+                console.error('Failed to load rules:', error);
+                document.getElementById('loading').textContent = 'Error loading rules.';
+            }
+        }
+
+        function renderRules(rules) {
+            const grid = document.getElementById('rulesGrid');
+            const loading = document.getElementById('loading');
+            loading.style.display = 'none';
+            grid.innerHTML = '';
+
+            if (rules.length === 0) {
+                grid.innerHTML = '<p style="color: #64748b; grid-column: 1/-1; text-align: center;">No rules found.</p>';
+                return;
+            }
+
+            rules.forEach(rule => {
+                const card = document.createElement('div');
+                // Deterministic color assignment based on category name
+                let hash = 0;
+                for (let i = 0; i < rule.category.length; i++) {
+                    hash = rule.category.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const colorIndex = Math.abs(hash) % 8; // 8 color variants
+                card.className = `category-card card-variant-${colorIndex}`;
+
+                card.onclick = (e) => toggleCard(e, card);
+
+                // Sort keywords alphabetically
+                const validKeywords = (rule.keywords || [])
+                    .filter(k => k && k.trim() !== '')
+                    .sort((a, b) => a.localeCompare(b));
+
+                const keywordsHtml = validKeywords.length > 0
+                    ? validKeywords.map(k => `
+                        <span class="keyword-tag">
+                            ${k}
+                            <span class="keyword-remove" onclick="deleteKeyword(event, '${rule.category}', '${k.replace(/'/g, "\\'")}')">&times;</span>
+                        </span>
+                    `).join('')
+                    : '<span class="empty-keywords">No keywords</span>';
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div class="category-name">${rule.category}</div>
+                            <span class="keyword-count" style="font-size: 0.8rem; color: #64748b;">(${validKeywords.length})</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="action-btn" onclick="openRenameModal(event, '${rule.category}')" title="Rename Category">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            </button>
+                            <button class="action-btn delete" onclick="deleteCategory(event, '${rule.category}')" title="Delete Category">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                            <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                    </div>
+                    <div class="keywords-list" style="display: none;">
+                        ${keywordsHtml}
+                        <a href="/transactions?category=${encodeURIComponent(rule.category)}" class="view-tx-link">View Transactions</a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function toggleCard(e, card) {
+            // Don't toggle if clicking on interactive elements inside the card
+            if (e.target.closest('.action-btn') || e.target.closest('.keyword-remove') || e.target.closest('.view-tx-link')) {
+                return;
+            }
+
+            const list = card.querySelector('.keywords-list');
+            const chevron = card.querySelector('.chevron');
+
+            const isHidden = list.style.display === 'none';
+            list.style.display = isHidden ? 'flex' : 'none';
+            chevron.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+
+            // Toggle expanded class for potential CSS styling
+            card.classList.toggle('expanded', isHidden);
+        }
+
+        async function deleteKeyword(event, category, keyword) {
+            event.stopPropagation();
+            if (!confirm(`Remove keyword "${keyword}" from ${category}?`)) return;
+
+            try {
+                const response = await fetch('/api/rules/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category, keyword })
+                });
+                if (response.ok) {
+                    fetchRules();
+                } else {
+                    alert('Failed to delete keyword');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error deleting keyword');
+            }
+        }
+
+        async function deleteCategory(event, category) {
+            event.stopPropagation();
+            if (!confirm(`Delete entire category "${category}"?`)) return;
+
+            try {
+                const response = await fetch('/api/rules/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category })
+                });
+                if (response.ok) {
+                    fetchRules();
+                } else {
+                    alert('Failed to delete category');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error deleting category');
+            }
+        }
+
+        // --- Rename Modal ---
+        const renameModal = document.getElementById('renameModal');
+        const oldCatInput = document.getElementById('oldCategoryName');
+        const newCatInput = document.getElementById('newCategoryName');
+
+        function openRenameModal(event, oldName) {
+            event.stopPropagation();
+            oldCatInput.value = oldName;
+            newCatInput.value = oldName;
+            renameModal.style.display = 'flex';
+            newCatInput.focus();
+        }
+
+        function closeRenameModal() {
+            renameModal.style.display = 'none';
+        }
+
+        async function submitRename() {
+            const oldName = oldCatInput.value;
+            const newName = newCatInput.value.trim();
+
+            if (!newName || newName === oldName) {
+                closeRenameModal();
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/rules/rename', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ old_category: oldName, new_category: newName })
+                });
+
+                if (response.ok) {
+                    closeRenameModal();
+                    fetchRules();
+                } else {
+                    alert('Failed to rename category');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error renaming category');
+            }
+        }
+
+        // --- Add Modal ---
+        const addModal = document.getElementById('addModal');
+        const addCatName = document.getElementById('addCategoryName');
+        const addCatKw = document.getElementById('addCategoryKeyword');
+
+        function openAddModal() {
+            addCatName.value = '';
+            addCatKw.value = '';
+            addModal.style.display = 'flex';
+            addCatName.focus();
+        }
+
+        function closeAddModal() {
+            addModal.style.display = 'none';
+        }
+
+        async function submitAdd() {
+            const category = addCatName.value.trim();
+            const keyword = addCatKw.value.trim();
+
+            if (!category || !keyword) {
+                alert('Both Category Name and Initial Keyword are required.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/rules', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category, keyword })
+                });
+
+                if (response.ok) {
+                    closeAddModal();
+                    fetchRules();
+                } else {
+                    alert('Failed to create category');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error creating category');
+            }
+        }
+
+        // Close modals on outside click
+        window.onclick = function (event) {
+            if (event.target == renameModal) closeRenameModal();
+            if (event.target == addModal) closeAddModal();
+        }
+    </script>
+</body>
+
+</html>

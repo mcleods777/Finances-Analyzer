@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categories - Personal Finance Dashboard</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <style>
+        .categories-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .categories-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .categories-header h1 {
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .header-link {
+            text-decoration: none;
+            color: #94a3b8;
+            font-weight: 500;
+            padding: 8px 16px;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .header-link:hover {
+            color: #e2e8f0;
+            border-color: #475569;
+            background: #1e293b;
+        }
+
+        .header-link.primary {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .header-link.primary:hover {
+            background: #2563eb;
+        }
+
+        /* Summary stats row */
+        .categories-stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .stat-pill {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-pill-label {
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+
+        .stat-pill-value {
+            color: #f1f5f9;
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+
+        /* Search / filter bar */
+        .categories-search {
+            margin-bottom: 20px;
+        }
+
+        .categories-search input {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px 16px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #f1f5f9;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .categories-search input:focus {
+            border-color: #3b82f6;
+        }
+
+        .categories-search input::placeholder {
+            color: #64748b;
+        }
+
+        /* Category grid */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        /* Card Color Variants */
+        .card-variant-0 { --card-accent: #f472b6; --card-bg: rgba(244, 114, 182, 0.1); }
+        .card-variant-1 { --card-accent: #c084fc; --card-bg: rgba(192, 132, 252, 0.1); }
+        .card-variant-2 { --card-accent: #818cf8; --card-bg: rgba(129, 140, 248, 0.1); }
+        .card-variant-3 { --card-accent: #60a5fa; --card-bg: rgba(96, 165, 250, 0.1); }
+        .card-variant-4 { --card-accent: #34d399; --card-bg: rgba(52, 211, 153, 0.1); }
+        .card-variant-5 { --card-accent: #fbbf24; --card-bg: rgba(251, 191, 36, 0.1); }
+        .card-variant-6 { --card-accent: #f87171; --card-bg: rgba(248, 113, 113, 0.1); }
+        .card-variant-7 { --card-accent: #2dd4bf; --card-bg: rgba(45, 212, 191, 0.1); }
+
+        .category-card {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 1px solid #334155;
+            border-left: 4px solid var(--card-accent);
+            border-radius: 8px;
+            padding: 0;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .category-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--card-bg);
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .category-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            border-color: var(--card-accent);
+        }
+
+        .category-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+        }
+
+        .card-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .category-name {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--card-accent);
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            letter-spacing: 0.5px;
+        }
+
+        .category-count {
+            font-size: 0.8rem;
+            color: #64748b;
+            background: rgba(100, 116, 139, 0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .card-header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .category-total {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #f87171;
+        }
+
+        .category-total.positive {
+            color: #34d399;
+        }
+
+        .chevron-icon {
+            transition: transform 0.3s;
+            color: #64748b;
+            flex-shrink: 0;
+        }
+
+        .category-card.expanded .chevron-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Transactions list inside card */
+        .card-transactions {
+            display: none;
+            border-top: 1px solid #334155;
+        }
+
+        .category-card.expanded .card-transactions {
+            display: block;
+        }
+
+        .tx-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+            transition: background 0.15s;
+        }
+
+        .tx-item:last-child {
+            border-bottom: none;
+        }
+
+        .tx-item:hover {
+            background: rgba(51, 65, 85, 0.3);
+        }
+
+        .tx-item-left {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .tx-item-desc {
+            color: #e2e8f0;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 280px;
+        }
+
+        .tx-item-meta {
+            display: flex;
+            gap: 12px;
+            margin-top: 3px;
+        }
+
+        .tx-item-date {
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+
+        .tx-item-account {
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+
+        .tx-item-amount {
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            padding-left: 12px;
+        }
+
+        .tx-item-amount.negative {
+            color: #f87171;
+        }
+
+        .tx-item-amount.positive {
+            color: #34d399;
+        }
+
+        /* View all link at bottom of card */
+        .card-footer {
+            display: block;
+            text-align: center;
+            padding: 10px 20px;
+            border-top: 1px solid #334155;
+            color: #3b82f6;
+            font-size: 0.85rem;
+            text-decoration: none;
+            background: rgba(15, 23, 42, 0.5);
+            transition: background 0.2s;
+        }
+
+        .card-footer:hover {
+            background: rgba(59, 130, 246, 0.1);
+            text-decoration: underline;
+        }
+
+        /* Uncategorized card special styling */
+        .category-card.uncategorized {
+            border-left-color: #64748b;
+            --card-accent: #64748b;
+            --card-bg: rgba(100, 116, 139, 0.05);
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            color: #64748b;
+            padding: 60px 20px;
+        }
+
+        .empty-state h2 {
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+
+        /* No results from search */
+        .no-results {
+            display: none;
+            text-align: center;
+            color: #64748b;
+            padding: 40px 20px;
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="categories-container">
+        <div class="categories-header">
+            <div>
+                <h1>Categories</h1>
+                <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 4px;">Browse transactions by category</p>
+            </div>
+            <div class="header-actions">
+                <a href="/rules" class="header-link">Manage Rules</a>
+                <a href="/transactions" class="header-link">All Transactions</a>
+                <a href="/" class="header-link">&larr; Dashboard</a>
+            </div>
+        </div>
+
+        {% if error %}
+        <div class="empty-state">
+            <h2>{{ error }}</h2>
+        </div>
+        {% else %}
+
+        <!-- Summary stats -->
+        <div class="categories-stats">
+            <div class="stat-pill">
+                <span class="stat-pill-label">Categories:</span>
+                <span class="stat-pill-value" id="total-categories">{{ categories | length }}</span>
+            </div>
+            <div class="stat-pill">
+                <span class="stat-pill-label">Categorized:</span>
+                <span class="stat-pill-value" id="categorized-count">
+                    {% set categorized = categories | selectattr('name', 'ne', 'Uncategorized') | list %}
+                    {{ categorized | sum(attribute='transaction_count') }}
+                </span>
+            </div>
+            <div class="stat-pill">
+                <span class="stat-pill-label">Uncategorized:</span>
+                <span class="stat-pill-value" id="uncategorized-count" style="color: {% if categories | selectattr('name', 'eq', 'Uncategorized') | list %}#fbbf24{% else %}#34d399{% endif %};">
+                    {% set uncat = categories | selectattr('name', 'eq', 'Uncategorized') | list %}
+                    {{ uncat[0].transaction_count if uncat else 0 }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="categories-search">
+            <input type="text" id="categorySearch" placeholder="Search categories..." oninput="filterCategories(this.value)">
+        </div>
+
+        <!-- Category Grid -->
+        <div class="category-grid" id="categoryGrid">
+            {% for cat in categories %}
+            <div class="category-card {% if cat.name == 'Uncategorized' %}uncategorized{% endif %} card-variant-{{ loop.index0 % 8 }}"
+                 data-name="{{ cat.name | lower }}"
+                 onclick="toggleCategory(event, this)">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <span class="category-name">{{ cat.name }}</span>
+                        <span class="category-count">{{ cat.transaction_count }} tx{{ 's' if cat.transaction_count != 1 else '' }}</span>
+                    </div>
+                    <div class="card-header-right">
+                        <span class="category-total {{ 'positive' if cat.total_amount > 0 else '' }}">
+                            {% if cat.total_amount < 0 %}-${{ "%.2f" | format(cat.total_amount | abs) }}{% else %}${{ "%.2f" | format(cat.total_amount) }}{% endif %}
+                        </span>
+                        <svg class="chevron-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="card-transactions">
+                    {% for tx in cat.recent_transactions %}
+                    <div class="tx-item">
+                        <div class="tx-item-left">
+                            <div class="tx-item-desc" title="{{ tx.description }}">{{ tx.description }}</div>
+                            <div class="tx-item-meta">
+                                <span class="tx-item-date">{{ tx.date }}</span>
+                                {% if tx.account %}
+                                <span class="tx-item-account">{{ tx.account }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="tx-item-amount {{ 'positive' if tx.amount > 0 else 'negative' }}">
+                            {% if tx.amount < 0 %}-${{ "%.2f" | format(tx.amount | abs) }}{% else %}${{ "%.2f" | format(tx.amount) }}{% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    {% if cat.has_more %}
+                    <a href="/transactions?category={{ cat.name | urlencode }}" class="card-footer" onclick="event.stopPropagation();">
+                        View all {{ cat.transaction_count }} transactions &rarr;
+                    </a>
+                    {% else %}
+                    <a href="/transactions?category={{ cat.name | urlencode }}" class="card-footer" onclick="event.stopPropagation();">
+                        View in transactions &rarr;
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            <div class="no-results" id="noResults">
+                <p>No categories match your search.</p>
+            </div>
+        </div>
+
+        {% endif %}
+    </div>
+
+    <script>
+        function toggleCategory(event, card) {
+            // Don't toggle if clicking links
+            if (event.target.closest('.card-footer')) return;
+
+            card.classList.toggle('expanded');
+        }
+
+        function filterCategories(query) {
+            const cards = document.querySelectorAll('.category-card');
+            const q = query.toLowerCase().trim();
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const name = card.getAttribute('data-name') || '';
+                if (!q || name.includes(q)) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            const noResults = document.getElementById('noResults');
+            if (noResults) {
+                noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,47 @@
+pay_period:
+  start_date: '2025-01-06'
+  frequency_days: 14
+
+accounts:
+- file: Checking.csv
+  name: Main Checking
+  type: checking
+  columns:
+    date: Posting Date
+    description: Description
+    amount: Amount
+    debit: null
+    credit: null
+  date_format: '%m/%d/%Y'
+  amount_sign: standard
+  balance_column: Balance
+  opening_balance: null
+  opening_date: null
+
+classification:
+  income_keywords:
+  - direct deposit
+  - payroll
+  - salary
+  expense_keywords:
+  - paypal
+  transfer_keywords:
+  - transfer
+  - xfer
+
+categorization_rules:
+- category: Groceries
+  keywords:
+  - walmart
+  - target
+- category: Dining Out
+  keywords:
+  - mcdonald's
+  - subway
+
+recurring_bills:
+- name: Example Bill
+  amount: 100.00
+  day_of_month: 1
+  match_criteria:
+  - example bill

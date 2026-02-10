@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - Personal Finance Dashboard</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <style>
+        .transactions-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .transactions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .back-link {
+            text-decoration: none;
+            color: #3b82f6;
+            font-weight: 500;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .transactions-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #1e293b;
+            /* Slate-800 matches cards */
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+            /* Slate-700 */
+        }
+
+        .transactions-table th,
+        .transactions-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #334155;
+            /* Slate-700 */
+            color: #e2e8f0;
+            /* Slate-200 */
+        }
+
+        .transactions-table th {
+            background-color: #0f172a;
+            /* Slate-900 matches body bg */
+            font-weight: 600;
+            color: #94a3b8;
+            /* Slate-400 */
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+        }
+
+        .transactions-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .amount-positive {
+            color: #4ade80;
+            /* Green-400 */
+        }
+
+        .amount-negative {
+            color: #f87171;
+            /* Red-400 */
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 0.85em;
+            font-weight: 500;
+            background-color: #334155;
+            color: #e2e8f0;
+            text-decoration: none;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        .category-badge:hover {
+            opacity: 0.8;
+        }
+
+        .badge-income {
+            background-color: rgba(74, 222, 128, 0.2);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.3);
+        }
+
+        .badge-expense {
+            background-color: rgba(248, 113, 113, 0.2);
+            color: #f87171;
+            border: 1px solid rgba(248, 113, 113, 0.3);
+        }
+
+        .badge-transfer {
+            background-color: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        /* Custom Dropdown Styling */
+        .custom-dropdown {
+            position: relative;
+            display: inline-block;
+            width: 250px;
+        }
+
+        .dropdown-input {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            outline: 2px solid rgba(59, 130, 246, 0.5);
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 4px;
+            padding: 8px;
+        }
+
+        .dropdown-content.show {
+            display: block;
+        }
+
+        .dropdown-section-title {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 8px 4px 4px 4px;
+            font-weight: 600;
+        }
+
+        .pills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .pill {
+            padding: 4px 10px;
+            background-color: #334155;
+            border: 1px solid #475569;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            color: #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pill:hover {
+            background-color: #475569;
+            border-color: #64748b;
+        }
+
+        .dropdown-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            color: #cbd5e1;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-item:hover {
+            background-color: #334155;
+            color: #f1f5f9;
+        }
+
+        .filter-banner {
+            background-color: #1e293b;
+            border: 1px solid #3b82f6;
+            color: #e2e8f0;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clear-filter-btn {
+            background-color: #3b82f6;
+            color: white;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .clear-filter-btn:hover {
+            background-color: #2563eb;
+        }
+
+        .sort-header {
+            color: inherit;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        .sort-header:hover {
+            color: #f1f5f9;
+            /* Lighter on hover */
+        }
+
+        /* Search and Filter Styles */
+        .controls-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            position: relative;
+            flex-grow: 1;
+            max-width: 400px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 16px;
+            padding-right: 40px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-size: 0.95rem;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            border-color: #3b82f6;
+            outline: 2px solid rgba(59, 130, 246, 0.5);
+        }
+
+        .filter-tabs {
+            display: flex;
+            background-color: #0f172a;
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .filter-tab {
+            padding: 6px 16px;
+            border-radius: 6px;
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-tab:hover {
+            color: #e2e8f0;
+        }
+
+        .filter-tab.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        /* Sidebar Layout */
+        .content-wrapper {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: #1e293b;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            color: #e2e8f0;
+            flex-shrink: 0;
+            position: sticky;
+            top: 20px;
+            order: 1;
+        }
+
+        .sidebar h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .freq-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .freq-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #334155;
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-decoration: none;
+            color: #cbd5e1;
+        }
+
+        .freq-item:last-child {
+            border-bottom: none;
+        }
+
+        .freq-item:hover {
+            color: #3b82f6;
+        }
+
+        .freq-count {
+            background: #334155;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        .transfer-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .transfer-toggle:hover {
+            color: #e2e8f0;
+        }
+
+        .transfer-toggle input[type="checkbox"] {
+            accent-color: #3b82f6;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        /* Modal Overrides */
+        .tx-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .tx-modal-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #334155;
+            background: #0f172a;
+        }
+
+        .modal-header h2 {
+            font-size: 1.1rem;
+            margin: 0;
+            color: #f1f5f9;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            color: #f1f5f9;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #334155;
+            background: #0f172a;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: #e2e8f0;
+            font-size: 0.95rem;
+        }
+
+        .form-input:focus {
+            outline: 2px solid #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #94a3b8;
+            border: 1px solid #475569;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            border-color: #64748b;
+            color: #e2e8f0;
+        }
+
+        /* Expandable Transaction Detail Row */
+        .tx-row {
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+
+        .tx-row:hover {
+            background-color: rgba(59, 130, 246, 0.04);
+        }
+
+        .tx-row.expanded {
+            background-color: rgba(59, 130, 246, 0.06);
+        }
+
+        .tx-row.expanded td {
+            border-bottom-color: transparent;
+        }
+
+        .tx-detail-row {
+            display: none;
+        }
+
+        .tx-detail-row.show {
+            display: table-row;
+        }
+
+        .tx-detail-row td {
+            padding: 0 16px 16px 16px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .tx-detail-panel {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 16px 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .detail-field {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .detail-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .detail-value {
+            font-size: 0.88rem;
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+
+        .detail-value.positive {
+            color: #4ade80;
+        }
+
+        .detail-value.negative {
+            color: #f87171;
+        }
+
+        .detail-value.muted {
+            color: #94a3b8;
+        }
+
+        .detail-actions {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .detail-action-btn {
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 1px solid #475569;
+            background: transparent;
+            color: #94a3b8;
+            text-decoration: none;
+        }
+
+        .detail-action-btn:hover {
+            border-color: #3b82f6;
+            color: #60a5fa;
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        .detail-action-btn.recurring-btn {
+            border-color: #eab308;
+            color: #eab308;
+        }
+
+        .detail-action-btn.recurring-btn:hover {
+            background: rgba(234, 179, 8, 0.08);
+        }
+
+        .detail-recurring-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            background: rgba(234, 179, 8, 0.1);
+            border: 1px solid rgba(234, 179, 8, 0.25);
+            border-radius: 6px;
+            color: #eab308;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .tx-expand-icon {
+            display: inline-block;
+            transition: transform 0.2s ease;
+            font-size: 0.75rem;
+            color: #475569;
+            margin-left: 6px;
+        }
+
+        .tx-row.expanded .tx-expand-icon {
+            transform: rotate(90deg);
+            color: #3b82f6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="transactions-container">
+        <div class="transactions-header">
+            <h1>Transactions</h1>
+            <div class="header-actions">
+                <a href="/categories"
+                    style="margin-right: 12px; text-decoration: none; color: #94a3b8; font-weight: 500;">Categories</a>
+                <a href="/rules"
+                    style="margin-right: 12px; text-decoration: none; color: #94a3b8; font-weight: 500;">Rules</a>
+                <button onclick="openModal()" class="btn-primary">Bulk Categorize</button>
+                <a href="/" class="back-link" style="margin-left: 12px;">&larr; Back to Dashboard</a>
+            </div>
+        </div>
+
+        <!-- Bulk Categorize Modal -->
+        <div id="categoryModal" class="tx-modal-overlay">
+            <div class="tx-modal-card">
+                <div class="modal-header">
+                    <h2>Create Categorization Rule</h2>
+                    <button onclick="closeModal()" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="margin-bottom: 16px; color: #94a3b8; font-size: 0.9rem;">
+                        Automatically categorize transactions based on their description.
+                    </p>
+                    <div class="form-group">
+                        <label for="ruleKeyword">If description contains:</label>
+                        <input type="text" id="ruleKeyword" class="form-input" placeholder="e.g. Starbucks">
+                    </div>
+                    <div class="form-group">
+                        <label for="ruleCategory">Set category to:</label>
+                        <input type="text" id="ruleCategory" class="form-input" list="categoryList"
+                            placeholder="e.g. Coffee">
+                        <datalist id="categoryList">
+                            <option value="Groceries">
+                            <option value="Dining Out">
+                            <option value="Utilities">
+                            <option value="Rent">
+                            <option value="Subscription">
+                            <option value="Shopping">
+                            <option value="Gas">
+                            <option value="Income">
+                            <option value="Transfer">
+                        </datalist>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="closeModal()" class="btn-secondary">Cancel</button>
+                    <button onclick="saveRule()" class="btn-primary">Save Rule</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Recurring Bill Modal -->
+        <div id="recurringModal" class="tx-modal-overlay">
+            <div class="tx-modal-card">
+                <div class="modal-header">
+                    <h2>Add Recurring Bill</h2>
+                    <button onclick="closeRecurringModal()" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="margin-bottom: 16px; color: #94a3b8; font-size: 0.9rem;">
+                        Track this bill in your Budget Runway.
+                    </p>
+                    <div class="form-group">
+                        <label for="billName">Bill Name</label>
+                        <input type="text" id="billName" class="form-input" placeholder="e.g. Netflix">
+                    </div>
+                    <div class="form-group">
+                        <label for="billAmount">Amount ($)</label>
+                        <input type="number" step="0.01" id="billAmount" class="form-input" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="billDay">Day of Month Due</label>
+                        <input type="number" min="1" max="31" id="billDay" class="form-input" placeholder="1-31">
+                    </div>
+                    <div class="form-group">
+                        <label for="billCriteria">Match Criteria (auto-filled)</label>
+                        <input type="text" id="billCriteria" class="form-input"
+                            placeholder="Keyword to match transaction">
+                        <small style="color: #64748b; font-size: 0.8rem;">We'll look for this keyword in transaction
+                            descriptions.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="closeRecurringModal()" class="btn-secondary">Cancel</button>
+                    <button onclick="saveRecurringBill()" class="btn-primary">Save Bill</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls: Search and Status Filters (Default View) -->
+        <div id="controlsContainer" class="controls-container">
+            <div class="filter-tabs">
+                <a href="/transactions?status=all{{ '&search=' + current_search if current_search }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
+                    class="filter-tab {{ 'active' if current_status == 'all' }}">All</a>
+                <a href="/transactions?status=uncategorized{{ '&search=' + current_search if current_search }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
+                    class="filter-tab {{ 'active' if current_status == 'uncategorized' }}">
+                    Uncategorized {% if uncategorized_count > 0 %}({{ uncategorized_count }}){% endif %}
+                </a>
+                <a href="/transactions?status=categorized{{ '&search=' + current_search if current_search }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
+                    class="filter-tab {{ 'active' if current_status == 'categorized' }}">Categorized</a>
+                <a href="/transactions?status=transfer{{ '&search=' + current_search if current_search }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
+                    class="filter-tab {{ 'active' if current_status == 'transfer' }}">Transfers</a>
+            </div>
+
+            {% if current_status != 'transfer' %}
+            <label class="transfer-toggle" title="Show transfer transactions">
+                <input type="checkbox" id="showTransfersCheckbox" {{ 'checked' if show_transfers else '' }}
+                    onchange="toggleTransfers(this.checked)">
+                <span>Show Transfers</span>
+            </label>
+            {% endif %}
+
+            <form action="/transactions" method="GET" class="search-box">
+                <input type="text" name="search" class="search-input" placeholder="Search transactions..."
+                    value="{{ current_search }}">
+                <input type="hidden" name="status" value="{{ current_status }}">
+                {% if filter_start %}<input type="hidden" name="start" value="{{ filter_start }}">{% endif %}
+                {% if filter_end %}<input type="hidden" name="end" value="{{ filter_end }}">{% endif %}
+                {% if current_sort %}<input type="hidden" name="sort" value="{{ current_sort }}">{% endif %}
+                {% if show_transfers %}<input type="hidden" name="show_transfers" value="1">{% endif %}
+            </form>
+        </div>
+
+        <!-- Bulk Actions Header (Hidden by default, replaces Controls) -->
+        <div id="bulkActionsHeader" class="controls-container"
+            style="display: none; background-color: #1e293b; border: 1px solid #3b82f6; padding: 10px 16px; border-radius: 8px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <span id="selectedCount" style="font-weight: 600; color: #fff;">0 selected</span>
+                <button onclick="clearSelection()" class="clear-filter-btn"
+                    style="background: transparent; border: 1px solid #475569; color: #94a3b8;">Clear</button>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <!-- Custom Dropdown -->
+                <div class="custom-dropdown" id="catDropdown">
+                    <input type="text" id="bulkCategoryInput" class="dropdown-input" placeholder="Categorize as..."
+                        autocomplete="off">
+                    <div class="dropdown-content" id="catDropdownContent">
+                        <div class="dropdown-section-title">Common</div>
+                        <div class="pills-container">
+                            <span class="pill" onclick="selectFromPill('Dining Out')">Dining Out</span>
+                            <span class="pill" onclick="selectFromPill('Groceries')">Groceries</span>
+                            <span class="pill" onclick="selectFromPill('Rent')">Rent</span>
+                            <span class="pill" onclick="selectFromPill('Subscription')">Subscription</span>
+                            <span class="pill" onclick="selectFromPill('Shopping')">Shopping</span>
+                            <span class="pill" onclick="selectFromPill('Gas')">Gas</span>
+                        </div>
+                        <div class="dropdown-section-title">All Categories</div>
+                        <div class="dropdown-item" onclick="selectFromList('Income')">Income</div>
+                        <div class="dropdown-item" onclick="selectFromList('Transfer')">Transfer</div>
+                        <div class="dropdown-item" onclick="selectFromList('Utilities')">Utilities</div>
+                        <div class="dropdown-item" onclick="selectFromList('Auto Repair')">Auto Repair</div>
+                        <div class="dropdown-item" onclick="selectFromList('Family Portraits')">Family Portraits</div>
+                        <div class="dropdown-item" onclick="selectFromList('Cell Phone')">Cell Phone</div>
+                    </div>
+                </div>
+
+                <button onclick="applyBulkCategory()" class="btn-primary">Apply</button>
+                <div style="width: 1px; height: 24px; background: #334155; margin: 0 8px;"></div>
+                <button onclick="openRecurringModal()" class="btn-secondary"
+                    style="border-color: #eab308; color: #eab308;">Make Recurring</button>
+            </div>
+        </div>
+
+        <div class="content-wrapper">
+            <div class="main-content">
+
+                {% if error %}
+                <div class="error-banner">
+                    <p>{{ error }}</p>
+                </div>
+                {% endif %}
+
+                {% if filter_start and filter_end %}
+                <div class="filter-banner">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <p style="margin: 0;">Viewing transactions from <strong>{{ filter_start }}</strong> to
+                            <strong>{{ filter_end }}</strong>.
+                        </p>
+                        <a href="/transactions?status={{ current_status }}{{ '&search=' + current_search if current_search }}{{ '&category=' + current_category if current_category }}"
+                            class="clear-filter-btn">Clear Date Filter</a>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="applyDateFilter(30)" class="btn-secondary"
+                        style="padding: 4px 10px; font-size: 0.8rem;">30 Days</button>
+                    <button onclick="applyDateFilter(60)" class="btn-secondary"
+                        style="padding: 4px 10px; font-size: 0.8rem;">60 Days</button>
+                    <button onclick="applyDateFilter(90)" class="btn-secondary"
+                        style="padding: 4px 10px; font-size: 0.8rem;">90 Days</button>
+                </div>
+                {% elif current_category %}
+            <!-- Category Filter Banner -->
+            <div class="filter-banner">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <p style="margin: 0;">Viewing transactions in <strong>{{ current_category }}</strong>.</p>
+                    <a href="/transactions?status={{ current_status }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&search=' + current_search if current_search }}"
+                        class="clear-filter-btn">Clear Filter</a>
+                </div>
+            </div>
+            {% else %}
+            <!-- Show date filters even if no custom date range is active -->
+            <div class="filter-banner" style="justify-content: flex-end;">
+                <div style="display: flex; gap: 8px;">
+                    <span style="align-self: center; font-size: 0.9rem; color: #94a3b8; margin-right: 8px;">Filter
+                        Last:</span>
+                    <button onclick="applyDateFilter(30)" class="btn-secondary"
+                        style="padding: 4px 10px; font-size: 0.8rem;">30 Days</button>
+                    <button onclick="applyDateFilter(60)" class="btn-secondary"
+                        style="padding: 4px 10px; font-size: 0.8rem;">60 Days</button>
+                    <button onclick="applyDateFilter(90)" class="btn-secondary"
+                        style="padding: 4px 10px; font-size: 0.8rem;">90 Days</button>
+                </div>
+            </div>
+            {% endif %}
+
+            <script>
+                function toggleTransfers(checked) {
+                    const url = new URL(window.location.href);
+                    if (checked) {
+                        url.searchParams.set('show_transfers', '1');
+                    } else {
+                        url.searchParams.delete('show_transfers');
+                    }
+                    window.location.href = url.toString();
+                }
+
+                function applyDateFilter(days) {
+                    const today = new Date();
+                    const startDate = new Date();
+                    startDate.setDate(today.getDate() - days);
+
+                    const startStr = startDate.toISOString().split('T')[0];
+                    const endStr = today.toISOString().split('T')[0];
+
+                    // Construct URL with existing params
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('start', startStr);
+                    url.searchParams.set('end', endStr);
+
+                    // Ensure status/search/sort are preserved (they are by default with URL object)
+                    window.location.href = url.toString();
+                }
+            </script>
+
+            {% if transactions %}
+            <table class="transactions-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px; text-align: center;">
+                            <input type="checkbox" id="selectAll" onclick="toggleSelectAll()">
+                        </th>
+                        <th>
+                            <a href="/transactions?sort={{ 'date_asc' if current_sort == 'date_desc' else 'date_desc' }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&status=' + current_status }}{{ '&search=' + current_search if current_search }}{{ '&category=' + current_category if current_category }}"
+                                class="sort-header">
+                                Date {{ '↓' if current_sort == 'date_desc' else '↑' if current_sort == 'date_asc'
+                                else '' }}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="/transactions?sort={{ 'description_asc' if current_sort == 'description_desc' else 'description_desc' }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&status=' + current_status }}{{ '&search=' + current_search if current_search }}{{ '&category=' + current_category if current_category }}"
+                                class="sort-header">
+                                Description {{ '↓' if current_sort == 'description_desc' else '↑' if current_sort ==
+                                'description_asc' else '' }}
+                            </a>
+                        </th>
+                        <th>Type</th>
+                        <th>Category</th>
+                        <th>Account</th>
+                        <th style="text-align: right;">
+                            <a href="/transactions?sort={{ 'amount_asc' if current_sort == 'amount_desc' else 'amount_desc' }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&status=' + current_status }}{{ '&search=' + current_search if current_search }}{{ '&category=' + current_category if current_category }}"
+                                class="sort-header">
+                                Amount {{ '↓' if current_sort == 'amount_desc' else '↑' if current_sort ==
+                                'amount_asc' else
+                                '' }}
+                            </a>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr class="tx-row" data-tx-id="{{ loop.index }}" onclick="toggleTxDetail(event, {{ loop.index }})">
+                        <td style="text-align: center;" onclick="event.stopPropagation();">
+                            <input type="checkbox" class="tx-checkbox" value="{{ t.description }}"
+                                onclick="updateBulkBar()">
+                        </td>
+                        <td style="white-space: nowrap;">
+                            {{ t.date.strftime('%b %d, %Y') }}
+                            <span class="tx-expand-icon">&#9654;</span>
+                        </td>
+                        <td>
+                            <a href="/transactions?search={{ t.description | urlencode }}&status={{ current_status }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&category=' + current_category if current_category }}"
+                                style="color: inherit; text-decoration: none; border-bottom: 1px dotted #64748b;"
+                                title="Filter by this description"
+                                onclick="event.stopPropagation();">
+                                {{ t.description }}
+                            </a>
+                            {% if t.recurring_bill %}
+                            <span title="Recurring Bill: {{ t.recurring_bill }}"
+                                style="cursor: help; margin-left: 6px; color: #eab308; font-size: 1.1em;">
+                                &#8635;
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="/transactions?status={{ 'transfer' if t.category == 'transfer' else 'all' }}{{ '&search=' + current_search if current_search }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&category=' + current_category if current_category }}"
+                                class="category-badge badge-{{ t.category }}" onclick="event.stopPropagation();">{{ t.category }}</a>
+                        </td>
+                        <td>
+                            {% if t.subcategory %}
+                            <a href="/transactions?category={{ t.subcategory | urlencode }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
+                                class="category-badge subcategory-badge" data-subcategory="{{ t.subcategory }}" onclick="event.stopPropagation();">{{
+                                t.subcategory }}</a>
+                            {% else %}
+                            <span style="color: #64748b;">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ t.account_name }}</td>
+                        <td style="text-align: right;"
+                            class="{{ 'amount-positive' if t.amount >= 0 else 'amount-negative' }}">
+                            {{ t.amount | currency }}
+                        </td>
+                    </tr>
+                    <!-- Expandable detail row -->
+                    <tr class="tx-detail-row" id="txDetail{{ loop.index }}">
+                        <td colspan="7">
+                            <div class="tx-detail-panel">
+                                <div class="detail-field">
+                                    <span class="detail-label">Date & Time</span>
+                                    <span class="detail-value">{{ t.date.strftime('%A, %B %d, %Y') }}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="detail-label">Amount</span>
+                                    <span class="detail-value {{ 'positive' if t.amount >= 0 else 'negative' }}">{{ t.amount | currency }}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="detail-label">Account</span>
+                                    <span class="detail-value">{{ t.account_name }}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="detail-label">Account Type</span>
+                                    <span class="detail-value muted">{{ t.account_type | replace('_', ' ') | title }}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="detail-label">Type</span>
+                                    <span class="detail-value">
+                                        <span class="category-badge badge-{{ t.category }}">{{ t.category }}</span>
+                                    </span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="detail-label">Category</span>
+                                    <span class="detail-value">{{ t.subcategory if t.subcategory else '—' }}</span>
+                                </div>
+                                <div class="detail-field">
+                                    <span class="detail-label">Description</span>
+                                    <span class="detail-value" style="word-break: break-word; font-size: 0.82rem;">{{ t.description }}</span>
+                                </div>
+                                {% if t.raw_balance is defined and t.raw_balance == t.raw_balance %}
+                                <div class="detail-field">
+                                    <span class="detail-label">Balance After</span>
+                                    <span class="detail-value">${{ "%.2f" | format(t.raw_balance) }}</span>
+                                </div>
+                                {% endif %}
+                                {% if t.recurring_bill %}
+                                <div class="detail-field">
+                                    <span class="detail-label">Recurring Bill</span>
+                                    <span class="detail-recurring-badge">&#8635; {{ t.recurring_bill }}</span>
+                                </div>
+                                {% endif %}
+                                <div class="detail-field detail-actions">
+                                    <a href="/transactions?search={{ t.description | urlencode }}&status=all"
+                                       class="detail-action-btn" onclick="event.stopPropagation();">
+                                        Find Similar
+                                    </a>
+                                    {% if not t.recurring_bill %}
+                                    <button class="detail-action-btn recurring-btn"
+                                            data-desc="{{ t.description }}"
+                                            data-amount="{{ t.amount | abs }}"
+                                            data-day="{{ t.date.day }}"
+                                            onclick="event.stopPropagation(); prefillRecurring(this.dataset.desc, parseFloat(this.dataset.amount), parseInt(this.dataset.day));">
+                                        &#8635; Make Recurring
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No transactions found.</p>
+            {% endif %}
+        </div> <!-- End main-content -->
+
+        {% if common_uncategorized %}
+        <div class="sidebar">
+            <h3>Frequent Keywords</h3>
+            <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px;">Click to filter & categorize</p>
+            <ul class="freq-list">
+                {% for item in common_uncategorized %}
+                <li>
+                    <a href="/transactions?search={{ item.description | urlencode }}&status=uncategorized"
+                        class="freq-item">
+                        <span
+                            style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">{{
+                            item.description }}</span>
+                        <span class="freq-count">{{ item.count }}</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div> <!-- End content-wrapper -->
+    </div>
+
+
+
+    <script>
+        const modal = document.getElementById("categoryModal");
+
+        function openModal() {
+            modal.style.display = "flex";
+            document.getElementById("ruleKeyword").focus();
+        }
+
+        function closeModal() {
+            modal.style.display = "none";
+            document.getElementById("ruleKeyword").value = "";
+            document.getElementById("ruleCategory").value = "";
+        }
+
+        window.onclick = function (event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        async function saveRule() {
+            const keyword = document.getElementById("ruleKeyword").value;
+            const category = document.getElementById("ruleCategory").value;
+
+            if (!keyword || !category) {
+                alert("Please enter both a keyword and a category.");
+                return;
+            }
+
+            await submitRule(keyword, category);
+        }
+
+        async function submitRule(keyword, category) {
+            try {
+                // If keyword is an array, send as 'keywords', else 'keyword'
+                const body = Array.isArray(keyword)
+                    ? { keywords: keyword, category }
+                    : { keyword, category };
+
+                const response = await fetch('/api/rules', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'ok') {
+                    window.location.reload();
+                } else {
+                    alert('Error saving rule: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to save rule.');
+            }
+        }
+
+        // --- Bulk Selection Logic ---
+
+        function toggleSelectAll() {
+            const master = document.getElementById("selectAll");
+            const checkboxes = document.querySelectorAll(".tx-checkbox");
+            checkboxes.forEach(cb => cb.checked = master.checked);
+            toggleBulkMode();
+        }
+
+        function toggleBulkMode() {
+            const checked = document.querySelectorAll(".tx-checkbox:checked");
+            const count = checked.length;
+
+            const controls = document.getElementById("controlsContainer");
+            const bulkHeader = document.getElementById("bulkActionsHeader");
+            const countSpan = document.getElementById("selectedCount");
+
+            if (count > 0) {
+                controls.style.display = "none";
+                bulkHeader.style.display = "flex";
+                countSpan.textContent = count + " selected";
+            } else {
+                controls.style.display = "flex";
+                bulkHeader.style.display = "none";
+            }
+        }
+
+        // Alias for the onclick in the checkboxes
+        function updateBulkBar() {
+            toggleBulkMode();
+        }
+
+        function clearSelection() {
+            document.getElementById("selectAll").checked = false;
+            document.querySelectorAll(".tx-checkbox").forEach(cb => cb.checked = false);
+            toggleBulkMode();
+        }
+
+        // --- Custom Dropdown Logic ---
+        const dropdownInput = document.getElementById("bulkCategoryInput");
+        const dropdownContent = document.getElementById("catDropdownContent");
+
+        dropdownInput.addEventListener("focus", () => {
+            dropdownContent.classList.add("show");
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener("click", (e) => {
+            if (!document.getElementById("catDropdown").contains(e.target)) {
+                dropdownContent.classList.remove("show");
+            }
+        });
+
+        function selectFromPill(cat) {
+            dropdownInput.value = cat;
+            dropdownContent.classList.remove("show");
+            // Optional: Auto-apply? user might prefer clicking Apply to be safe.
+        }
+
+        function selectFromList(cat) {
+            dropdownInput.value = cat;
+            dropdownContent.classList.remove("show");
+        }
+
+        // --- Expandable Transaction Detail ---
+        function toggleTxDetail(event, txId) {
+            // Don't toggle if user clicked a link or button inside the row
+            if (event.target.tagName === 'A' || event.target.tagName === 'INPUT' ||
+                event.target.tagName === 'BUTTON' || event.target.closest('a') || event.target.closest('button')) {
+                return;
+            }
+
+            const mainRow = document.querySelector(`.tx-row[data-tx-id="${txId}"]`);
+            const detailRow = document.getElementById(`txDetail${txId}`);
+
+            if (!mainRow || !detailRow) return;
+
+            const isExpanded = mainRow.classList.contains('expanded');
+
+            // Collapse all other expanded rows first
+            document.querySelectorAll('.tx-row.expanded').forEach(row => {
+                if (row !== mainRow) {
+                    row.classList.remove('expanded');
+                    const otherId = row.getAttribute('data-tx-id');
+                    const otherDetail = document.getElementById(`txDetail${otherId}`);
+                    if (otherDetail) otherDetail.classList.remove('show');
+                }
+            });
+
+            // Toggle current
+            if (isExpanded) {
+                mainRow.classList.remove('expanded');
+                detailRow.classList.remove('show');
+            } else {
+                mainRow.classList.add('expanded');
+                detailRow.classList.add('show');
+            }
+        }
+
+        function prefillRecurring(description, amount, dayOfMonth) {
+            document.getElementById("billName").value = description;
+            document.getElementById("billAmount").value = amount.toFixed(2);
+            document.getElementById("billDay").value = dayOfMonth;
+            document.getElementById("billCriteria").value = description;
+            recurringModal.style.display = "flex";
+        }
+
+        // Color subcategory badges with consistent hue per category name
+        function hashStringToHue(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return Math.abs(hash) % 360;
+        }
+
+        document.querySelectorAll('.subcategory-badge').forEach(badge => {
+            const name = badge.getAttribute('data-subcategory');
+            if (name) {
+                const hue = hashStringToHue(name);
+                badge.style.backgroundColor = `hsla(${hue}, 60%, 40%, 0.25)`;
+                badge.style.color = `hsl(${hue}, 70%, 70%)`;
+                badge.style.border = `1px solid hsla(${hue}, 60%, 50%, 0.3)`;
+            }
+        });
+
+        async function applyBulkCategory() {
+            const category = document.getElementById("bulkCategoryInput").value;
+            if (!category) {
+                alert("Please select or enter a category.");
+                return;
+            }
+
+            const checked = document.querySelectorAll(".tx-checkbox:checked");
+            const descriptions = Array.from(checked).map(cb => cb.value);
+
+            if (descriptions.length === 0) return;
+
+            if (confirm(`Categorize ${descriptions.length} transactions as '${category}'?`)) {
+                await submitRule(descriptions, category);
+            }
+        }
+
+        // --- Recurring Bills Logic ---
+        const recurringModal = document.getElementById("recurringModal");
+
+        function openRecurringModal() {
+            // Check if a single transaction is selected to pre-fill
+            const checked = document.querySelectorAll(".tx-checkbox:checked");
+            if (checked.length === 1) {
+                const desc = checked[0].value;
+                const row = checked[0].closest('tr');
+                const amountText = row.querySelector('td:nth-last-child(1)').innerText;
+                const dateText = row.querySelector('td:nth-child(2)').innerText;
+
+                // Parse amount (remove $ and ,)
+                const amount = parseFloat(amountText.replace(/[$,]/g, ''));
+
+                // Parse date (Oct 24, 2025) -> Day of month
+                const dateObj = new Date(dateText);
+                const day = dateObj.getDate();
+
+                document.getElementById("billName").value = desc;
+                // If amount is negative (expense), make it positive for bill amount
+                document.getElementById("billAmount").value = Math.abs(amount).toFixed(2);
+                document.getElementById("billDay").value = day;
+                // Use description as initial match criteria
+                document.getElementById("billCriteria").value = desc;
+            } else {
+                // Clear fields
+                document.getElementById("billName").value = "";
+                document.getElementById("billAmount").value = "";
+                document.getElementById("billDay").value = "";
+                document.getElementById("billCriteria").value = "";
+            }
+            recurringModal.style.display = "flex";
+        }
+
+        function closeRecurringModal() {
+            recurringModal.style.display = "none";
+        }
+
+        async function saveRecurringBill() {
+            const name = document.getElementById("billName").value;
+            const amount = parseFloat(document.getElementById("billAmount").value);
+            const day = parseInt(document.getElementById("billDay").value);
+            const criteria = document.getElementById("billCriteria").value;
+
+            if (!name || isNaN(amount) || isNaN(day)) {
+                alert("Please fill in valid Name, Amount, and Day.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/recurring-bills', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        amount: amount,
+                        day_of_month: day,
+                        match_criteria: [criteria]
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'ok') {
+                    closeRecurringModal();
+                    alert("Recurring bill saved!");
+                } else {
+                    alert('Error saving bill: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to save recurring bill.');
+            }
+        }
+
+        window.onclick = function (event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+            if (event.target == recurringModal) {
+                closeRecurringModal();
+            }
+        }
+    </script>
+</body>
+
+</html>

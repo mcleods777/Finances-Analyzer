@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Finance Dashboard</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
+    <style>
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-link {
+            text-decoration: none;
+            background-color: #3b82f6;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn-link:hover {
+            background-color: #2563eb;
+        }
+
+        /* Spending Breakdown Layout */
+        .spending-layout {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        .spending-chart-col {
+            flex: 0 0 340px;
+            height: 340px;
+            position: relative;
+        }
+
+        .spending-legend-col {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding-top: 4px;
+        }
+
+        .legend-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            grid-template-rows: auto auto;
+            gap: 2px 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background-color 0.15s;
+        }
+
+        .legend-row:hover {
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+
+        .legend-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .legend-label {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: #e2e8f0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .legend-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            grid-column: 2;
+            grid-row: 1;
+            justify-self: end;
+        }
+
+        .legend-amount {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .legend-pct {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #64748b;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .legend-bar-track {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .legend-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.6s ease-out;
+        }
+
+        /* Net Worth Custom Legend */
+        .nw-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .nw-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            user-select: none;
+        }
+
+        .nw-legend-item.active {
+            border-color: var(--legend-color);
+            background: var(--legend-bg);
+        }
+
+        .nw-legend-item.inactive {
+            opacity: 0.35;
+        }
+
+        .nw-legend-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .nw-legend-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .nw-legend-name {
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: #cbd5e1;
+            white-space: nowrap;
+            max-width: 160px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nw-legend-value {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #94a3b8;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Pending Bills in Runway */
+        .pending-bills-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .pending-bills-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .pending-bills-total {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #fbbf24;
+        }
+
+        .pending-bills-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+        }
+
+        .bill-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 10px 12px;
+            border-radius: 8px;
+            transition: border-color 0.2s;
+        }
+
+        .bill-card.pending {
+            border-left: 3px solid #fbbf24;
+        }
+
+        .bill-card.paid {
+            border-left: 3px solid #22c55e;
+            opacity: 0.7;
+        }
+
+        .bill-card-name {
+            font-size: 0.85rem;
+            color: #f1f5f9;
+            font-weight: 600;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .bill-card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .bill-card-amount {
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .bill-card-amount.pending {
+            color: #fbbf24;
+        }
+
+        .bill-card-amount.paid {
+            color: #4ade80;
+        }
+
+        .bill-card-date {
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+
+        .bill-card-status {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .bill-card-status.pending {
+            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.1);
+        }
+
+        .bill-card-status.paid {
+            color: #4ade80;
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        /* Runway bar legend for pending/free */
+        .runway-bar-legend {
+            display: flex;
+            gap: 16px;
+            margin-top: 6px;
+            font-size: 0.75rem;
+        }
+
+        .runway-bar-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #94a3b8;
+        }
+
+        .runway-bar-legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+        }
+
+        /* Recurring Bills Table Styles */
+        #recurring-bills-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #recurring-bills-table th {
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            padding: 6px 8px;
+            border-bottom: 1px solid #334155;
+            position: sticky;
+            top: 0;
+            background: #1e293b;
+        }
+
+        #recurring-bills-table td {
+            padding: 8px;
+            font-size: 0.875rem;
+            color: #e2e8f0;
+            border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+        }
+
+        #recurring-bills-table tr:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .status-badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .status-badge.paid {
+            color: #4ade80;
+            background: rgba(34, 197, 94, 0.12);
+        }
+
+        .status-badge.pending {
+            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.12);
+        }
+
+        .status-badge.no-period {
+            color: #64748b;
+            background: rgba(100, 116, 139, 0.12);
+        }
+
+        .match-keywords {
+            font-size: 0.75rem;
+            color: #64748b;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            .spending-layout {
+                flex-direction: column;
+            }
+
+            .spending-chart-col {
+                flex: none;
+                width: 100%;
+                height: 280px;
+            }
+
+            .pending-bills-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Personal Finance Dashboard</h1>
+        <div class="header-actions">
+            <a href="/transactions" class="btn-link">View Transactions</a>
+            <a href="/categories" class="btn-link" style="background-color: #475569;">Categories</a>
+            <a href="/rules" class="btn-link" style="background-color: #475569;">Rules</a>
+            <a href="/transactions?status=uncategorized" class="btn-link secondary">View Uncategorized</a>
+            <button id="refresh-btn" onclick="refreshData()">Refresh Data</button>
+        </div>
+    </header>
+
+    {% if error %}
+    <div class="error-banner">
+        <p>{{ error }}</p>
+    </div>
+    {% endif %}
+
+    {% if summary %}
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+        <div class="card">
+            <h3>Net Worth</h3>
+            <p class="value">{{ summary.current_net_worth | currency }}</p>
+            <p class="sub
+                {%- if summary.net_worth_change_30d >= 0 %} positive{% else %} negative{% endif %}">
+                {% if summary.net_worth_change_30d >= 0 %}+{% endif %}{{ summary.net_worth_change_30d | currency }}
+                ({{ summary.net_worth_change_pct_30d }}%) past 30 days
+            </p>
+        </div>
+        <div class="card">
+            <h3>This Month Spending</h3>
+            <p class="value">{{ summary.current_month_spending | currency }}</p>
+            <p class="sub">Avg biweekly: {{ summary.avg_biweekly_spending | currency }}</p>
+        </div>
+        <div class="card">
+            <h3>Income This Month</h3>
+            <p class="value">{{ summary.income_this_month | currency }}</p>
+            <p class="sub">{{ summary.total_accounts }} account{{ 's' if summary.total_accounts != 1 }}</p>
+        </div>
+        <div class="card">
+            <h3>Savings Rate</h3>
+            <p class="value
+                {%- if summary.savings_rate >= 0 %} positive{% else %} negative{% endif %}">
+                {{ summary.savings_rate }}%
+            </p>
+            <p class="sub">Trailing 3 months</p>
+        </div>
+    </div>
+
+    <!-- Runway Section -->
+    <div class="runway-section" id="runway-section">
+        <div class="runway-header">
+            <div class="runway-info">
+                <h3>Budget Runway</h3>
+                <p>
+                    <strong>{{ runway.budget_remaining_this_period | currency }}</strong>
+                    remaining this period
+                    ({{ runway.days_left_in_period }} days left)
+                </p>
+            </div>
+            <div class="runway-info">
+                <h3>Total Runway</h3>
+                <p>
+                    <strong>{{ runway.runway_days }} days</strong>
+                    ({{ runway.runway_periods }} pay periods)
+                    {% if runway.runway_date != 'N/A' %}
+                    &mdash; until {{ runway.runway_date }}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        <div class="runway-bar-container">
+            <div class="runway-bar" id="runway-bar" style="width: 0%"></div>
+        </div>
+        <p class="runway-period-label">
+            Period: {{ runway.period_start }} to {{ runway.period_end }}
+        </p>
+
+        <!-- Pending Recurring Bills -->
+        <div id="pending-bills-container" style="display: none; margin-top: 16px;">
+            <div class="pending-bills-header">
+                <h3 class="pending-bills-title">Upcoming Bills This Period</h3>
+                <span id="pending-bills-total" class="pending-bills-total"></span>
+            </div>
+            <div id="pending-bills-list" class="pending-bills-list">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Manual Balance Entry -->
+    <div class="manual-balance-section">
+        <div class="manual-balance-header" onclick="toggleManualSection()">
+            <h2>Log Account Balance</h2>
+            <span class="toggle-icon" id="manual-toggle">+</span>
+        </div>
+        <div class="manual-balance-content" id="manual-balance-content" style="display: none;">
+            <form id="manual-balance-form" onsubmit="submitManualBalance(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="mb-account">Account Name</label>
+                        <input type="text" id="mb-account" list="mb-account-list" placeholder="e.g., Fidelity 401k"
+                            required>
+                        <datalist id="mb-account-list">
+                            {% for name in manual_accounts %}
+                            <option value="{{ name }}">
+                                {% endfor %}
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="mb-date">Date</label>
+                        <input type="date" id="mb-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="mb-balance">Balance ($)</label>
+                        <input type="number" id="mb-balance" step="0.01" min="0" placeholder="52340.00" required>
+                    </div>
+                    <div class="form-group form-submit">
+                        <button type="submit" id="mb-submit-btn">Save</button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Bulk Import -->
+            <div class="bulk-import-section">
+                <div class="bulk-import-header" onclick="toggleBulkImport()">
+                    <h3>Bulk Import</h3>
+                    <span class="toggle-icon" id="bulk-toggle">+</span>
+                </div>
+                <div class="bulk-import-content" id="bulk-import-content" style="display: none;">
+                    <p class="bulk-instructions">
+                        Paste one entry per line: <code>Account Name, YYYY-MM-DD, Balance</code>
+                    </p>
+                    <textarea id="bulk-textarea" rows="8" placeholder="Fidelity 401k, 2024-03-01, 42000.00
+Fidelity 401k, 2024-04-01, 43500.00
+Fidelity Roth IRA, 2024-03-01, 18000.00
+Fidelity Roth IRA, 2024-04-01, 18750.00"></textarea>
+                    <div class="bulk-actions">
+                        <button id="bulk-submit-btn" onclick="submitBulkImport()">Import All</button>
+                        <span id="bulk-status" class="bulk-status"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History table -->
+            <div class="manual-history" id="manual-history">
+                <h3>Balance History</h3>
+                <div class="history-table-wrapper">
+                    <table id="manual-history-table">
+                        <thead>
+                            <tr>
+                                <th>Account</th>
+                                <th>Date</th>
+                                <th>Balance</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="manual-history-body">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recurring Bills Management -->
+    <div class="manual-balance-section" id="recurring-bills-section">
+        <div class="manual-balance-header" onclick="toggleRecurringBills()">
+            <h2>Recurring Bills</h2>
+            <span class="toggle-icon" id="recurring-toggle">+</span>
+        </div>
+        <div id="recurring-bills-content" style="display: none;">
+            <!-- Add Bill Form -->
+            <form id="recurring-bill-form" onsubmit="submitRecurringBill(event)" style="margin-top: 16px;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="rb-name">Bill Name</label>
+                        <input type="text" id="rb-name" placeholder="e.g., Netflix" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="rb-amount">Amount ($)</label>
+                        <input type="number" id="rb-amount" step="0.01" min="0" placeholder="15.99" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="rb-day">Day of Month</label>
+                        <input type="number" id="rb-day" min="1" max="31" placeholder="15" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="rb-match">Match Keywords</label>
+                        <input type="text" id="rb-match" placeholder="netflix, nflx (comma-sep)">
+                    </div>
+                    <div class="form-group form-submit">
+                        <button type="submit" id="rb-submit-btn">Add Bill</button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Existing Bills Table -->
+            <div class="manual-history" style="margin-top: 16px;">
+                <h3>Configured Bills</h3>
+                <div class="history-table-wrapper">
+                    <table id="recurring-bills-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Amount</th>
+                                <th>Day</th>
+                                <th>Match Keywords</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="recurring-bills-body">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="chart-container">
+        <h2>Net Worth Over Time</h2>
+        <div id="netWorthLegend" class="nw-legend"></div>
+        <canvas id="netWorthChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+        <div class="chart-header">
+            <h2>Spending Breakdown</h2>
+            <div class="chart-controls">
+                <button class="chart-btn active" onclick="updateSpendingChart(30)">30 Days</button>
+                <button class="chart-btn" onclick="updateSpendingChart(60)">60 Days</button>
+                <button class="chart-btn" onclick="updateSpendingChart(90)">90 Days</button>
+            </div>
+        </div>
+        <div class="spending-layout">
+            <div class="spending-chart-col">
+                <canvas id="spendingChart"></canvas>
+            </div>
+            <div class="spending-legend-col" id="spendingLegend">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <h2>Income vs Expenses</h2>
+        <canvas id="incomeVsExpenseChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+        <h2>Biweekly Spending</h2>
+        <canvas id="biweeklySpendingChart"></canvas>
+    </div>
+
+    <!-- History Entry Modal (shown when creating a new manual account) -->
+    <div class="modal-overlay" id="history-modal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Set Up Account: <span id="modal-account-name"></span></h2>
+                <button class="modal-close" onclick="closeHistoryModal()">&times;</button>
+            </div>
+            <p class="modal-description">
+                Enter the balance at the end of each month. Leave blank any months you don't have data for.
+            </p>
+            <div class="history-grid" id="history-grid">
+                <!-- Populated by JavaScript: 24 rows of month + balance input -->
+            </div>
+            <div class="modal-footer">
+                <span id="modal-status" class="bulk-status"></span>
+                <button class="modal-cancel" onclick="closeHistoryModal()">Cancel</button>
+                <button class="modal-save" id="modal-save-btn" onclick="saveHistoryEntries()">Save All</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Pass known manual account names to JS so we can detect new accounts
+        const KNOWN_MANUAL_ACCOUNTS = {{ manual_accounts | tojson }};
+    </script>
+    <script src="/static/js/charts.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+
+</html>
