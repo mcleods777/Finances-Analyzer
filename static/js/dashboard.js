@@ -46,61 +46,108 @@ function updateRunwayBar(data) {
     const bar = document.getElementById('runway-bar');
     if (!bar || !data.avg_biweekly_spending) return;
 
+    const fmtCurrency = (v) => v < 0 ? `-$${Math.abs(v).toFixed(2)}` : `$${v.toFixed(2)}`;
+
     // Calculate what percentage of the budget has been used this period
     const totalBudget = data.avg_biweekly_spending;
     const remaining = data.budget_remaining_this_period;
     const spent = totalBudget - remaining;
-    const pctUsed = Math.max(0, Math.min(100, (spent / totalBudget) * 100));
-    const pctRemaining = 100 - pctUsed;
+    const pctRemaining = Math.max(0, Math.min(100, (remaining / totalBudget) * 100));
 
-    bar.style.width = pctRemaining + '%';
-
-    // Calculate split for Pending Bills vs Free Cash within the remaining bar
+    // Get pending bills only
+    const allBills = data.recurring_bills || [];
+    const pendingBills = allBills.filter(b => b.status === 'pending');
     const pendingTotal = data.pending_bills_total || 0;
     const freeCash = data.free_cash || remaining;
 
-    let pendingPctOfBar = 0;
-    if (remaining > 0 && pendingTotal > 0) {
-        pendingPctOfBar = (pendingTotal / remaining) * 100;
-    }
-    pendingPctOfBar = Math.min(100, Math.max(0, pendingPctOfBar));
-
-    // Colors based on free cash health (not just remaining)
+    // Free cash health color
     const healthPct = remaining > 0 ? (freeCash / totalBudget) * 100 : 0;
     const freeColor = healthPct > 35 ? '#22c55e' : (healthPct > 15 ? '#f59e0b' : '#ef4444');
-    const pendingColor = '#eab308';
 
-    if (pendingPctOfBar > 0 && pendingPctOfBar < 100) {
-        // Striped amber segment for committed, solid color for free cash
-        bar.style.background = `linear-gradient(90deg,
-            ${freeColor} 0%,
-            ${freeColor} ${100 - pendingPctOfBar}%,
-            ${pendingColor} ${100 - pendingPctOfBar}%,
-            ${pendingColor} 100%)`;
-    } else if (pendingPctOfBar >= 100) {
-        bar.style.background = pendingColor;
+    // Distinct colors for each bill segment
+    const billColors = [
+        '#f59e0b', '#f97316', '#ef4444', '#ec4899',
+        '#a855f7', '#6366f1', '#0ea5e9', '#14b8a6',
+    ];
+
+    // Build segmented bar
+    bar.style.width = pctRemaining + '%';
+    bar.style.background = 'none';
+
+    // Create segments container
+    let segmentsEl = bar.querySelector('.runway-segments');
+    if (!segmentsEl) {
+        bar.innerHTML = '';
+        segmentsEl = document.createElement('div');
+        segmentsEl.className = 'runway-segments';
+        bar.appendChild(segmentsEl);
+    }
+    segmentsEl.innerHTML = '';
+
+    if (remaining <= 0) {
+        bar.style.width = '0%';
+    } else if (pendingBills.length === 0) {
+        // No pending bills — full green bar
+        segmentsEl.innerHTML = `
+            <div class="runway-segment" style="width: 100%; background: ${freeColor};">
+                <div class="segment-tooltip">
+                    <div class="segment-tooltip-name">Free Cash</div>
+                    <div class="segment-tooltip-amount">${fmtCurrency(remaining)}</div>
+                </div>
+            </div>`;
     } else {
-        bar.style.background = freeColor;
+        // Free cash segment
+        const freePct = Math.max(0, (freeCash / remaining) * 100);
+
+        if (freePct > 0) {
+            segmentsEl.innerHTML += `
+                <div class="runway-segment" style="width: ${freePct}%; background: ${freeColor};">
+                    <div class="segment-tooltip">
+                        <div class="segment-tooltip-name">Free Cash</div>
+                        <div class="segment-tooltip-amount">${fmtCurrency(freeCash)}</div>
+                    </div>
+                </div>`;
+        }
+
+        // Individual bill segments — sorted by due date
+        const sortedBills = [...pendingBills].sort((a, b) => {
+            return new Date(a.due_date) - new Date(b.due_date);
+        });
+
+        sortedBills.forEach((bill, i) => {
+            const billPct = Math.max(0.5, (bill.amount / remaining) * 100); // min 0.5% so tiny bills are visible
+            const color = billColors[i % billColors.length];
+            const dueDate = new Date(bill.due_date + 'T00:00:00');
+            const dateStr = dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+            segmentsEl.innerHTML += `
+                <div class="runway-segment" style="width: ${billPct}%; background: ${color};">
+                    <div class="segment-tooltip">
+                        <div class="segment-tooltip-name">${escapeHtml(bill.name)}</div>
+                        <div class="segment-tooltip-amount">${fmtCurrency(bill.amount)}</div>
+                        <div class="segment-tooltip-date">Due ${dateStr}</div>
+                    </div>
+                </div>`;
+        });
     }
 
-    // Add bar legend if pending bills exist
+    // Update bar legend — show free cash + count of pending
     const barContainer = bar.parentElement;
     let legendEl = barContainer.parentElement.querySelector('.runway-bar-legend');
-    if (pendingTotal > 0) {
+    if (pendingBills.length > 0) {
         if (!legendEl) {
             legendEl = document.createElement('div');
             legendEl.className = 'runway-bar-legend';
             barContainer.parentElement.insertBefore(legendEl, barContainer.nextSibling);
         }
-        const fmtCurrency = (v) => v < 0 ? `-$${Math.abs(v).toFixed(2)}` : `$${v.toFixed(2)}`;
         legendEl.innerHTML = `
             <span class="runway-bar-legend-item">
                 <span class="runway-bar-legend-dot" style="background: ${freeColor};"></span>
-                Free Cash: ${fmtCurrency(freeCash)}
+                Free: ${fmtCurrency(freeCash)}
             </span>
             <span class="runway-bar-legend-item">
-                <span class="runway-bar-legend-dot" style="background: ${pendingColor};"></span>
-                Committed: ${fmtCurrency(pendingTotal)}
+                <span class="runway-bar-legend-dot" style="background: #f59e0b;"></span>
+                ${pendingBills.length} pending bill${pendingBills.length !== 1 ? 's' : ''}: ${fmtCurrency(pendingTotal)}
             </span>
         `;
     } else if (legendEl) {
@@ -113,12 +160,10 @@ function updateRunwayBar(data) {
     const totalEl = document.getElementById('pending-bills-total');
 
     if (container && list) {
-        const allBills = data.recurring_bills || [];
-        // Show all bills in this period (pending and paid)
         if (allBills.length > 0) {
             container.style.display = 'block';
 
-            const pendingCount = allBills.filter(b => b.status === 'pending').length;
+            const pendingCount = pendingBills.length;
             if (totalEl) {
                 totalEl.textContent = pendingTotal > 0
                     ? `${pendingCount} pending \u2022 $${pendingTotal.toFixed(2)} committed`
@@ -126,14 +171,24 @@ function updateRunwayBar(data) {
                 totalEl.style.color = pendingTotal > 0 ? '#fbbf24' : '#4ade80';
             }
 
-            list.innerHTML = allBills.map(b => {
+            list.innerHTML = allBills.map((b, idx) => {
                 const isPaid = b.status === 'paid';
                 const statusClass = isPaid ? 'paid' : 'pending';
                 const dueDate = new Date(b.due_date + 'T00:00:00');
                 const dateStr = dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
+                // Match color to bar segment for pending bills
+                let dotColor = '#4ade80'; // green for paid
+                if (!isPaid) {
+                    const pendingIdx = pendingBills.findIndex(pb => pb.name === b.name);
+                    dotColor = billColors[pendingIdx % billColors.length];
+                }
+
                 return `<div class="bill-card ${statusClass}">
-                    <div class="bill-card-name">${escapeHtml(b.name)}</div>
+                    <div class="bill-card-name">
+                        <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${dotColor};margin-right:6px;vertical-align:middle;"></span>
+                        ${escapeHtml(b.name)}
+                    </div>
                     <div class="bill-card-row">
                         <span class="bill-card-amount ${statusClass}">$${b.amount.toFixed(2)}</span>
                         <span class="bill-card-date">Due ${dateStr}</span>

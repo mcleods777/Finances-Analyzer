@@ -151,17 +151,20 @@ header h1 {
 
 .runway-bar-container {
     background: #0f172a;
-    border-radius: 6px;
-    height: 12px;
-    overflow: hidden;
+    border-radius: 8px;
+    height: 20px;
+    overflow: visible;
     margin-bottom: 8px;
+    position: relative;
 }
 
 .runway-bar {
     height: 100%;
-    border-radius: 6px;
-    background: linear-gradient(90deg, #3b82f6, #22d3ee);
+    border-radius: 8px;
+    background: none;
     transition: width 0.8s ease;
+    overflow: visible;
+    position: relative;
 }
 
 .runway-period-label {

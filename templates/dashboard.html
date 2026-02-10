@@ -287,6 +287,86 @@
             background: rgba(34, 197, 94, 0.1);
         }
 
+        /* Segmented runway bar */
+        .runway-segments {
+            display: flex;
+            height: 100%;
+            border-radius: 6px;
+            overflow: hidden;
+            transition: width 0.8s ease;
+        }
+
+        .runway-segment {
+            height: 100%;
+            position: relative;
+            transition: opacity 0.2s, filter 0.2s;
+            cursor: default;
+        }
+
+        .runway-segment:first-child {
+            border-radius: 6px 0 0 6px;
+        }
+
+        .runway-segment:last-child {
+            border-radius: 0 6px 6px 0;
+        }
+
+        .runway-segment:only-child {
+            border-radius: 6px;
+        }
+
+        .runway-segment:hover {
+            opacity: 0.85;
+            filter: brightness(1.2);
+        }
+
+        /* Segment tooltip */
+        .segment-tooltip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 8px 12px;
+            white-space: nowrap;
+            z-index: 100;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            font-size: 0.8rem;
+        }
+
+        .segment-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #475569;
+        }
+
+        .runway-segment:hover .segment-tooltip {
+            display: block;
+        }
+
+        .segment-tooltip-name {
+            color: #f1f5f9;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .segment-tooltip-amount {
+            color: #94a3b8;
+        }
+
+        .segment-tooltip-date {
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+
         /* Runway bar legend for pending/free */
         .runway-bar-legend {
             display: flex;
