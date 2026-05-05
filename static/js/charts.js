@@ -709,3 +709,191 @@ function renderSpendingChart(data, days = 30) {
 
     buildCustomLegend();
 }
+
+
+// --- Category Spending Trends ---
+
+const CATEGORY_TREND_COLORS = [
+    { line: '#4ade80', fill: 'rgba(74, 222, 128, 0.12)' },   // green
+    { line: '#38bdf8', fill: 'rgba(56, 189, 248, 0.12)' },   // sky
+    { line: '#f59e0b', fill: 'rgba(245, 158, 11, 0.12)' },   // amber
+    { line: '#a78bfa', fill: 'rgba(167, 139, 250, 0.12)' },  // violet
+    { line: '#fb923c', fill: 'rgba(251, 146, 60, 0.12)' },   // orange
+    { line: '#f472b6', fill: 'rgba(244, 114, 182, 0.12)' },  // pink
+    { line: '#22d3ee', fill: 'rgba(34, 211, 238, 0.12)' },   // cyan
+    { line: '#e879f9', fill: 'rgba(232, 121, 249, 0.12)' },  // fuchsia
+];
+
+let categoryTrendsChartInstance = null;
+
+function renderCategoryTrendsChart(data, months) {
+    const ctx = document.getElementById('categoryTrendsChart');
+    if (!ctx || !data.labels || !data.labels.length) return;
+
+    if (categoryTrendsChartInstance) {
+        categoryTrendsChartInstance.destroy();
+    }
+
+    const categoryNames = Object.keys(data.datasets);
+    if (!categoryNames.length) return;
+
+    // Sort categories by total spending (descending) for better default ordering
+    categoryNames.sort((a, b) => {
+        const sumA = data.datasets[a].reduce((s, v) => s + v, 0);
+        const sumB = data.datasets[b].reduce((s, v) => s + v, 0);
+        return sumB - sumA;
+    });
+
+    // Format labels: "2025-03" → "Mar 2025" or "Mar" for shorter ranges
+    const useShortLabels = months <= 3;
+    const displayLabels = data.labels.map(ym => {
+        const [y, m] = ym.split('-');
+        const d = new Date(parseInt(y), parseInt(m) - 1, 1);
+        return useShortLabels
+            ? d.toLocaleDateString(undefined, { month: 'short' })
+            : d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+    });
+
+    const datasets = categoryNames.map((cat, i) => {
+        const colors = CATEGORY_TREND_COLORS[i % CATEGORY_TREND_COLORS.length];
+        return {
+            label: cat,
+            data: data.datasets[cat],
+            borderColor: colors.line,
+            backgroundColor: colors.fill,
+            fill: false,
+            tension: 0.3,
+            borderWidth: 2.5,
+            pointRadius: months <= 3 ? 4 : 2,
+            pointHoverRadius: 6,
+            pointBackgroundColor: colors.line,
+            pointBorderColor: '#1e293b',
+            pointBorderWidth: 2,
+            // Hide categories beyond the top 5 by default for readability
+            hidden: i >= 5,
+        };
+    });
+
+    let chartRef = null;
+
+    chartRef = new Chart(ctx, {
+        type: 'line',
+        data: { labels: displayLabels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    titleColor: '#f1f5f9',
+                    bodyColor: '#cbd5e1',
+                    borderColor: '#334155',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    padding: 12,
+                    displayColors: true,
+                    boxPadding: 6,
+                    titleFont: { weight: '600', size: 13 },
+                    bodyFont: { size: 12 },
+                    callbacks: {
+                        label: function(context) {
+                            return ` ${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
+                        },
+                    },
+                    filter: (item) => {
+                        if (!chartRef) return true;
+                        const meta = chartRef.getDatasetMeta(item.datasetIndex);
+                        const isHidden = meta.hidden === null ? !!chartRef.data.datasets[item.datasetIndex].hidden : meta.hidden;
+                        return !isHidden;
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    grid: { color: COLORS.grid },
+                    ticks: {
+                        color: COLORS.text,
+                        font: { size: 11 },
+                        maxRotation: 45,
+                    },
+                },
+                y: {
+                    grid: { color: COLORS.grid },
+                    ticks: {
+                        color: COLORS.text,
+                        callback: v => formatCurrency(v),
+                    },
+                    beginAtZero: true,
+                },
+            },
+            onHover: (event, chartElement) => {
+                event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+            },
+            onClick: (event, elements) => {
+                if (elements.length > 0) {
+                    const idx = elements[0].index;
+                    const datasetIdx = elements[0].datasetIndex;
+                    const cat = categoryNames[datasetIdx];
+                    const ym = data.labels[idx]; // "2025-03"
+                    const [y, m] = ym.split('-');
+                    const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+                    const start = `${y}-${m}-01`;
+                    const end = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
+                    window.location.href = `/transactions?category=${encodeURIComponent(cat)}&start=${start}&end=${end}&status=all`;
+                }
+            },
+        },
+    });
+
+    categoryTrendsChartInstance = chartRef;
+
+    // Build toggle legend
+    buildCategoryTrendsLegend(chartRef, categoryNames, data);
+}
+
+function buildCategoryTrendsLegend(chart, categoryNames, data) {
+    const container = document.getElementById('categoryTrendsLegend');
+    if (!container) return;
+    container.innerHTML = '';
+
+    categoryNames.forEach((cat, i) => {
+        const colors = CATEGORY_TREND_COLORS[i % CATEGORY_TREND_COLORS.length];
+        const total = data.datasets[cat].reduce((s, v) => s + v, 0);
+
+        const item = document.createElement('div');
+        item.className = 'nw-legend-item';
+        item.style.setProperty('--legend-color', colors.line + '55');
+        item.style.setProperty('--legend-bg', colors.line + '15');
+
+        const isHidden = chart.data.datasets[i].hidden;
+        item.classList.add(isHidden ? 'inactive' : 'active');
+
+        item.innerHTML = `
+            <span class="nw-legend-dot" style="background:${colors.line};box-shadow:0 0 6px ${colors.line}66;"></span>
+            <span class="nw-legend-name">${cat}</span>
+            <span class="nw-legend-value">${formatCurrency(total)}</span>
+        `;
+
+        item.addEventListener('click', () => {
+            const meta = chart.getDatasetMeta(i);
+            const isCurrentlyHidden = meta.hidden === null ? !!chart.data.datasets[i].hidden : meta.hidden;
+            meta.hidden = !isCurrentlyHidden;
+            chart.update();
+
+            if (meta.hidden) {
+                item.classList.remove('active');
+                item.classList.add('inactive');
+            } else {
+                item.classList.remove('inactive');
+                item.classList.add('active');
+            }
+        });
+
+        container.appendChild(item);
+    });
+}

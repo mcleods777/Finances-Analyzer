@@ -380,6 +380,7 @@ def get_recurring_bill_status(
             "amount": bill.amount,
             "due_date": bill_due_date.isoformat(),
             "status": status,
+            "search_keyword": bill.match_criteria[0] if bill.match_criteria else bill.name,
             **paid_details
         })
 
@@ -447,6 +448,7 @@ def _get_bill_status_for_range(
             "amount": bill.amount,
             "due_date": bill_due_date.isoformat(),
             "status": "paid" if is_paid else "pending",
+            "search_keyword": bill.match_criteria[0] if bill.match_criteria else bill.name,
             **paid_details,
         })
 
@@ -608,3 +610,74 @@ def compute_monthly_half_runway(
         "current_balance": round(current_balance, 2),
         "avg_biweekly_spending": round(avg_biweekly_spending, 2),
     }
+
+
+def get_category_trends(
+    df: pd.DataFrame,
+    categories: list[str],
+    months: int = 12,
+) -> dict:
+    """
+    Get monthly spending totals for specific subcategories over time.
+
+    Returns:
+        {
+            "labels": ["2025-03", "2025-04", ...],
+            "datasets": {
+                "Green": [120.50, 95.00, ...],
+                "Groceries": [340.00, 280.00, ...],
+                ...
+            }
+        }
+    """
+    if df.empty or not categories:
+        return {"labels": [], "datasets": {c: [] for c in categories}}
+
+    months = max(1, months)
+    today = pd.Timestamp(date.today())
+    start_date = today - pd.DateOffset(months=months - 1)
+    start_date = start_date.replace(day=1)
+
+    # Normalize Uncategorized so it matches the same sentinel the caller uses
+    # when it pre-computes top categories (routes.py /api/category-trends).
+    df = df.copy()
+    df["subcategory"] = df["subcategory"].fillna("Uncategorized")
+    df.loc[df["subcategory"] == "", "subcategory"] = "Uncategorized"
+
+    mask = (
+        (df["date"] >= start_date)
+        & (df["category"] == "expense")
+        & (df["subcategory"].isin(categories))
+    )
+    filtered = df[mask].copy()
+
+    if filtered.empty:
+        return {"labels": [], "datasets": {c: [] for c in categories}}
+
+    filtered["year_month"] = filtered["date"].dt.to_period("M")
+    filtered["abs_amount"] = filtered["amount"].abs()
+
+    all_months = pd.period_range(
+        start=start_date.to_period("M"),
+        end=today.to_period("M"),
+        freq="M",
+    )
+    labels = [str(m) for m in all_months]
+
+    grouped = (
+        filtered.groupby(["year_month", "subcategory"])["abs_amount"]
+        .sum()
+        .reset_index()
+        .rename(columns={"abs_amount": "amount"})
+    )
+
+    datasets = {}
+    for cat in categories:
+        cat_data = grouped[grouped["subcategory"] == cat]
+        # Build a lookup from period -> amount
+        cat_lookup = dict(
+            zip(cat_data["year_month"].astype(str), cat_data["amount"])
+        )
+        datasets[cat] = [round(cat_lookup.get(m, 0), 2) for m in labels]
+
+    return {"labels": labels, "datasets": datasets}

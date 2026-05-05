@@ -21,3 +21,6 @@ nul
 
 # Misc
 *.log
+
+# gstack workspace
+.gstack/

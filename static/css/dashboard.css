@@ -152,10 +152,11 @@ header h1 {
 .runway-bar-container {
     background: #0f172a;
     border-radius: 8px;
-    height: 20px;
+    height: 36px;
     overflow: visible;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     position: relative;
+    border: 1px solid rgba(51, 65, 85, 0.5);
 }
 
 .runway-bar {
@@ -621,6 +622,46 @@ header h1 {
     font-weight: 600;
     color: #f1f5f9;
     margin-bottom: 16px;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.chart-header h2 {
+    margin-bottom: 0;
+}
+
+.chart-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.chart-btn {
+    background: #0f172a;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.chart-btn:hover {
+    background: #1e293b;
+    border-color: #475569;
+    color: #e2e8f0;
+}
+
+.chart-btn.active {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
 }
 
 canvas {

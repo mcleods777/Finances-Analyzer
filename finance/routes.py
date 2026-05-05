@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 
+import pandas as pd
 from flask import Flask, jsonify, render_template, request
 
 from finance.analytics import (
@@ -10,6 +11,7 @@ from finance.analytics import (
     biweekly_spending,
     compute_monthly_half_runway,
     compute_runway,
+    get_category_trends,
     get_recurring_bill_status,
     get_spending_breakdown,
     spending_averages,
@@ -151,14 +153,12 @@ def refresh_data() -> dict:
 
 
 def _empty_classified_df():
-    import pandas as pd
     return pd.DataFrame(
         columns=["date", "description", "amount", "account_name", "account_type", "raw_balance", "category", "subcategory"]
     )
 
 
 def _empty_biweekly_df():
-    import pandas as pd
     return pd.DataFrame(
         columns=["period_start", "period_end", "total_spending", "transaction_count"]
     )
@@ -210,15 +210,13 @@ def register_routes(app: Flask) -> None:
         filtered_df = df.copy()
 
         if start_str:
-            import pandas as pd
             try:
                 start_date = pd.to_datetime(start_str)
                 filtered_df = filtered_df[filtered_df["date"] >= start_date]
             except Exception:
-                pass # Ignore invalid dates
-        
+                pass
+
         if end_str:
-            import pandas as pd
             try:
                 end_date = pd.to_datetime(end_str)
                 filtered_df = filtered_df[filtered_df["date"] <= end_date]
@@ -252,30 +250,59 @@ def register_routes(app: Flask) -> None:
             if not show_transfers:
                 filtered_df = filtered_df[filtered_df["category"] != "transfer"]
 
-        # Filter by category (for pie chart drill-down)
-        category_filter = request.args.get("category")
+        # Filter by category (supports single or multi-select via comma-separated values)
+        category_filter = request.args.get("category", "")
         if category_filter:
-            if category_filter == "Uncategorized":
+            cat_list = [c.strip() for c in category_filter.split(",") if c.strip()]
+            if len(cat_list) == 1 and cat_list[0] == "Uncategorized":
                 filtered_df = filtered_df[filtered_df["subcategory"].isna() | (filtered_df["subcategory"] == "")]
             else:
-                 filtered_df = filtered_df[filtered_df["subcategory"] == category_filter]
+                include_uncat = "Uncategorized" in cat_list
+                named_cats = [c for c in cat_list if c != "Uncategorized"]
+                mask = filtered_df["subcategory"].isin(named_cats) if named_cats else pd.Series(False, index=filtered_df.index)
+                if include_uncat:
+                    mask = mask | filtered_df["subcategory"].isna() | (filtered_df["subcategory"] == "")
+                filtered_df = filtered_df[mask]
 
-        # Sort by date desc
+        # Filter by account (supports multi-select via comma-separated values)
+        account_filter = request.args.get("account", "")
+        if account_filter:
+            acct_list = [a.strip() for a in account_filter.split(",") if a.strip()]
+            filtered_df = filtered_df[filtered_df["account_name"].isin(acct_list)]
+
+        # Collect available subcategories for the filter dropdown (from full df, not filtered)
+        all_subcategories = sorted(
+            df[df["subcategory"].notna() & (df["subcategory"] != "")]
+            ["subcategory"].unique().tolist()
+        )
+
+        # Collect available account names for the filter dropdown (from full df)
+        all_accounts = sorted(df["account_name"].dropna().unique().tolist())
+
+        # Sort
         sort_by = request.args.get("sort", "date_desc")
-        
-        if sort_by == "date_asc":
-            transactions = filtered_df.sort_values("date", ascending=True).to_dict(orient="records")
-        elif sort_by == "amount_desc":
-            transactions = filtered_df.sort_values("amount", ascending=False).to_dict(orient="records")
-        elif sort_by == "amount_asc":
-            transactions = filtered_df.sort_values("amount", ascending=True).to_dict(orient="records")
-        elif sort_by == "description_asc":
-            transactions = filtered_df.sort_values("description", ascending=True).to_dict(orient="records")
-        elif sort_by == "description_desc":
-            transactions = filtered_df.sort_values("description", ascending=False).to_dict(orient="records")
+        sort_map = {
+            "date_asc": ("date", True),
+            "date_desc": ("date", False),
+            "amount_asc": ("amount", True),
+            "amount_desc": ("amount", False),
+            "description_asc": ("description", True),
+            "description_desc": ("description", False),
+            "type_asc": ("category", True),
+            "type_desc": ("category", False),
+            "category_asc": ("subcategory", True),
+            "category_desc": ("subcategory", False),
+            "account_asc": ("account_name", True),
+            "account_desc": ("account_name", False),
+        }
+        col, asc = sort_map.get(sort_by, ("date", False))
+        # For subcategory sort, put nulls last
+        if col == "subcategory":
+            filtered_df = filtered_df.copy()
+            filtered_df["_sort_key"] = filtered_df["subcategory"].fillna("zzz")
+            transactions = filtered_df.sort_values("_sort_key", ascending=asc).drop(columns=["_sort_key"]).to_dict(orient="records")
         else:
-            # Default: date_desc
-            transactions = filtered_df.sort_values("date", ascending=False).to_dict(orient="records")
+            transactions = filtered_df.sort_values(col, ascending=asc).to_dict(orient="records")
         
         # Match recurring bills
         config = load_config(_get_config_path())
@@ -337,8 +364,8 @@ def register_routes(app: Flask) -> None:
                 common_uncategorized.append({"description": word.title(), "count": count})
 
         return render_template(
-            "transactions.html", 
-            transactions=transactions, 
+            "transactions.html",
+            transactions=transactions,
             error=None,
             filter_start=start_str,
             filter_end=end_str,
@@ -346,9 +373,12 @@ def register_routes(app: Flask) -> None:
             current_search=search_query,
             current_status=status_filter,
             current_category=category_filter,
+            current_account=account_filter,
             show_transfers=show_transfers,
             uncategorized_count=uncategorized_count,
-            common_uncategorized=common_uncategorized
+            common_uncategorized=common_uncategorized,
+            all_subcategories=all_subcategories,
+            all_accounts=all_accounts,
         )
 
     @app.route("/api/net-worth")
@@ -458,6 +488,38 @@ def register_routes(app: Flask) -> None:
             
         breakdown = get_spending_breakdown(df, days)
         return jsonify(breakdown)
+
+    @app.route("/api/category-trends")
+    def api_category_trends():
+        categories_param = request.args.get("categories", "")
+        categories = [c.strip() for c in categories_param.split(",") if c.strip()]
+        months_param = request.args.get("months", "12")
+        try:
+            months = int(months_param)
+        except ValueError:
+            months = 12
+
+        df = _cache.get("df")
+        if df is None:
+            return jsonify({"labels": [], "datasets": {}})
+
+        # If no categories specified, use top subcategories by total spending
+        if not categories:
+            expenses = df[df["category"] == "expense"].copy()
+            if expenses.empty:
+                return jsonify({"labels": [], "datasets": {}})
+            expenses["subcategory"] = expenses["subcategory"].fillna("Uncategorized")
+            expenses.loc[expenses["subcategory"] == "", "subcategory"] = "Uncategorized"
+            top = (
+                expenses.groupby("subcategory")["amount"]
+                .agg(lambda x: x.abs().sum())
+                .sort_values(ascending=False)
+                .head(8)
+                .index.tolist()
+            )
+            categories = top
+
+        return jsonify(get_category_trends(df, categories, months))
 
     # --- Manual balance API routes ---
 
@@ -664,9 +726,6 @@ def register_routes(app: Flask) -> None:
         if df is None or df.empty:
             return render_template("categories.html", categories=[], error="No data loaded.")
 
-        import pandas as pd
-
-        # Build category data with actual transactions
         non_transfer_df = df[df["category"] != "transfer"].copy()
 
         categories = []

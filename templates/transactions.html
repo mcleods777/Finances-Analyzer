@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/static/css/dashboard.css">
     <style>
         .transactions-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -40,6 +40,7 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
             border: 1px solid #334155;
             /* Slate-700 */
+            table-layout: fixed;
         }
 
         .transactions-table th,
@@ -50,6 +51,8 @@
             /* Slate-700 */
             color: #e2e8f0;
             /* Slate-200 */
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .transactions-table th {
@@ -238,7 +241,181 @@
 
         .sort-header:hover {
             color: #f1f5f9;
-            /* Lighter on hover */
+        }
+
+        .sort-header.sort-active {
+            color: #60a5fa;
+        }
+
+        /* Category multi-select dropdown */
+        .cat-filter-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .cat-filter-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .cat-filter-btn:hover {
+            border-color: #475569;
+            color: #e2e8f0;
+        }
+
+        .cat-filter-btn.has-selection {
+            border-color: #3b82f6;
+            color: #60a5fa;
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        .cat-filter-btn .cat-count-badge {
+            background: #3b82f6;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        .cat-filter-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            z-index: 200;
+            min-width: 260px;
+            max-height: 380px;
+            overflow: hidden;
+            display: none;
+            flex-direction: column;
+        }
+
+        .cat-filter-dropdown.open {
+            display: flex;
+        }
+
+        /* Align Account dropdown to right to prevent overflow */
+        #acctFilterDropdown {
+            left: auto;
+            right: 0;
+        }
+
+        .cat-filter-search {
+            padding: 10px 12px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .cat-filter-search input {
+            width: 100%;
+            padding: 7px 10px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: #e2e8f0;
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        .cat-filter-search input:focus {
+            border-color: #3b82f6;
+        }
+
+        .cat-filter-search input::placeholder {
+            color: #475569;
+        }
+
+        .cat-filter-list {
+            overflow-y: auto;
+            max-height: 260px;
+            padding: 6px 0;
+        }
+
+        .cat-filter-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 14px;
+            cursor: pointer;
+            transition: background 0.1s;
+            font-size: 0.88rem;
+            color: #cbd5e1;
+            user-select: none;
+        }
+
+        .cat-filter-item:hover {
+            background: rgba(59, 130, 246, 0.06);
+        }
+
+        .cat-filter-item input[type="checkbox"] {
+            accent-color: #3b82f6;
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .cat-filter-item .cat-swatch {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        .cat-filter-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-top: 1px solid #334155;
+            gap: 8px;
+        }
+
+        .cat-filter-actions button {
+            padding: 5px 14px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .cat-filter-apply {
+            background: #3b82f6;
+            color: white;
+            border: none;
+        }
+
+        .cat-filter-apply:hover {
+            background: #2563eb;
+        }
+
+        .cat-filter-clear {
+            background: transparent;
+            color: #94a3b8;
+            border: 1px solid #475569;
+        }
+
+        .cat-filter-clear:hover {
+            border-color: #64748b;
+            color: #e2e8f0;
         }
 
         /* Search and Filter Styles */
@@ -313,6 +490,7 @@
         .main-content {
             flex: 1;
             min-width: 0;
+            overflow-x: auto;
         }
 
         .sidebar {
@@ -547,6 +725,7 @@
         .tx-detail-row td {
             padding: 0 16px 16px 16px;
             border-bottom: 1px solid #334155;
+            overflow: visible;
         }
 
         .tx-detail-panel {
@@ -565,6 +744,7 @@
                 opacity: 0;
                 transform: translateY(-6px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -648,6 +828,21 @@
             color: #eab308;
             font-size: 0.8rem;
             font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .detail-recurring-badge:hover {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.4);
+            color: #f87171;
+        }
+
+        .detail-recurring-badge:hover::after {
+            content: ' ✕ Remove';
+            font-size: 0.7rem;
+            margin-left: 4px;
+            color: #f87171;
         }
 
         .tx-expand-icon {
@@ -661,6 +856,19 @@
         .tx-row.expanded .tx-expand-icon {
             transform: rotate(90deg);
             color: #3b82f6;
+        }
+
+        /* Responsive sidebar */
+        @media (max-width: 1100px) {
+            .content-wrapper {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                position: static;
+                order: -1;
+            }
         }
     </style>
 </head>
@@ -759,15 +967,15 @@
         <!-- Controls: Search and Status Filters (Default View) -->
         <div id="controlsContainer" class="controls-container">
             <div class="filter-tabs">
-                <a href="/transactions?status=all{{ '&search=' + current_search if current_search }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
+                <a href="/transactions?status=all{{ '&search=' + (current_search | urlencode) if current_search }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
                     class="filter-tab {{ 'active' if current_status == 'all' }}">All</a>
-                <a href="/transactions?status=uncategorized{{ '&search=' + current_search if current_search }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
+                <a href="/transactions?status=uncategorized{{ '&search=' + (current_search | urlencode) if current_search }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
                     class="filter-tab {{ 'active' if current_status == 'uncategorized' }}">
                     Uncategorized {% if uncategorized_count > 0 %}({{ uncategorized_count }}){% endif %}
                 </a>
-                <a href="/transactions?status=categorized{{ '&search=' + current_search if current_search }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
+                <a href="/transactions?status=categorized{{ '&search=' + (current_search | urlencode) if current_search }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
                     class="filter-tab {{ 'active' if current_status == 'categorized' }}">Categorized</a>
-                <a href="/transactions?status=transfer{{ '&search=' + current_search if current_search }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
+                <a href="/transactions?status=transfer{{ '&search=' + (current_search | urlencode) if current_search }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
                     class="filter-tab {{ 'active' if current_status == 'transfer' }}">Transfers</a>
             </div>
 
@@ -840,248 +1048,413 @@
                 </div>
                 {% endif %}
 
-                {% if filter_start and filter_end %}
-                <div class="filter-banner">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <p style="margin: 0;">Viewing transactions from <strong>{{ filter_start }}</strong> to
-                            <strong>{{ filter_end }}</strong>.
+                {% set active_cats = current_category.split(',') if current_category else [] %}
+                {% set active_accts = current_account.split(',') if current_account else [] %}
+
+                <div class="filter-banner" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        {% if filter_start and filter_end %}
+                        <p style="margin: 0; font-size: 0.9rem;">
+                            <strong>{{ filter_start }}</strong> to <strong>{{ filter_end }}</strong>
                         </p>
-                        <a href="/transactions?status={{ current_status }}{{ '&search=' + current_search if current_search }}{{ '&category=' + current_category if current_category }}"
-                            class="clear-filter-btn">Clear Date Filter</a>
+                        <a href="/transactions?status={{ current_status }}{{ '&search=' + (current_search | urlencode) if current_search }}{{ '&category=' + (current_category | urlencode) if current_category }}{{ '&account=' + (current_account | urlencode) if current_account }}{{ '&sort=' + current_sort if current_sort }}"
+                            class="clear-filter-btn" style="font-size: 0.78rem; padding: 4px 10px;">Clear Dates</a>
+                        <span style="color: #334155;">|</span>
+                        {% endif %}
+
+                        <span style="font-size: 0.85rem; color: #94a3b8;">Date:</span>
+                        <button onclick="applyDateFilter(30)" class="btn-secondary"
+                            style="padding: 4px 10px; font-size: 0.8rem;">30d</button>
+                        <button onclick="applyDateFilter(60)" class="btn-secondary"
+                            style="padding: 4px 10px; font-size: 0.8rem;">60d</button>
+                        <button onclick="applyDateFilter(90)" class="btn-secondary"
+                            style="padding: 4px 10px; font-size: 0.8rem;">90d</button>
                     </div>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <button onclick="applyDateFilter(30)" class="btn-secondary"
-                        style="padding: 4px 10px; font-size: 0.8rem;">30 Days</button>
-                    <button onclick="applyDateFilter(60)" class="btn-secondary"
-                        style="padding: 4px 10px; font-size: 0.8rem;">60 Days</button>
-                    <button onclick="applyDateFilter(90)" class="btn-secondary"
-                        style="padding: 4px 10px; font-size: 0.8rem;">90 Days</button>
-                </div>
-                {% elif current_category %}
-            <!-- Category Filter Banner -->
-            <div class="filter-banner">
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <p style="margin: 0;">Viewing transactions in <strong>{{ current_category }}</strong>.</p>
-                    <a href="/transactions?status={{ current_status }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&search=' + current_search if current_search }}"
-                        class="clear-filter-btn">Clear Filter</a>
-                </div>
-            </div>
-            {% else %}
-            <!-- Show date filters even if no custom date range is active -->
-            <div class="filter-banner" style="justify-content: flex-end;">
-                <div style="display: flex; gap: 8px;">
-                    <span style="align-self: center; font-size: 0.9rem; color: #94a3b8; margin-right: 8px;">Filter
-                        Last:</span>
-                    <button onclick="applyDateFilter(30)" class="btn-secondary"
-                        style="padding: 4px 10px; font-size: 0.8rem;">30 Days</button>
-                    <button onclick="applyDateFilter(60)" class="btn-secondary"
-                        style="padding: 4px 10px; font-size: 0.8rem;">60 Days</button>
-                    <button onclick="applyDateFilter(90)" class="btn-secondary"
-                        style="padding: 4px 10px; font-size: 0.8rem;">90 Days</button>
-                </div>
-            </div>
-            {% endif %}
 
-            <script>
-                function toggleTransfers(checked) {
-                    const url = new URL(window.location.href);
-                    if (checked) {
-                        url.searchParams.set('show_transfers', '1');
-                    } else {
-                        url.searchParams.delete('show_transfers');
-                    }
-                    window.location.href = url.toString();
-                }
-
-                function applyDateFilter(days) {
-                    const today = new Date();
-                    const startDate = new Date();
-                    startDate.setDate(today.getDate() - days);
-
-                    const startStr = startDate.toISOString().split('T')[0];
-                    const endStr = today.toISOString().split('T')[0];
-
-                    // Construct URL with existing params
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('start', startStr);
-                    url.searchParams.set('end', endStr);
-
-                    // Ensure status/search/sort are preserved (they are by default with URL object)
-                    window.location.href = url.toString();
-                }
-            </script>
-
-            {% if transactions %}
-            <table class="transactions-table">
-                <thead>
-                    <tr>
-                        <th style="width: 40px; text-align: center;">
-                            <input type="checkbox" id="selectAll" onclick="toggleSelectAll()">
-                        </th>
-                        <th>
-                            <a href="/transactions?sort={{ 'date_asc' if current_sort == 'date_desc' else 'date_desc' }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&status=' + current_status }}{{ '&search=' + current_search if current_search }}{{ '&category=' + current_category if current_category }}"
-                                class="sort-header">
-                                Date {{ '↓' if current_sort == 'date_desc' else '↑' if current_sort == 'date_asc'
-                                else '' }}
-                            </a>
-                        </th>
-                        <th>
-                            <a href="/transactions?sort={{ 'description_asc' if current_sort == 'description_desc' else 'description_desc' }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&status=' + current_status }}{{ '&search=' + current_search if current_search }}{{ '&category=' + current_category if current_category }}"
-                                class="sort-header">
-                                Description {{ '↓' if current_sort == 'description_desc' else '↑' if current_sort ==
-                                'description_asc' else '' }}
-                            </a>
-                        </th>
-                        <th>Type</th>
-                        <th>Category</th>
-                        <th>Account</th>
-                        <th style="text-align: right;">
-                            <a href="/transactions?sort={{ 'amount_asc' if current_sort == 'amount_desc' else 'amount_desc' }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&status=' + current_status }}{{ '&search=' + current_search if current_search }}{{ '&category=' + current_category if current_category }}"
-                                class="sort-header">
-                                Amount {{ '↓' if current_sort == 'amount_desc' else '↑' if current_sort ==
-                                'amount_asc' else
-                                '' }}
-                            </a>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in transactions %}
-                    <tr class="tx-row" data-tx-id="{{ loop.index }}" onclick="toggleTxDetail(event, {{ loop.index }})">
-                        <td style="text-align: center;" onclick="event.stopPropagation();">
-                            <input type="checkbox" class="tx-checkbox" value="{{ t.description }}"
-                                onclick="updateBulkBar()">
-                        </td>
-                        <td style="white-space: nowrap;">
-                            {{ t.date.strftime('%b %d, %Y') }}
-                            <span class="tx-expand-icon">&#9654;</span>
-                        </td>
-                        <td>
-                            <a href="/transactions?search={{ t.description | urlencode }}&status={{ current_status }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&category=' + current_category if current_category }}"
-                                style="color: inherit; text-decoration: none; border-bottom: 1px dotted #64748b;"
-                                title="Filter by this description"
-                                onclick="event.stopPropagation();">
-                                {{ t.description }}
-                            </a>
-                            {% if t.recurring_bill %}
-                            <span title="Recurring Bill: {{ t.recurring_bill }}"
-                                style="cursor: help; margin-left: 6px; color: #eab308; font-size: 1.1em;">
-                                &#8635;
-                            </span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="/transactions?status={{ 'transfer' if t.category == 'transfer' else 'all' }}{{ '&search=' + current_search if current_search }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&category=' + current_category if current_category }}"
-                                class="category-badge badge-{{ t.category }}" onclick="event.stopPropagation();">{{ t.category }}</a>
-                        </td>
-                        <td>
-                            {% if t.subcategory %}
-                            <a href="/transactions?category={{ t.subcategory | urlencode }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
-                                class="category-badge subcategory-badge" data-subcategory="{{ t.subcategory }}" onclick="event.stopPropagation();">{{
-                                t.subcategory }}</a>
-                            {% else %}
-                            <span style="color: #64748b;">-</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ t.account_name }}</td>
-                        <td style="text-align: right;"
-                            class="{{ 'amount-positive' if t.amount >= 0 else 'amount-negative' }}">
-                            {{ t.amount | currency }}
-                        </td>
-                    </tr>
-                    <!-- Expandable detail row -->
-                    <tr class="tx-detail-row" id="txDetail{{ loop.index }}">
-                        <td colspan="7">
-                            <div class="tx-detail-panel">
-                                <div class="detail-field">
-                                    <span class="detail-label">Date & Time</span>
-                                    <span class="detail-value">{{ t.date.strftime('%A, %B %d, %Y') }}</span>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <!-- Category multi-select dropdown -->
+                        <div class="cat-filter-wrapper" id="catFilterWrapper">
+                            <button class="cat-filter-btn {{ 'has-selection' if active_cats }}" id="catFilterBtn"
+                                onclick="toggleCatFilter()">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                                </svg>
+                                Category
+                                {% if active_cats %}<span class="cat-count-badge">{{ active_cats|length }}</span>{%
+                                endif %}
+                            </button>
+                            <div class="cat-filter-dropdown" id="catFilterDropdown">
+                                <div class="cat-filter-search">
+                                    <input type="text" id="catFilterSearch" placeholder="Search categories..."
+                                        oninput="filterCatList()">
                                 </div>
-                                <div class="detail-field">
-                                    <span class="detail-label">Amount</span>
-                                    <span class="detail-value {{ 'positive' if t.amount >= 0 else 'negative' }}">{{ t.amount | currency }}</span>
+                                <div class="cat-filter-list" id="catFilterList">
+                                    {% for sub in all_subcategories %}
+                                    <label class="cat-filter-item" data-name="{{ sub|lower }}">
+                                        <input type="checkbox" value="{{ sub }}" {{ 'checked' if sub in active_cats }}>
+                                        <span>{{ sub }}</span>
+                                    </label>
+                                    {% endfor %}
+                                    <label class="cat-filter-item" data-name="uncategorized">
+                                        <input type="checkbox" value="Uncategorized" {{ 'checked' if 'Uncategorized' in
+                                            active_cats }}>
+                                        <span style="color: #64748b; font-style: italic;">Uncategorized</span>
+                                    </label>
                                 </div>
-                                <div class="detail-field">
-                                    <span class="detail-label">Account</span>
-                                    <span class="detail-value">{{ t.account_name }}</span>
-                                </div>
-                                <div class="detail-field">
-                                    <span class="detail-label">Account Type</span>
-                                    <span class="detail-value muted">{{ t.account_type | replace('_', ' ') | title }}</span>
-                                </div>
-                                <div class="detail-field">
-                                    <span class="detail-label">Type</span>
-                                    <span class="detail-value">
-                                        <span class="category-badge badge-{{ t.category }}">{{ t.category }}</span>
-                                    </span>
-                                </div>
-                                <div class="detail-field">
-                                    <span class="detail-label">Category</span>
-                                    <span class="detail-value">{{ t.subcategory if t.subcategory else '—' }}</span>
-                                </div>
-                                <div class="detail-field">
-                                    <span class="detail-label">Description</span>
-                                    <span class="detail-value" style="word-break: break-word; font-size: 0.82rem;">{{ t.description }}</span>
-                                </div>
-                                {% if t.raw_balance is defined and t.raw_balance == t.raw_balance %}
-                                <div class="detail-field">
-                                    <span class="detail-label">Balance After</span>
-                                    <span class="detail-value">${{ "%.2f" | format(t.raw_balance) }}</span>
-                                </div>
-                                {% endif %}
-                                {% if t.recurring_bill %}
-                                <div class="detail-field">
-                                    <span class="detail-label">Recurring Bill</span>
-                                    <span class="detail-recurring-badge">&#8635; {{ t.recurring_bill }}</span>
-                                </div>
-                                {% endif %}
-                                <div class="detail-field detail-actions">
-                                    <a href="/transactions?search={{ t.description | urlencode }}&status=all"
-                                       class="detail-action-btn" onclick="event.stopPropagation();">
-                                        Find Similar
-                                    </a>
-                                    {% if not t.recurring_bill %}
-                                    <button class="detail-action-btn recurring-btn"
-                                            data-desc="{{ t.description }}"
-                                            data-amount="{{ t.amount | abs }}"
-                                            data-day="{{ t.date.day }}"
-                                            onclick="event.stopPropagation(); prefillRecurring(this.dataset.desc, parseFloat(this.dataset.amount), parseInt(this.dataset.day));">
-                                        &#8635; Make Recurring
-                                    </button>
-                                    {% endif %}
+                                <div class="cat-filter-actions">
+                                    <button class="cat-filter-clear" onclick="clearCatFilter()">Clear</button>
+                                    <button class="cat-filter-apply" onclick="applyCatFilter()">Apply Filter</button>
                                 </div>
                             </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p>No transactions found.</p>
-            {% endif %}
-        </div> <!-- End main-content -->
+                        </div>
 
-        {% if common_uncategorized %}
-        <div class="sidebar">
-            <h3>Frequent Keywords</h3>
-            <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px;">Click to filter & categorize</p>
-            <ul class="freq-list">
-                {% for item in common_uncategorized %}
-                <li>
-                    <a href="/transactions?search={{ item.description | urlencode }}&status=uncategorized"
-                        class="freq-item">
-                        <span
-                            style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">{{
-                            item.description }}</span>
-                        <span class="freq-count">{{ item.count }}</span>
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-    </div> <!-- End content-wrapper -->
+                        <!-- Account multi-select dropdown -->
+                        <div class="cat-filter-wrapper" id="acctFilterWrapper">
+                            <button class="cat-filter-btn {{ 'has-selection' if active_accts }}" id="acctFilterBtn"
+                                onclick="toggleAcctFilter()">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2" y="5" width="20" height="14" rx="2" />
+                                    <line x1="2" y1="10" x2="22" y2="10" />
+                                </svg>
+                                Account
+                                {% if active_accts %}<span class="cat-count-badge">{{ active_accts|length }}</span>{%
+                                endif %}
+                            </button>
+                            <div class="cat-filter-dropdown" id="acctFilterDropdown">
+                                <div class="cat-filter-list" id="acctFilterList">
+                                    {% for acct in all_accounts %}
+                                    <label class="cat-filter-item" data-name="{{ acct|lower }}">
+                                        <input type="checkbox" value="{{ acct }}" {{ 'checked' if acct in active_accts
+                                            }}>
+                                        <span>{{ acct }}</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                                <div class="cat-filter-actions">
+                                    <button class="cat-filter-clear" onclick="clearAcctFilter()">Clear</button>
+                                    <button class="cat-filter-apply" onclick="applyAcctFilter()">Apply Filter</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if current_category or current_account %}
+                        <a href="/transactions?status={{ current_status }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&search=' + (current_search | urlencode) if current_search }}{{ '&sort=' + current_sort if current_sort }}"
+                            class="clear-filter-btn" style="font-size: 0.78rem; padding: 4px 10px;">Clear Filters</a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <script>
+                    function toggleTransfers(checked) {
+                        const url = new URL(window.location.href);
+                        if (checked) {
+                            url.searchParams.set('show_transfers', '1');
+                        } else {
+                            url.searchParams.delete('show_transfers');
+                        }
+                        window.location.href = url.toString();
+                    }
+
+                    function applyDateFilter(days) {
+                        const today = new Date();
+                        const startDate = new Date();
+                        startDate.setDate(today.getDate() - days);
+
+                        const startStr = startDate.toISOString().split('T')[0];
+                        const endStr = today.toISOString().split('T')[0];
+
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('start', startStr);
+                        url.searchParams.set('end', endStr);
+                        window.location.href = url.toString();
+                    }
+
+                    // --- Category multi-select dropdown ---
+                    function toggleCatFilter() {
+                        const dropdown = document.getElementById('catFilterDropdown');
+                        dropdown.classList.toggle('open');
+                        if (dropdown.classList.contains('open')) {
+                            setTimeout(() => document.getElementById('catFilterSearch').focus(), 50);
+                        }
+                    }
+
+                    // Close dropdown when clicking outside
+                    document.addEventListener('click', (e) => {
+                        const wrapper = document.getElementById('catFilterWrapper');
+                        if (wrapper && !wrapper.contains(e.target)) {
+                            document.getElementById('catFilterDropdown').classList.remove('open');
+                        }
+                    });
+
+                    function filterCatList() {
+                        const query = document.getElementById('catFilterSearch').value.toLowerCase();
+                        document.querySelectorAll('#catFilterList .cat-filter-item').forEach(item => {
+                            const name = item.getAttribute('data-name');
+                            item.style.display = name.includes(query) ? '' : 'none';
+                        });
+                    }
+
+                    function applyCatFilter() {
+                        const checked = document.querySelectorAll('#catFilterList input[type="checkbox"]:checked');
+                        const categories = Array.from(checked).map(cb => cb.value);
+
+                        const url = new URL(window.location.href);
+                        if (categories.length > 0) {
+                            url.searchParams.set('category', categories.join(','));
+                        } else {
+                            url.searchParams.delete('category');
+                        }
+                        window.location.href = url.toString();
+                    }
+
+                    function clearCatFilter() {
+                        document.querySelectorAll('#catFilterList input[type="checkbox"]').forEach(cb => cb.checked = false);
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('category');
+                        window.location.href = url.toString();
+                    }
+
+                    // --- Account multi-select dropdown ---
+                    function toggleAcctFilter() {
+                        const dropdown = document.getElementById('acctFilterDropdown');
+                        dropdown.classList.toggle('open');
+                    }
+
+                    // Close account dropdown when clicking outside
+                    document.addEventListener('click', (e) => {
+                        const wrapper = document.getElementById('acctFilterWrapper');
+                        if (wrapper && !wrapper.contains(e.target)) {
+                            document.getElementById('acctFilterDropdown').classList.remove('open');
+                        }
+                    });
+
+                    function applyAcctFilter() {
+                        const checked = document.querySelectorAll('#acctFilterList input[type="checkbox"]:checked');
+                        const accounts = Array.from(checked).map(cb => cb.value);
+
+                        const url = new URL(window.location.href);
+                        if (accounts.length > 0) {
+                            url.searchParams.set('account', accounts.join(','));
+                        } else {
+                            url.searchParams.delete('account');
+                        }
+                        window.location.href = url.toString();
+                    }
+
+                    function clearAcctFilter() {
+                        document.querySelectorAll('#acctFilterList input[type="checkbox"]').forEach(cb => cb.checked = false);
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('account');
+                        window.location.href = url.toString();
+                    }
+                </script>
+
+                {# Macro for sort link params #}
+                {% set sp = '&start=' + filter_start if filter_start else '' %}
+                {% set ep = '&end=' + filter_end if filter_end else '' %}
+                {% set stp = '&status=' + current_status %}
+                {% set srch = '&search=' + (current_search | urlencode) if current_search else '' %}
+                {% set catp = '&category=' + (current_category | urlencode) if current_category else '' %}
+                {% set acctp = '&account=' + (current_account | urlencode) if current_account else '' %}
+                {% set stp_t = '&show_transfers=1' if show_transfers else '' %}
+                {% set base = sp + ep + stp + srch + catp + acctp + stp_t %}
+
+                {% if transactions %}
+                <table class="transactions-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px; text-align: center;">
+                                <input type="checkbox" id="selectAll" onclick="toggleSelectAll()">
+                            </th>
+                            <th style="width: 120px;">
+                                <a href="/transactions?sort={{ 'date_asc' if current_sort == 'date_desc' else 'date_desc' }}{{ base }}"
+                                    class="sort-header {{ 'sort-active' if current_sort in ['date_asc', 'date_desc'] }}">
+                                    Date {{ '↓' if current_sort == 'date_desc' else '↑' if current_sort == 'date_asc'
+                                    else '' }}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="/transactions?sort={{ 'description_asc' if current_sort == 'description_desc' else 'description_desc' }}{{ base }}"
+                                    class="sort-header {{ 'sort-active' if current_sort in ['description_asc', 'description_desc'] }}">
+                                    Description {{ '↓' if current_sort == 'description_desc' else '↑' if current_sort ==
+                                    'description_asc' else '' }}
+                                </a>
+                            </th>
+                            <th style="width: 90px;">
+                                <a href="/transactions?sort={{ 'type_asc' if current_sort == 'type_desc' else 'type_desc' }}{{ base }}"
+                                    class="sort-header {{ 'sort-active' if current_sort in ['type_asc', 'type_desc'] }}">
+                                    Type {{ '↓' if current_sort == 'type_desc' else '↑' if current_sort == 'type_asc'
+                                    else '' }}
+                                </a>
+                            </th>
+                            <th style="width: 120px;">
+                                <a href="/transactions?sort={{ 'category_asc' if current_sort == 'category_desc' else 'category_desc' }}{{ base }}"
+                                    class="sort-header {{ 'sort-active' if current_sort in ['category_asc', 'category_desc'] }}">
+                                    Category {{ '↓' if current_sort == 'category_desc' else '↑' if current_sort ==
+                                    'category_asc' else '' }}
+                                </a>
+                            </th>
+                            <th style="width: 130px;">
+                                <a href="/transactions?sort={{ 'account_asc' if current_sort == 'account_desc' else 'account_desc' }}{{ base }}"
+                                    class="sort-header {{ 'sort-active' if current_sort in ['account_asc', 'account_desc'] }}">
+                                    Account {{ '↓' if current_sort == 'account_desc' else '↑' if current_sort ==
+                                    'account_asc' else '' }}
+                                </a>
+                            </th>
+                            <th style="width: 100px; text-align: right;">
+                                <a href="/transactions?sort={{ 'amount_asc' if current_sort == 'amount_desc' else 'amount_desc' }}{{ base }}"
+                                    class="sort-header {{ 'sort-active' if current_sort in ['amount_asc', 'amount_desc'] }}">
+                                    Amount {{ '↓' if current_sort == 'amount_desc' else '↑' if current_sort ==
+                                    'amount_asc' else '' }}
+                                </a>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in transactions %}
+                        <tr class="tx-row" data-tx-id="{{ loop.index }}"
+                            onclick="toggleTxDetail(event, {{ loop.index }})">
+                            <td style="text-align: center;" onclick="event.stopPropagation();">
+                                <input type="checkbox" class="tx-checkbox" value="{{ t.description }}"
+                                    onclick="updateBulkBar()">
+                            </td>
+                            <td style="white-space: nowrap;">
+                                {{ t.date.strftime('%b %d, %Y') }}
+                                <span class="tx-expand-icon">&#9654;</span>
+                            </td>
+                            <td>
+                                <a href="/transactions?search={{ t.description | urlencode }}&status={{ current_status }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&category=' + (current_category | urlencode) if current_category }}"
+                                    style="color: inherit; text-decoration: none; border-bottom: 1px dotted #64748b;"
+                                    title="Filter by this description" onclick="event.stopPropagation();">
+                                    {{ t.description }}
+                                </a>
+                                {% if t.recurring_bill %}
+                                <span title="Recurring Bill: {{ t.recurring_bill }}"
+                                    style="cursor: help; margin-left: 6px; color: #eab308; font-size: 1.1em;">
+                                    &#8635;
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="/transactions?status={{ 'transfer' if t.category == 'transfer' else 'all' }}{{ '&search=' + (current_search | urlencode) if current_search }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&category=' + (current_category | urlencode) if current_category }}"
+                                    class="category-badge badge-{{ t.category }}" onclick="event.stopPropagation();">{{
+                                    t.category }}</a>
+                            </td>
+                            <td>
+                                {% if t.subcategory %}
+                                <a href="/transactions?category={{ t.subcategory | urlencode }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
+                                    class="category-badge subcategory-badge" data-subcategory="{{ t.subcategory }}"
+                                    onclick="event.stopPropagation();">{{
+                                    t.subcategory }}</a>
+                                {% else %}
+                                <span style="color: #64748b;">-</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ t.account_name }}</td>
+                            <td style="text-align: right;"
+                                class="{{ 'amount-positive' if t.amount >= 0 else 'amount-negative' }}">
+                                {{ t.amount | currency }}
+                            </td>
+                        </tr>
+                        <!-- Expandable detail row -->
+                        <tr class="tx-detail-row" id="txDetail{{ loop.index }}">
+                            <td colspan="7">
+                                <div class="tx-detail-panel">
+                                    <div class="detail-field">
+                                        <span class="detail-label">Date & Time</span>
+                                        <span class="detail-value">{{ t.date.strftime('%A, %B %d, %Y') }}</span>
+                                    </div>
+                                    <div class="detail-field">
+                                        <span class="detail-label">Amount</span>
+                                        <span class="detail-value {{ 'positive' if t.amount >= 0 else 'negative' }}">{{
+                                            t.amount | currency }}</span>
+                                    </div>
+                                    <div class="detail-field">
+                                        <span class="detail-label">Account</span>
+                                        <span class="detail-value">{{ t.account_name }}</span>
+                                    </div>
+                                    <div class="detail-field">
+                                        <span class="detail-label">Account Type</span>
+                                        <span class="detail-value muted">{{ t.account_type | replace('_', ' ') | title
+                                            }}</span>
+                                    </div>
+                                    <div class="detail-field">
+                                        <span class="detail-label">Type</span>
+                                        <span class="detail-value">
+                                            <span class="category-badge badge-{{ t.category }}">{{ t.category }}</span>
+                                        </span>
+                                    </div>
+                                    <div class="detail-field">
+                                        <span class="detail-label">Category</span>
+                                        <span class="detail-value">{{ t.subcategory if t.subcategory else '—' }}</span>
+                                    </div>
+                                    <div class="detail-field">
+                                        <span class="detail-label">Description</span>
+                                        <span class="detail-value"
+                                            style="word-break: break-word; font-size: 0.82rem;">{{ t.description
+                                            }}</span>
+                                    </div>
+                                    {% if t.raw_balance is defined and t.raw_balance == t.raw_balance %}
+                                    <div class="detail-field">
+                                        <span class="detail-label">Balance After</span>
+                                        <span class="detail-value">${{ "%.2f" | format(t.raw_balance) }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if t.recurring_bill %}
+                                    <div class="detail-field detail-recurring-field">
+                                        <span class="detail-label">Recurring Bill</span>
+                                        <span class="detail-recurring-badge"
+                                            data-bill="{{ t.recurring_bill }}"
+                                            onclick="event.stopPropagation(); removeRecurringBill(this.dataset.bill, this)"
+                                            title="Click to remove recurring bill">&#8635; {{ t.recurring_bill }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="detail-field detail-actions">
+                                        <a href="/transactions?search={{ t.description | urlencode }}&status=all"
+                                            class="detail-action-btn" onclick="event.stopPropagation();">
+                                            Find Similar
+                                        </a>
+                                        {% if not t.recurring_bill %}
+                                        <button class="detail-action-btn recurring-btn" data-desc="{{ t.description }}"
+                                            data-amount="{{ t.amount | abs }}" data-day="{{ t.date.day }}"
+                                            onclick="event.stopPropagation(); prefillRecurring(this.dataset.desc, parseFloat(this.dataset.amount), parseInt(this.dataset.day));">
+                                            &#8635; Make Recurring
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p>No transactions found.</p>
+                {% endif %}
+            </div> <!-- End main-content -->
+
+            {% if common_uncategorized and current_status == 'uncategorized' %}
+            <div class="sidebar">
+                <h3>Frequent Keywords</h3>
+                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px;">Click to filter & categorize</p>
+                <ul class="freq-list">
+                    {% for item in common_uncategorized %}
+                    <li>
+                        <a href="/transactions?search={{ item.description | urlencode }}&status=uncategorized"
+                            class="freq-item">
+                            <span
+                                style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">{{
+                                item.description }}</span>
+                            <span class="freq-count">{{ item.count }}</span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div> <!-- End content-wrapper -->
     </div>
 
 
@@ -1243,7 +1616,11 @@
             }
         }
 
+        // Track which description triggered the recurring modal
+        let _recurringSourceDesc = null;
+
         function prefillRecurring(description, amount, dayOfMonth) {
+            _recurringSourceDesc = description;
             document.getElementById("billName").value = description;
             document.getElementById("billAmount").value = amount.toFixed(2);
             document.getElementById("billDay").value = dayOfMonth;
@@ -1295,6 +1672,7 @@
             const checked = document.querySelectorAll(".tx-checkbox:checked");
             if (checked.length === 1) {
                 const desc = checked[0].value;
+                _recurringSourceDesc = desc;
                 const row = checked[0].closest('tr');
                 const amountText = row.querySelector('td:nth-last-child(1)').innerText;
                 const dateText = row.querySelector('td:nth-child(2)').innerText;
@@ -1313,6 +1691,7 @@
                 // Use description as initial match criteria
                 document.getElementById("billCriteria").value = desc;
             } else {
+                _recurringSourceDesc = null;
                 // Clear fields
                 document.getElementById("billName").value = "";
                 document.getElementById("billAmount").value = "";
@@ -1353,13 +1732,184 @@
 
                 if (result.status === 'ok') {
                     closeRecurringModal();
-                    alert("Recurring bill saved!");
+                    markRowsAsRecurring(_recurringSourceDesc || criteria, name);
+                    _recurringSourceDesc = null;
                 } else {
                     alert('Error saving bill: ' + result.message);
                 }
             } catch (error) {
                 console.error('Error:', error);
                 alert('Failed to save recurring bill.');
+            }
+        }
+
+        function markRowsAsRecurring(matchDesc, billName) {
+            // Find all tx-rows whose description matches
+            const matchLower = matchDesc.toLowerCase();
+
+            document.querySelectorAll('.tx-row').forEach(row => {
+                const txId = row.getAttribute('data-tx-id');
+                // Get the description cell (3rd td)
+                const descCell = row.querySelector('td:nth-child(3)');
+                if (!descCell) return;
+
+                const descLink = descCell.querySelector('a');
+                if (!descLink) return;
+
+                const rowDesc = descLink.textContent.trim().toLowerCase();
+
+                if (rowDesc.includes(matchLower) || matchLower.includes(rowDesc)) {
+                    // Add recurring icon to the main row if not already there
+                    if (!descCell.querySelector('.recurring-icon-added')) {
+                        const icon = document.createElement('span');
+                        icon.title = 'Recurring Bill: ' + billName;
+                        icon.style.cssText = 'cursor: help; margin-left: 6px; color: #eab308; font-size: 1.1em;';
+                        icon.className = 'recurring-icon-added';
+                        icon.innerHTML = '&#8635;';
+                        descCell.appendChild(icon);
+                    }
+
+                    // Update the detail panel
+                    const detailRow = document.getElementById('txDetail' + txId);
+                    if (detailRow) {
+                        const panel = detailRow.querySelector('.tx-detail-panel');
+                        if (panel) {
+                            // Remove the "Make Recurring" button
+                            const recurBtn = panel.querySelector('.recurring-btn');
+                            if (recurBtn) recurBtn.remove();
+
+                            // Add recurring badge if not there
+                            if (!panel.querySelector('.detail-recurring-badge')) {
+                                const actionsDiv = panel.querySelector('.detail-actions');
+                                if (actionsDiv) {
+                                    const field = document.createElement('div');
+                                    field.className = 'detail-field detail-recurring-field';
+                                    const badge = document.createElement('span');
+                                    badge.className = 'detail-recurring-badge';
+                                    badge.title = 'Click to remove recurring bill';
+                                    badge.innerHTML = `&#8635; ${billName}`;
+                                    badge.onclick = function (e) {
+                                        e.stopPropagation();
+                                        removeRecurringBill(billName, badge);
+                                    };
+                                    const label = document.createElement('span');
+                                    label.className = 'detail-label';
+                                    label.textContent = 'Recurring Bill';
+                                    field.appendChild(label);
+                                    field.appendChild(badge);
+                                    panel.insertBefore(field, actionsDiv);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Brief flash to confirm the change visually
+            document.querySelectorAll('.recurring-icon-added').forEach(icon => {
+                icon.style.transition = 'opacity 0.3s';
+                icon.style.opacity = '0';
+                requestAnimationFrame(() => {
+                    icon.style.opacity = '1';
+                });
+            });
+        }
+
+        async function removeRecurringBill(billName, badgeElement) {
+            if (!confirm(`Remove "${billName}" from recurring bills?`)) return;
+
+            try {
+                const response = await fetch('/api/recurring-bills', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: billName }),
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'ok') {
+                    // Remove the recurring badge field from the detail panel
+                    const recurringField = badgeElement.closest('.detail-recurring-field');
+                    const panel = badgeElement.closest('.tx-detail-panel');
+
+                    if (recurringField) recurringField.remove();
+
+                    // Restore "Make Recurring" button in the detail panel
+                    if (panel) {
+                        const actionsDiv = panel.querySelector('.detail-actions');
+                        if (actionsDiv && !actionsDiv.querySelector('.recurring-btn')) {
+                            const detailRow = panel.closest('.tx-detail-row');
+                            if (detailRow) {
+                                const txId = detailRow.id.replace('txDetail', '');
+                                const mainRow = document.querySelector(`.tx-row[data-tx-id="${txId}"]`);
+                                if (mainRow) {
+                                    const descCell = mainRow.querySelector('td:nth-child(3)');
+                                    const descLink = descCell ? descCell.querySelector('a') : null;
+                                    const desc = descLink ? descLink.textContent.trim() : '';
+                                    const amountText = mainRow.querySelector('td:last-child').innerText;
+                                    const amount = Math.abs(parseFloat(amountText.replace(/[$,]/g, '')));
+                                    const dateText = mainRow.querySelector('td:nth-child(2)').innerText;
+                                    const day = new Date(dateText).getDate() || 1;
+
+                                    const btn = document.createElement('button');
+                                    btn.className = 'detail-action-btn recurring-btn';
+                                    btn.dataset.desc = desc;
+                                    btn.dataset.amount = amount;
+                                    btn.dataset.day = day;
+                                    btn.onclick = function (e) {
+                                        e.stopPropagation();
+                                        prefillRecurring(desc, amount, day);
+                                    };
+                                    btn.innerHTML = '&#8635; Make Recurring';
+                                    actionsDiv.appendChild(btn);
+                                }
+                            }
+                        }
+                    }
+
+                    // Remove the yellow ↻ icon from all matching rows
+                    const billNameLower = billName.toLowerCase();
+                    document.querySelectorAll('.tx-row').forEach(row => {
+                        const descCell = row.querySelector('td:nth-child(3)');
+                        if (!descCell) return;
+
+                        // Remove server-rendered recurring icons
+                        const icons = descCell.querySelectorAll('span[title]');
+                        icons.forEach(icon => {
+                            if (icon.title && icon.title.toLowerCase().includes(billNameLower)) {
+                                icon.style.transition = 'opacity 0.3s';
+                                icon.style.opacity = '0';
+                                setTimeout(() => icon.remove(), 300);
+                            }
+                        });
+
+                        // Remove JS-added recurring icons
+                        const addedIcons = descCell.querySelectorAll('.recurring-icon-added');
+                        addedIcons.forEach(icon => {
+                            if (icon.title && icon.title.toLowerCase().includes(billNameLower)) {
+                                icon.style.transition = 'opacity 0.3s';
+                                icon.style.opacity = '0';
+                                setTimeout(() => icon.remove(), 300);
+                            }
+                        });
+
+                        // Also remove badge from other expanded detail panels for same bill
+                        const txId = row.getAttribute('data-tx-id');
+                        const otherDetail = document.getElementById('txDetail' + txId);
+                        if (otherDetail) {
+                            const otherBadge = otherDetail.querySelector('.detail-recurring-badge');
+                            if (otherBadge && otherBadge !== badgeElement && otherBadge.textContent.includes(billName)) {
+                                const otherField = otherBadge.closest('.detail-recurring-field');
+                                if (otherField) otherField.remove();
+                            }
+                        }
+                    });
+                } else {
+                    alert('Error removing bill: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to remove recurring bill.');
             }
         }
 

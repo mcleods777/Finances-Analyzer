@@ -287,11 +287,65 @@
             background: rgba(34, 197, 94, 0.1);
         }
 
-        /* Segmented runway bar */
+        .bill-card-link {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .bill-card-link:hover .bill-card {
+            border-color: #60a5fa;
+            background: #1a2540;
+            cursor: pointer;
+        }
+
+        .bill-card-link:hover .bill-card.pending {
+            border-left-color: #fbbf24;
+        }
+
+        .bill-card-link:hover .bill-card.paid {
+            border-left-color: #22c55e;
+        }
+
+        /* Runway bar wrapper with percentage badge */
+        .runway-bar-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .runway-bar-wrapper .runway-bar-container {
+            flex: 1;
+        }
+
+        .runway-pct-badge {
+            flex-shrink: 0;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            min-width: 48px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
+        }
+
+        .runway-pct-badge.pct-good { color: #4ade80; }
+        .runway-pct-badge.pct-warn { color: #fbbf24; }
+        .runway-pct-badge.pct-danger { color: #f87171; }
+
+        /* Explainer text */
+        .runway-explainer {
+            font-size: 0.8rem;
+            color: #64748b;
+            line-height: 1.5;
+            margin-top: 2px;
+        }
+
+        /* Segmented runway bar — taller for readability */
         .runway-segments {
             display: flex;
             height: 100%;
-            border-radius: 6px;
+            border-radius: 8px;
             overflow: hidden;
             transition: width 0.8s ease;
         }
@@ -301,40 +355,54 @@
             position: relative;
             transition: opacity 0.2s, filter 0.2s;
             cursor: default;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
         }
 
         .runway-segment:first-child {
-            border-radius: 6px 0 0 6px;
+            border-radius: 8px 0 0 8px;
         }
 
         .runway-segment:last-child {
-            border-radius: 0 6px 6px 0;
+            border-radius: 0 8px 8px 0;
         }
 
         .runway-segment:only-child {
-            border-radius: 6px;
+            border-radius: 8px;
         }
 
         .runway-segment:hover {
-            opacity: 0.85;
-            filter: brightness(1.2);
+            filter: brightness(1.25);
+        }
+
+        /* Inline label on segment */
+        .segment-inline-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            white-space: nowrap;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            padding: 0 4px;
+            pointer-events: none;
         }
 
         /* Segment tooltip */
         .segment-tooltip {
             display: none;
             position: absolute;
-            bottom: calc(100% + 8px);
+            bottom: calc(100% + 10px);
             left: 50%;
             transform: translateX(-50%);
-            background: #1e293b;
+            background: #0f172a;
             border: 1px solid #475569;
-            border-radius: 6px;
-            padding: 8px 12px;
+            border-radius: 8px;
+            padding: 10px 14px;
             white-space: nowrap;
             z-index: 100;
             pointer-events: none;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
             font-size: 0.8rem;
         }
 
@@ -344,7 +412,7 @@
             top: 100%;
             left: 50%;
             transform: translateX(-50%);
-            border: 5px solid transparent;
+            border: 6px solid transparent;
             border-top-color: #475569;
         }
 
@@ -355,114 +423,127 @@
         .segment-tooltip-name {
             color: #f1f5f9;
             font-weight: 600;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
         }
 
         .segment-tooltip-amount {
-            color: #94a3b8;
+            color: #e2e8f0;
+            font-weight: 500;
         }
 
         .segment-tooltip-date {
             color: #64748b;
             font-size: 0.75rem;
+            margin-top: 2px;
         }
 
-        /* Runway bar legend for pending/free */
+        /* Runway bar legend — clean grid */
         .runway-bar-legend {
             display: flex;
-            gap: 16px;
-            margin-top: 6px;
+            flex-wrap: wrap;
+            gap: 6px 14px;
+            margin-top: 10px;
             font-size: 0.75rem;
         }
 
         .runway-bar-legend-item {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
             color: #94a3b8;
         }
 
         .runway-bar-legend-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 2px;
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            flex-shrink: 0;
         }
 
         /* Monthly Half Runway */
         .monthly-halves-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 16px;
             margin-top: 16px;
         }
 
         .monthly-half-card {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 10px;
-            padding: 16px;
+            background: linear-gradient(145deg, #0f172a 0%, #131d33 100%);
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .monthly-half-card:hover {
+            border-color: #334155;
         }
 
         .monthly-half-card.is-current {
             border-color: #3b82f6;
-            box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.15), 0 4px 20px rgba(59, 130, 246, 0.08);
         }
 
         .monthly-half-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
 
         .monthly-half-label {
-            font-size: 0.95rem;
+            font-size: 1rem;
             font-weight: 600;
             color: #f1f5f9;
         }
 
         .monthly-half-label .current-tag {
-            font-size: 0.65rem;
-            background: #3b82f6;
+            font-size: 0.6rem;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-left: 6px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
             vertical-align: middle;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.06em;
+            font-weight: 700;
         }
 
         .monthly-half-days {
-            font-size: 0.75rem;
+            font-size: 0.78rem;
             color: #64748b;
+            font-weight: 500;
         }
 
         .budget-input-row {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
 
         .budget-label {
-            font-size: 0.75rem;
-            color: #94a3b8;
+            font-size: 0.7rem;
+            color: #64748b;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
             white-space: nowrap;
+            font-weight: 600;
         }
 
         .budget-input {
             background: #1e293b;
             border: 1px solid #334155;
             color: #f1f5f9;
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 5px 10px;
+            border-radius: 6px;
             font-size: 0.85rem;
             width: 100px;
             outline: none;
             transition: border-color 0.2s;
+            font-variant-numeric: tabular-nums;
         }
 
         .budget-input:focus {
@@ -470,33 +551,38 @@
         }
 
         .budget-save-btn {
-            background: #3b82f6;
-            color: white;
+            background: #334155;
+            color: #e2e8f0;
             border: none;
-            padding: 4px 10px;
-            border-radius: 4px;
+            padding: 5px 12px;
+            border-radius: 6px;
             font-size: 0.75rem;
             cursor: pointer;
             transition: background 0.2s;
+            font-weight: 500;
         }
 
         .budget-save-btn:hover {
-            background: #2563eb;
+            background: #3b82f6;
         }
 
         .monthly-half-stats {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 14px;
         }
 
         .half-stat {
-            font-size: 0.78rem;
+            font-size: 0.75rem;
             color: #94a3b8;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
 
         .half-stat strong {
+            font-size: 0.95rem;
             color: #f1f5f9;
         }
 
@@ -893,17 +979,12 @@
 
     <!-- Runway Section -->
     <div class="runway-section" id="runway-section">
-        <!-- Compact biweekly summary -->
+        <!-- Header with explanation -->
         <div class="runway-header">
             <div class="runway-info">
                 <h3>Budget Runway</h3>
-                <p>
-                    <strong>{{ runway.budget_remaining_this_period | currency }}</strong>
-                    remaining this pay period
-                    ({{ runway.days_left_in_period }} days left)
-                    &bull;
-                    Total runway: <strong>{{ runway.runway_days }} days</strong>
-                    ({{ runway.runway_periods }} periods)
+                <p class="runway-explainer">
+                    How your budget is allocated each half of the month. Gray is already spent, colored segments are upcoming bills, and the remaining space is your free cash.
                 </p>
             </div>
         </div>
@@ -923,8 +1004,11 @@
                     <button class="budget-save-btn" onclick="saveBudgetOverride(1)">Save</button>
                 </div>
                 <div class="monthly-half-stats" id="half1-stats"></div>
-                <div class="runway-bar-container">
-                    <div class="runway-bar" id="half1-bar" style="width: 0%"></div>
+                <div class="runway-bar-wrapper">
+                    <div class="runway-bar-container">
+                        <div class="runway-bar" id="half1-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="runway-pct-badge" id="half1-pct"></div>
                 </div>
                 <div class="runway-bar-legend" id="half1-legend"></div>
             </div>
@@ -942,8 +1026,11 @@
                     <button class="budget-save-btn" onclick="saveBudgetOverride(2)">Save</button>
                 </div>
                 <div class="monthly-half-stats" id="half2-stats"></div>
-                <div class="runway-bar-container">
-                    <div class="runway-bar" id="half2-bar" style="width: 0%"></div>
+                <div class="runway-bar-wrapper">
+                    <div class="runway-bar-container">
+                        <div class="runway-bar" id="half2-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="runway-pct-badge" id="half2-pct"></div>
                 </div>
                 <div class="runway-bar-legend" id="half2-legend"></div>
             </div>
@@ -1152,6 +1239,21 @@ Fidelity Roth IRA, 2024-04-01, 18750.00"></textarea>
                 <!-- Populated by JS -->
             </div>
         </div>
+    </div>
+
+    <div class="chart-container">
+        <div class="chart-header">
+            <h2>Category Spending Trends</h2>
+            <div class="chart-controls category-trends-controls">
+                <button class="chart-btn" data-months="2" onclick="updateCategoryTrends(2)">2 Mo</button>
+                <button class="chart-btn" data-months="3" onclick="updateCategoryTrends(3)">3 Mo</button>
+                <button class="chart-btn" data-months="6" onclick="updateCategoryTrends(6)">6 Mo</button>
+                <button class="chart-btn active" data-months="12" onclick="updateCategoryTrends(12)">1 Year</button>
+                <button class="chart-btn" data-months="24" onclick="updateCategoryTrends(24)">All</button>
+            </div>
+        </div>
+        <div id="categoryTrendsLegend" class="nw-legend"></div>
+        <canvas id="categoryTrendsChart"></canvas>
     </div>
 
     <div class="chart-container">

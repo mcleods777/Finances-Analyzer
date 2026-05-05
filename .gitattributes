@@ -1,0 +1,4 @@
+# Enforce LF line endings on text files across all platforms.
+# Prevents Windows-side editors (or WSL <-> Windows save loops) from
+# silently rewriting templates with CRLF and creating noise diffs.
+* text=auto eol=lf
