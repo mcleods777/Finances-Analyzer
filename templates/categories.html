@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Categories - Personal Finance Dashboard</title>
-    <link rel="stylesheet" href="/static/css/dashboard.css">
+{% block title %}Categories - Personal Finance Dashboard{% endblock %}
+
+{% block head %}
     <style>
         .categories-container {
             max-width: 1200px;
@@ -338,9 +335,9 @@
             grid-column: 1 / -1;
         }
     </style>
-</head>
+{% endblock %}
 
-<body>
+{% block content %}
     <div class="categories-container">
         <div class="categories-header">
             <div>
@@ -475,6 +472,4 @@
             }
         }
     </script>
-</body>
-
-</html>
+{% endblock %}

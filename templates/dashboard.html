@@ -1,13 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal Finance Dashboard</title>
-    <link rel="stylesheet" href="/static/css/dashboard.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
+{% block title %}Personal Finance Dashboard{% endblock %}
+
+{% block head %}
     <style>
         .header-actions {
             display: flex;
@@ -925,9 +920,9 @@
             }
         }
     </style>
-</head>
+{% endblock %}
 
-<body>
+{% block content %}
     <header>
         <h1>Personal Finance Dashboard</h1>
         <div class="header-actions">
@@ -1293,6 +1288,4 @@ Fidelity Roth IRA, 2024-04-01, 18750.00"></textarea>
     </script>
     <script src="/static/js/charts.js"></script>
     <script src="/static/js/dashboard.js"></script>
-</body>
-
-</html>
+{% endblock %}

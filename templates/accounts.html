@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Accounts - Personal Finance Dashboard{% endblock %}
+
+{% block head %}
+    <style>
+        .accounts-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .accounts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .accounts-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #1e293b;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .accounts-table th,
+        .accounts-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #334155;
+        }
+
+        .accounts-table th {
+            background: #0f172a;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .accounts-table td {
+            color: #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        .accounts-table td.balance {
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+        }
+
+        .account-type-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            background: rgba(59, 130, 246, 0.15);
+            color: #93c5fd;
+        }
+
+        .account-source {
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+
+        .accounts-note {
+            margin-top: 16px;
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="accounts-container">
+        <div class="accounts-header">
+            <div>
+                <h1>Accounts</h1>
+                <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 4px;">All tracked accounts with their latest known balance</p>
+            </div>
+        </div>
+
+        {% if not accounts %}
+        <div class="empty-state">
+            <h2>No accounts yet</h2>
+            <p>Accounts are created from config.yaml CSVs and manual balance entries.</p>
+        </div>
+        {% else %}
+        <table class="accounts-table">
+            <thead>
+                <tr>
+                    <th>Account</th>
+                    <th>Type</th>
+                    <th>Source</th>
+                    <th>Transactions</th>
+                    <th>Latest Balance</th>
+                    <th>As Of</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for account in accounts %}
+                <tr>
+                    <td>{{ account.name }}</td>
+                    <td><span class="account-type-badge">{{ account.type.replace('_', ' ') }}</span></td>
+                    <td class="account-source">{{ account.source }}</td>
+                    <td>{{ account.txn_count }}</td>
+                    <td class="balance">{{ account.balance | currency }}</td>
+                    <td class="account-source">{{ account.as_of or '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="accounts-note">CSV upload and bank sync (Plaid) are coming soon — for now, accounts come from config.yaml and manual balance entries on the dashboard.</p>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rules - Personal Finance Dashboard</title>
-    <link rel="stylesheet" href="/static/css/dashboard.css">
+{% block title %}Rules - Personal Finance Dashboard{% endblock %}
+
+{% block head %}
     <style>
         .rules-container {
             max-width: 1200px;
@@ -254,9 +251,9 @@
             letter-spacing: 0.5px;
         }
     </style>
-</head>
+{% endblock %}
 
-<body>
+{% block content %}
     <div class="rules-container">
         <div class="rules-header">
             <div>
@@ -564,6 +561,4 @@
             if (event.target == addModal) closeAddModal();
         }
     </script>
-</body>
-
-</html>
+{% endblock %}

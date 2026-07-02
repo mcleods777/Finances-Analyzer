@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Personal Finance Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
+    <style>
+        .main-nav {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 10px 24px;
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+            margin-bottom: 16px;
+        }
+
+        .main-nav .nav-brand {
+            font-weight: 700;
+            color: #f1f5f9;
+            text-decoration: none;
+            margin-right: 20px;
+            font-size: 1rem;
+        }
+
+        .main-nav a.nav-link {
+            text-decoration: none;
+            color: #94a3b8;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .main-nav a.nav-link:hover {
+            color: #e2e8f0;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .main-nav a.nav-link.active {
+            color: #fff;
+            background: #3b82f6;
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <nav class="main-nav">
+        <a href="/" class="nav-brand">Finance Tracker</a>
+        <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Dashboard</a>
+        <a href="/transactions" class="nav-link {% if request.path == '/transactions' %}active{% endif %}">Transactions</a>
+        <a href="/accounts" class="nav-link {% if request.path == '/accounts' %}active{% endif %}">Accounts</a>
+        <a href="/forecast" class="nav-link {% if request.path == '/forecast' %}active{% endif %}">Forecast</a>
+        <a href="/categories" class="nav-link {% if request.path == '/categories' %}active{% endif %}">Categories</a>
+        <a href="/rules" class="nav-link {% if request.path == '/rules' %}active{% endif %}">Rules</a>
+    </nav>
+    {% block content %}{% endblock %}
+</body>
+
+</html>

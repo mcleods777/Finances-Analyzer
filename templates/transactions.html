@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transactions - Personal Finance Dashboard</title>
-    <link rel="stylesheet" href="/static/css/dashboard.css">
+{% block title %}Transactions - Personal Finance Dashboard{% endblock %}
+
+{% block head %}
     <style>
         .transactions-container {
             max-width: 1400px;
@@ -871,9 +868,9 @@
             }
         }
     </style>
-</head>
+{% endblock %}
 
-<body>
+{% block content %}
     <div class="transactions-container">
         <div class="transactions-header">
             <h1>Transactions</h1>
@@ -1922,6 +1919,4 @@
             }
         }
     </script>
-</body>
-
-</html>
+{% endblock %}

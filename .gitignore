@@ -1,6 +1,10 @@
 # Financial data - NEVER commit
 data/
+data/finance.db
 config.yaml
+
+# Secrets
+.env
 
 # Python
 __pycache__/
