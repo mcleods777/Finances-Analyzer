@@ -5,6 +5,7 @@ from flask import Flask
 from finance.blueprints.accounts import accounts_bp
 from finance.blueprints.dashboard import dashboard_bp
 from finance.blueprints.forecast import forecast_bp
+from finance.blueprints.plaid import plaid_bp
 from finance.blueprints.rules import rules_bp
 from finance.blueprints.transactions import transactions_bp
 
@@ -29,3 +30,4 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(rules_bp)
     app.register_blueprint(accounts_bp)
     app.register_blueprint(forecast_bp)
+    app.register_blueprint(plaid_bp)

@@ -111,7 +111,9 @@
                 {% endfor %}
             </tbody>
         </table>
-        <p class="accounts-note">CSV upload and bank sync (Plaid) are coming soon — for now, accounts come from config.yaml and manual balance entries on the dashboard.</p>
         {% endif %}
+
+        {% include "partials/plaid_section.html" %}
+        {% include "partials/upload_section.html" %}
     </div>
 {% endblock %}
