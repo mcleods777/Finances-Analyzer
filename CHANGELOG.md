@@ -5,6 +5,51 @@ All notable changes to the Personal Finance Dashboard.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses 4-digit semantic versioning (MAJOR.MINOR.PATCH.MICRO).
 
+## [0.2.0.0] - 2026-07-02
+
+Mint/PocketSmith-style release: the app moves from a stateless CSV/YAML
+dashboard to a stateful local finance platform with live bank sync.
+
+### Added
+- **SQLite storage** (`data/finance.db`, WAL mode): transactions, accounts,
+  balance snapshots, categorization rules, Plaid state, and import audit
+  history now persist in one database. Startup migration seeds it from
+  config.yaml, existing `data/*.csv`, and `manual_balances.json` —
+  idempotent via content-hash dedup (3,728 transactions migrated exactly).
+- **In-app CSV upload** on the new Accounts page: per-account drag-and-drop
+  with imported/duplicate/error reporting, per-account import history, and
+  an "Add account from CSV" flow with column-mapping preview and
+  auto-detected date formats. Raw uploads archived under `data/uploads/`.
+- **Plaid live bank sync** (free Trial plan): Link flow, token exchange,
+  `/transactions/sync` cursor loop with add/modify/remove handling,
+  automatic balance snapshots, per-institution status + error surfacing.
+  Fully optional — without `.env` credentials the app runs CSV-only and the
+  Accounts page shows setup instructions.
+- **Net worth tracking**: snapshot-anchored daily series with
+  assets-vs-liabilities split, headline number with 30d/90d change pills,
+  3M/6M/1Y/All range selector, and a quick-update panel for manual
+  (Fidelity) balances with staleness badges.
+- **Calendar cash-flow forecast** (`/forecast`): PocketSmith-style month
+  grid projecting recurring bills, paychecks (median per-pay-period income),
+  and temporary expenses up to 365 days, with running projected balances,
+  negative-balance warnings, and monthly in/out/net summaries.
+- **Smarter categorization**: inline category editing on the transactions
+  page (user edits are never clobbered by rules), an uncategorized review
+  queue on the categories page grouping transactions by normalized merchant
+  with one-click categorize-all and optional rule creation, and id-based
+  bulk re-categorization.
+- **Test suite**: 120 pytest tests covering the importer, dedup, migration
+  idempotency, Plaid sync semantics, net-worth math, forecast projections,
+  and categorization endpoints.
+
+### Changed
+- `finance/routes.py` (1,149 lines) split into blueprints:
+  `dashboard`, `transactions`, `rules`, `accounts`, `forecast`, `plaid`.
+- Templates now extend a shared `base.html` with a common nav.
+- Categorization rules and manual balances are DB-backed; the rules API
+  no longer writes to config.yaml (YAML remains the first-run seed).
+- New dependencies: `plaid-python`, `python-dotenv` (see `.env.example`).
+
 ## [0.1.0.0] - 2026-05-04
 
 ### Added
