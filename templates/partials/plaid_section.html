@@ -1,1 +1,310 @@
 <!-- Plaid bank sync section (Wave 2b) -->
+<style>
+    .plaid-card {
+        margin-top: 32px;
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 20px 24px;
+    }
+
+    .plaid-card h2 {
+        color: #e2e8f0;
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    .plaid-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .plaid-subtitle {
+        color: #94a3b8;
+        font-size: 0.85rem;
+        margin-top: 4px;
+    }
+
+    .plaid-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .plaid-btn {
+        background: #3b82f6;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .plaid-btn:hover { background: #2563eb; }
+    .plaid-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+
+    .plaid-btn-secondary {
+        background: rgba(59, 130, 246, 0.15);
+        color: #93c5fd;
+    }
+
+    .plaid-btn-secondary:hover { background: rgba(59, 130, 246, 0.3); }
+
+    .plaid-setup {
+        margin-top: 16px;
+        color: #94a3b8;
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+
+    .plaid-setup code {
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 4px;
+        padding: 1px 6px;
+        font-size: 0.8rem;
+        color: #93c5fd;
+    }
+
+    .plaid-setup ol { margin: 8px 0 0 20px; }
+    .plaid-setup a { color: #60a5fa; }
+
+    .plaid-items { margin-top: 16px; }
+
+    .plaid-item-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 12px 0;
+        border-top: 1px solid #334155;
+    }
+
+    .plaid-item-name {
+        color: #e2e8f0;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .plaid-item-meta {
+        color: #64748b;
+        font-size: 0.8rem;
+        margin-top: 2px;
+    }
+
+    .plaid-item-error {
+        display: inline-block;
+        margin-top: 4px;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        background: rgba(239, 68, 68, 0.15);
+        color: #fca5a5;
+    }
+
+    .plaid-status-msg {
+        margin-top: 12px;
+        font-size: 0.85rem;
+        color: #94a3b8;
+    }
+
+    .plaid-status-msg.error { color: #fca5a5; }
+    .plaid-status-msg.ok { color: #86efac; }
+
+    .plaid-empty {
+        margin-top: 16px;
+        color: #64748b;
+        font-size: 0.85rem;
+    }
+</style>
+
+<div class="plaid-card" id="plaid-card">
+    <div class="plaid-card-header">
+        <div>
+            <h2>Bank sync (Plaid)</h2>
+            <p class="plaid-subtitle">Automatically pull transactions and balances from linked banks</p>
+        </div>
+        <div class="plaid-actions" id="plaid-actions" hidden>
+            <button class="plaid-btn" id="plaid-connect-btn">Connect a bank</button>
+            <button class="plaid-btn plaid-btn-secondary" id="plaid-sync-all-btn" hidden>Sync all</button>
+        </div>
+    </div>
+
+    <div class="plaid-setup" id="plaid-setup" hidden>
+        <p>Plaid isn't configured yet. To enable live bank sync:</p>
+        <ol>
+            <li>Sign up for a free Plaid account at <a href="https://dashboard.plaid.com/signup" target="_blank" rel="noopener">dashboard.plaid.com/signup</a> — the free Trial plan ("Personal use") covers about 10 institutions.</li>
+            <li>Copy <code>.env.example</code> to <code>.env</code> in the project root.</li>
+            <li>Fill in <code>PLAID_CLIENT_ID</code> and <code>PLAID_SECRET</code> from your Plaid dashboard (keep <code>PLAID_ENV=sandbox</code> to test, switch to <code>production</code> for real banks).</li>
+            <li>Restart the app.</li>
+        </ol>
+        <p style="margin-top: 8px;">Until then, CSV upload keeps everything working.</p>
+    </div>
+
+    <div class="plaid-items" id="plaid-items" hidden></div>
+    <div class="plaid-empty" id="plaid-empty" hidden>No banks linked yet. Click "Connect a bank" to get started.</div>
+    <div class="plaid-status-msg" id="plaid-status-msg" hidden></div>
+</div>
+
+<script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+<script>
+(function () {
+    var connectBtn = document.getElementById("plaid-connect-btn");
+    var syncAllBtn = document.getElementById("plaid-sync-all-btn");
+    var actionsEl = document.getElementById("plaid-actions");
+    var setupEl = document.getElementById("plaid-setup");
+    var itemsEl = document.getElementById("plaid-items");
+    var emptyEl = document.getElementById("plaid-empty");
+    var msgEl = document.getElementById("plaid-status-msg");
+
+    function showMessage(text, kind) {
+        msgEl.textContent = text;
+        msgEl.className = "plaid-status-msg" + (kind ? " " + kind : "");
+        msgEl.hidden = !text;
+    }
+
+    function postJSON(url, body) {
+        return fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body || {})
+        }).then(function (res) {
+            return res.json().then(function (data) {
+                if (!res.ok || data.status === "error") {
+                    throw new Error(data.message || ("Request failed (" + res.status + ")"));
+                }
+                return data;
+            });
+        });
+    }
+
+    function renderStatus(status) {
+        var configured = status.configured;
+        var items = status.items || [];
+
+        setupEl.hidden = configured;
+        actionsEl.hidden = !configured;
+        syncAllBtn.hidden = !(configured && items.length > 1);
+        emptyEl.hidden = !(configured && items.length === 0);
+        itemsEl.hidden = items.length === 0;
+        itemsEl.innerHTML = "";
+
+        items.forEach(function (item) {
+            var row = document.createElement("div");
+            row.className = "plaid-item-row";
+
+            var info = document.createElement("div");
+            var name = document.createElement("div");
+            name.className = "plaid-item-name";
+            name.textContent = item.institution_name;
+            info.appendChild(name);
+
+            var meta = document.createElement("div");
+            meta.className = "plaid-item-meta";
+            meta.textContent = item.account_count + " account" + (item.account_count === 1 ? "" : "s")
+                + " · last synced " + (item.last_synced_at ? item.last_synced_at + " UTC" : "never");
+            info.appendChild(meta);
+
+            if (item.last_error) {
+                var err = document.createElement("span");
+                err.className = "plaid-item-error";
+                err.textContent = item.needs_reconnect ? "Reconnect needed" : item.last_error;
+                info.appendChild(err);
+            }
+            row.appendChild(info);
+
+            var syncBtn = document.createElement("button");
+            syncBtn.className = "plaid-btn plaid-btn-secondary";
+            syncBtn.textContent = "Sync now";
+            syncBtn.addEventListener("click", function () {
+                runSync({ item_id: item.item_id }, syncBtn);
+            });
+            row.appendChild(syncBtn);
+
+            itemsEl.appendChild(row);
+        });
+    }
+
+    function refreshStatus() {
+        return fetch("/api/plaid/status")
+            .then(function (res) { return res.json(); })
+            .then(renderStatus)
+            .catch(function () {
+                showMessage("Could not load Plaid status.", "error");
+            });
+    }
+
+    function runSync(body, btn) {
+        var original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Syncing…";
+        showMessage("");
+        postJSON("/api/plaid/sync", body)
+            .then(function (data) {
+                var totals = (data.results || []).reduce(function (acc, r) {
+                    acc.added += r.added || 0;
+                    acc.errors += r.error ? 1 : 0;
+                    return acc;
+                }, { added: 0, errors: 0 });
+                if (totals.errors > 0) {
+                    showMessage("Sync finished with errors — see items below.", "error");
+                    return refreshStatus();
+                }
+                showMessage("Synced: " + totals.added + " new transaction(s). Reloading…", "ok");
+                setTimeout(function () { window.location.reload(); }, 800);
+            })
+            .catch(function (err) {
+                showMessage(err.message, "error");
+                refreshStatus();
+            })
+            .finally(function () {
+                btn.disabled = false;
+                btn.textContent = original;
+            });
+    }
+
+    function openPlaidLink() {
+        connectBtn.disabled = true;
+        showMessage("");
+        postJSON("/api/plaid/link-token")
+            .then(function (data) {
+                var handler = Plaid.create({
+                    token: data.link_token,
+                    onSuccess: function (publicToken, metadata) {
+                        var institution = (metadata && metadata.institution)
+                            ? metadata.institution.name : null;
+                        showMessage("Linking " + (institution || "bank") + "…");
+                        postJSON("/api/plaid/exchange", {
+                            public_token: publicToken,
+                            institution_name: institution
+                        })
+                            .then(function () {
+                                showMessage("Bank linked. Reloading…", "ok");
+                                setTimeout(function () { window.location.reload(); }, 800);
+                            })
+                            .catch(function (err) { showMessage(err.message, "error"); });
+                    },
+                    onExit: function (err) {
+                        if (err) {
+                            showMessage(err.display_message || err.error_message || "Link exited.", "error");
+                        }
+                    }
+                });
+                handler.open();
+            })
+            .catch(function (err) { showMessage(err.message, "error"); })
+            .finally(function () { connectBtn.disabled = false; });
+    }
+
+    connectBtn.addEventListener("click", openPlaidLink);
+    syncAllBtn.addEventListener("click", function () { runSync({}, syncAllBtn); });
+
+    refreshStatus();
+})();
+</script>

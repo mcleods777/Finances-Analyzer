@@ -1,1 +1,431 @@
 <!-- CSV upload section (Wave 2a) -->
+<section class="upload-section">
+    <div class="upload-section-header">
+        <h2>Import Transactions</h2>
+        <p class="upload-section-note">
+            Drop a CSV on an account below to import new transactions, or add a brand new account from a CSV file.
+        </p>
+    </div>
+
+    {% set uploadable = accounts | selectattr('has_mapping') | list %}
+    {% if uploadable %}
+    <div class="upload-accounts-grid">
+        {% for account in uploadable %}
+        <div class="upload-account-card" data-account-id="{{ account.id }}">
+            <div class="upload-account-card-header">
+                <span class="upload-account-name">{{ account.name }}</span>
+                <button type="button" class="upload-link-btn upload-imports-toggle" data-account-id="{{ account.id }}">
+                    Recent imports
+                </button>
+            </div>
+            <label class="upload-dropzone" data-account-id="{{ account.id }}">
+                <input type="file" accept=".csv" class="upload-file-input" data-account-id="{{ account.id }}" hidden>
+                <span class="upload-dropzone-text">Drop CSV here or click to browse</span>
+            </label>
+            <div class="upload-result" data-account-id="{{ account.id }}"></div>
+            <div class="upload-imports-list" data-account-id="{{ account.id }}" hidden></div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <button type="button" id="add-account-btn" class="upload-add-account-btn">+ Add account from CSV</button>
+
+    <div id="add-account-modal" class="upload-modal" hidden>
+        <div class="upload-modal-backdrop" id="add-account-modal-backdrop"></div>
+        <div class="upload-modal-panel">
+            <div class="upload-modal-header">
+                <h3>Add account from CSV</h3>
+                <button type="button" class="upload-modal-close" id="add-account-modal-close" aria-label="Close">&times;</button>
+            </div>
+
+            <div class="upload-modal-body">
+                <!-- Step 1: file picker -->
+                <div id="add-account-step-file">
+                    <label class="upload-dropzone" id="add-account-dropzone">
+                        <input type="file" accept=".csv" id="add-account-file-input" hidden>
+                        <span class="upload-dropzone-text">Drop CSV here or click to browse</span>
+                    </label>
+                    <div class="upload-result" id="add-account-preview-error"></div>
+                </div>
+
+                <!-- Step 2: mapping form (populated by JS after preview) -->
+                <div id="add-account-step-mapping" hidden>
+                    <div class="upload-preview-table-wrap">
+                        <table class="upload-preview-table" id="add-account-preview-table"></table>
+                    </div>
+
+                    <form id="add-account-form" class="upload-form">
+                        <div class="upload-form-row">
+                            <label>Account name
+                                <input type="text" name="name" id="add-account-name" required>
+                            </label>
+                            <label>Account type
+                                <select name="type" id="add-account-type" required>
+                                    <option value="checking">Checking</option>
+                                    <option value="savings">Savings</option>
+                                    <option value="credit">Credit card</option>
+                                    <option value="investment">Investment</option>
+                                    <option value="loan">Loan</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <div class="upload-form-row">
+                            <label>Date column
+                                <select name="date_col" id="add-account-date-col" required></select>
+                            </label>
+                            <label>Description column
+                                <select name="description_col" id="add-account-description-col" required></select>
+                            </label>
+                        </div>
+
+                        <div class="upload-form-row">
+                            <label>Amount column
+                                <select name="amount_col" id="add-account-amount-col">
+                                    <option value="">(use debit/credit instead)</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="upload-form-row">
+                            <label>Debit column
+                                <select name="debit_col" id="add-account-debit-col">
+                                    <option value="">(none)</option>
+                                </select>
+                            </label>
+                            <label>Credit column
+                                <select name="credit_col" id="add-account-credit-col">
+                                    <option value="">(none)</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <div class="upload-form-row">
+                            <label>Balance column (optional)
+                                <select name="balance_col" id="add-account-balance-col">
+                                    <option value="">(none)</option>
+                                </select>
+                            </label>
+                            <label>Date format
+                                <input type="text" name="date_format" id="add-account-date-format" placeholder="%m/%d/%Y">
+                            </label>
+                        </div>
+
+                        <div class="upload-form-row">
+                            <fieldset class="upload-sign-fieldset">
+                                <legend>Sign convention</legend>
+                                <label class="upload-radio-label">
+                                    <input type="radio" name="amount_sign" value="standard" checked>
+                                    Standard (charges negative)
+                                </label>
+                                <label class="upload-radio-label">
+                                    <input type="radio" name="amount_sign" value="inverted">
+                                    Inverted (charges positive)
+                                </label>
+                            </fieldset>
+                        </div>
+
+                        <div class="upload-result" id="add-account-submit-error"></div>
+
+                        <div class="upload-form-actions">
+                            <button type="button" class="upload-link-btn" id="add-account-back-btn">&larr; Choose a different file</button>
+                            <button type="submit" class="upload-submit-btn" id="add-account-submit-btn">Create account &amp; import</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .upload-section {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid #334155;
+    }
+
+    .upload-section-header h2 {
+        color: #f1f5f9;
+        font-size: 1.1rem;
+        margin-bottom: 4px;
+    }
+
+    .upload-section-note {
+        color: #94a3b8;
+        font-size: 0.85rem;
+        margin-bottom: 16px;
+    }
+
+    .upload-accounts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .upload-account-card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 14px;
+    }
+
+    .upload-account-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .upload-account-name {
+        color: #e2e8f0;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .upload-link-btn {
+        background: none;
+        border: none;
+        color: #93c5fd;
+        font-size: 0.78rem;
+        cursor: pointer;
+        padding: 2px 4px;
+    }
+
+    .upload-link-btn:hover {
+        text-decoration: underline;
+    }
+
+    .upload-dropzone {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 64px;
+        border: 1.5px dashed #475569;
+        border-radius: 6px;
+        cursor: pointer;
+        text-align: center;
+        padding: 10px;
+        transition: border-color 0.15s, background 0.15s;
+    }
+
+    .upload-dropzone:hover,
+    .upload-dropzone.upload-dragover {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.08);
+    }
+
+    .upload-dropzone-text {
+        color: #64748b;
+        font-size: 0.8rem;
+    }
+
+    .upload-result {
+        margin-top: 10px;
+        font-size: 0.8rem;
+    }
+
+    .upload-result:empty {
+        display: none;
+    }
+
+    .upload-result.ok {
+        color: #4ade80;
+    }
+
+    .upload-result.error {
+        color: #f87171;
+    }
+
+    .upload-result ul {
+        margin: 6px 0 0 18px;
+        padding: 0;
+        color: #fca5a5;
+    }
+
+    .upload-imports-list {
+        margin-top: 10px;
+        font-size: 0.78rem;
+        color: #94a3b8;
+    }
+
+    .upload-imports-list table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .upload-imports-list th,
+    .upload-imports-list td {
+        text-align: left;
+        padding: 4px 6px;
+        border-bottom: 1px solid #334155;
+    }
+
+    .upload-add-account-btn {
+        background: #3b82f6;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 9px 16px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .upload-add-account-btn:hover {
+        background: #2563eb;
+    }
+
+    /* Modal */
+    .upload-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .upload-modal[hidden] {
+        display: none;
+    }
+
+    .upload-modal-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.7);
+    }
+
+    .upload-modal-panel {
+        position: relative;
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        width: min(640px, 92vw);
+        max-height: 88vh;
+        overflow-y: auto;
+        padding: 20px;
+    }
+
+    .upload-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+
+    .upload-modal-header h3 {
+        color: #f1f5f9;
+        font-size: 1.05rem;
+    }
+
+    .upload-modal-close {
+        background: none;
+        border: none;
+        color: #94a3b8;
+        font-size: 1.4rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .upload-preview-table-wrap {
+        overflow-x: auto;
+        margin-bottom: 16px;
+        border: 1px solid #334155;
+        border-radius: 6px;
+    }
+
+    .upload-preview-table {
+        border-collapse: collapse;
+        font-size: 0.75rem;
+        width: 100%;
+    }
+
+    .upload-preview-table th,
+    .upload-preview-table td {
+        padding: 5px 8px;
+        border-bottom: 1px solid #334155;
+        white-space: nowrap;
+        color: #cbd5e1;
+    }
+
+    .upload-preview-table th {
+        background: #0f172a;
+        color: #94a3b8;
+    }
+
+    .upload-form-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+
+    .upload-form-row label {
+        flex: 1 1 200px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        color: #94a3b8;
+        font-size: 0.78rem;
+    }
+
+    .upload-form-row input,
+    .upload-form-row select {
+        background: #0f172a;
+        border: 1px solid #334155;
+        color: #e2e8f0;
+        border-radius: 5px;
+        padding: 6px 8px;
+        font-size: 0.85rem;
+    }
+
+    .upload-sign-fieldset {
+        border: 1px solid #334155;
+        border-radius: 6px;
+        padding: 8px 12px;
+        flex: 1 1 100%;
+    }
+
+    .upload-sign-fieldset legend {
+        color: #94a3b8;
+        font-size: 0.78rem;
+        padding: 0 4px;
+    }
+
+    .upload-radio-label {
+        display: inline-flex !important;
+        flex-direction: row !important;
+        align-items: center;
+        gap: 6px;
+        margin-right: 16px;
+        color: #cbd5e1 !important;
+        font-size: 0.82rem !important;
+    }
+
+    .upload-form-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 14px;
+    }
+
+    .upload-submit-btn {
+        background: #3b82f6;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 9px 16px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .upload-submit-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+</style>
+
+<script src="/static/js/accounts_upload.js"></script>

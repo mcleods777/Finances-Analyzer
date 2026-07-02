@@ -72,20 +72,27 @@ def compute_daily_balances(
     manual_balances_df: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """
-    Compute a running balance per account per day.
+    Compute a unified running balance per account per day.
 
-    For CSV-based accounts:
-    - If opening_balance is set in config, start from there.
-    - Otherwise, cumulative sum of transactions (assumes CSV is complete history).
+    Each account's balance for a given day is resolved with this precedence:
 
-    For manual balance accounts:
-    - Snapshots are forward-filled: balance stays at the last known value until
-      a new snapshot overrides it.
+    1. A balance_snapshot on/before that day (forward-filled) — snapshots are
+       ground truth (manual entry, Plaid balance check, bank statement, etc.)
+       and always win once they exist for a day.
+    2. Otherwise, the transaction-derived balance for that day: the
+       bank-reported running-balance column if the CSV/import provided one,
+       else a cumulative sum of transactions from an optional configured
+       opening balance.
+
+    This lets a single account carry both transaction history *and* periodic
+    snapshots (e.g. an account with imported transactions plus a couple of
+    manually-logged statement balances): days before the account's first
+    snapshot fall back to the transaction-derived trajectory, and every day
+    on/after a snapshot is anchored to it (forward-filled) instead of the
+    derived figure, which can drift from bank-reported truth over time.
 
     Returns DataFrame with columns: date, account_name, account_type, balance
     """
-    results = []
-
     # --- Determine the global date range across all data sources ---
     all_dates = []
     if not df.empty:
@@ -98,7 +105,10 @@ def compute_daily_balances(
 
     date_range = pd.date_range(min(all_dates), max(all_dates), freq="D")
 
-    # --- CSV-based (transaction) accounts ---
+    # --- Transaction-derived balances, per account ---
+    derived: dict[str, pd.Series] = {}
+    account_types: dict[str, str] = {}
+
     if not df.empty:
         opening_balances = {}
         for acct in config.accounts:
@@ -106,7 +116,7 @@ def compute_daily_balances(
                 opening_balances[acct.name] = acct.opening_balance
 
         for account_name, group in df.groupby("account_name"):
-            account_type = group["account_type"].iloc[0]
+            account_types[account_name] = group["account_type"].iloc[0]
 
             # Check if we have actual balance data from the CSV
             has_balance_col = group["raw_balance"].notna().any()
@@ -121,44 +131,60 @@ def compute_daily_balances(
                     .ffill()
                     .bfill()  # Fill days before the first transaction
                 )
-                balance = daily_balance
             else:
                 # Fallback: cumulative sum of transactions
                 daily = group.groupby("date")["amount"].sum().reindex(date_range, fill_value=0)
                 opening = opening_balances.get(account_name, 0)
-                balance = daily.cumsum() + opening
+                daily_balance = daily.cumsum() + opening
 
-            acct_df = pd.DataFrame(
-                {
-                    "date": date_range,
-                    "account_name": account_name,
-                    "account_type": account_type,
-                    "balance": balance.values,
-                }
-            )
-            results.append(acct_df)
+            derived[account_name] = daily_balance
 
-    # --- Manual balance (snapshot) accounts ---
+    # --- Snapshot (balance_snapshots) balances, per account ---
+    # "manual_balances_df" historically meant source='manual' only, but the
+    # merge logic here is source-agnostic: any balance_snapshots rows passed
+    # in (manual, plaid, csv-statement, ...) are treated the same way.
+    snapshot_filled: dict[str, pd.Series] = {}
+    snapshot_present: dict[str, pd.Series] = {}
+
     if manual_balances_df is not None and not manual_balances_df.empty:
         for account_name, group in manual_balances_df.groupby("account_name"):
             # Place snapshots on the date index, forward-fill between them
             snapshots = group.set_index("date")["balance"]
             # Drop duplicates keeping last (most recent entry for a given date)
             snapshots = snapshots[~snapshots.index.duplicated(keep="last")]
-            # Reindex to the full date range and forward-fill
-            daily_balance = snapshots.reindex(date_range).ffill()
-            # Rows before the first snapshot will be NaN — fill with 0
-            daily_balance = daily_balance.fillna(0)
+            forward_filled = snapshots.reindex(date_range).ffill()
+            # True from the first snapshot's date onward (that's "on/after
+            # their date" — forward-fill makes every subsequent day count).
+            snapshot_present[account_name] = forward_filled.notna()
+            snapshot_filled[account_name] = forward_filled
+            account_types.setdefault(account_name, "manual_balance")
 
-            acct_df = pd.DataFrame(
-                {
-                    "date": date_range,
-                    "account_name": account_name,
-                    "account_type": "manual_balance",
-                    "balance": daily_balance.values,
-                }
-            )
-            results.append(acct_df)
+    # --- Merge: snapshots win on/after their date; derived fills the rest ---
+    results = []
+    for account_name, account_type in account_types.items():
+        has_derived = account_name in derived
+        has_snapshot = account_name in snapshot_filled
+
+        if has_derived and has_snapshot:
+            balance = derived[account_name].copy()
+            has_snapshot_on_day = snapshot_present[account_name]
+            balance.loc[has_snapshot_on_day] = snapshot_filled[account_name].loc[has_snapshot_on_day]
+        elif has_snapshot:
+            # Snapshot-only account: no transaction history to fall back on,
+            # so pre-first-snapshot days are treated as 0 (unknown history).
+            balance = snapshot_filled[account_name].fillna(0)
+        else:
+            balance = derived[account_name]
+
+        acct_df = pd.DataFrame(
+            {
+                "date": date_range,
+                "account_name": account_name,
+                "account_type": account_type,
+                "balance": balance.values,
+            }
+        )
+        results.append(acct_df)
 
     if not results:
         return pd.DataFrame(columns=["date", "account_name", "account_type", "balance"])
@@ -168,13 +194,20 @@ def compute_daily_balances(
 
 def compute_net_worth_series(daily_balances: pd.DataFrame) -> pd.DataFrame:
     """
-    For each day, compute total net worth.
-    Credit card and loan balances are subtracted (they represent debt).
+    For each day, compute total net worth, split into assets vs liabilities.
 
-    Returns DataFrame with columns: date, net_worth, plus per-account columns.
+    Account balances are stored as the bank/account reports them; the sign
+    convention is applied here, by account type, for aggregation:
+    - credit_card / loan balances count as liabilities (their magnitude is
+      subtracted from net worth, and accumulated into `liabilities_total`).
+    - every other account type (checking, savings, investment,
+      manual_balance, ...) counts as an asset.
+
+    Returns DataFrame with columns: date, net_worth, assets_total,
+    liabilities_total, plus one column per account (original signed balance).
     """
     if daily_balances.empty:
-        return pd.DataFrame(columns=["date", "net_worth"])
+        return pd.DataFrame(columns=["date", "net_worth", "assets_total", "liabilities_total"])
 
     # Pivot: one column per account
     pivot = daily_balances.pivot_table(
@@ -191,6 +224,8 @@ def compute_net_worth_series(daily_balances: pd.DataFrame) -> pd.DataFrame:
 
     # Compute net worth: assets positive, debts negative
     net_worth = pd.Series(0.0, index=pivot.index)
+    assets_total = pd.Series(0.0, index=pivot.index)
+    liabilities_total = pd.Series(0.0, index=pivot.index)
     for col in pivot.columns:
         acct_type = type_lookup.get(col, "checking")
         if acct_type in NEGATIVE_BALANCE_TYPES:
@@ -198,12 +233,17 @@ def compute_net_worth_series(daily_balances: pd.DataFrame) -> pd.DataFrame:
             # A credit card with cumsum of transactions will have negative balance
             # (charges are negative after normalization). We take the absolute value
             # and subtract it.
-            net_worth -= pivot[col].abs()
+            liability_amount = pivot[col].abs()
+            liabilities_total += liability_amount
+            net_worth -= liability_amount
         else:
+            assets_total += pivot[col]
             net_worth += pivot[col]
 
     result = pivot.copy()
     result["net_worth"] = net_worth
+    result["assets_total"] = assets_total
+    result["liabilities_total"] = liabilities_total
     result = result.reset_index()
 
     return result

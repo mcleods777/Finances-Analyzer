@@ -31,6 +31,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadManualBalances();
 });
 
+async function updateNetWorthRange(range) {
+    // Update active button state
+    document.querySelectorAll('#nw-range-controls .chart-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.range === range);
+    });
+
+    try {
+        const data = await fetch(`/api/net-worth?range=${range}`).then(r => r.json());
+        renderNetWorthChart(data);
+    } catch (err) {
+        console.error('Failed to update net worth chart:', err);
+    }
+}
+
 async function updateSpendingChart(days) {
     // Update active button state
     document.querySelectorAll('.chart-controls .chart-btn').forEach(btn => {
@@ -801,6 +815,8 @@ async function loadManualBalances() {
     try {
         const entries = await fetch('/api/manual-balances').then(r => r.json());
 
+        renderQuickUpdatePanel(entries);
+
         if (!entries.length) {
             tbody.innerHTML = '<tr><td colspan="4" class="empty-msg">No manual entries yet</td></tr>';
             return;
@@ -826,6 +842,100 @@ async function loadManualBalances() {
     } catch (err) {
         console.error('Failed to load manual balances:', err);
         tbody.innerHTML = '<tr><td colspan="4" class="empty-msg">Failed to load history</td></tr>';
+    }
+}
+
+const STALE_THRESHOLD_DAYS = 30;
+
+function daysSince(dateStr) {
+    const then = new Date(dateStr + 'T00:00:00');
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return Math.round((now - then) / 86400000);
+}
+
+function renderQuickUpdatePanel(entries) {
+    const section = document.getElementById('mb-quick-update-section');
+    const grid = document.getElementById('mb-quick-grid');
+    if (!section || !grid) return;
+
+    if (!entries || !entries.length) {
+        section.style.display = 'none';
+        grid.innerHTML = '';
+        return;
+    }
+
+    // entries are sorted date DESC — first occurrence per account is the latest
+    const latestByAccount = new Map();
+    entries.forEach(entry => {
+        if (!latestByAccount.has(entry.account)) {
+            latestByAccount.set(entry.account, entry);
+        }
+    });
+
+    const accounts = Array.from(latestByAccount.values()).sort((a, b) => a.account.localeCompare(b.account));
+
+    section.style.display = 'block';
+    grid.innerHTML = accounts.map(entry => {
+        const age = daysSince(entry.date);
+        const isStale = age > STALE_THRESHOLD_DAYS;
+        const staleClass = isStale ? 'stale' : '';
+        const ageLabel = age <= 0 ? 'Today' : `${age} day${age === 1 ? '' : 's'} old`;
+        const bal = parseFloat(entry.balance);
+        const formatted = bal < 0
+            ? '-$' + Math.abs(bal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : '$' + bal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        return `<div class="mb-account-card">
+            <div class="mb-account-card-top">
+                <span class="mb-account-name" title="${escapeAttr(entry.account)}">${escapeHtml(entry.account)}</span>
+                <span class="mb-staleness ${staleClass}">${ageLabel}</span>
+            </div>
+            <div class="mb-account-card-balance">${formatted}<span class="mb-account-date">as of ${escapeHtml(entry.date)}</span></div>
+            <div class="mb-account-card-form">
+                <input type="number" step="0.01" class="mb-quick-input" placeholder="New balance"
+                       data-account="${escapeAttr(entry.account)}">
+                <button onclick="quickUpdateBalance('${escapeAttr(entry.account)}', this)">Update</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function quickUpdateBalance(account, btn) {
+    const grid = document.getElementById('mb-quick-grid');
+    const input = grid ? grid.querySelector(`.mb-quick-input[data-account="${CSS.escape(account)}"]`) : null;
+    if (!input) return;
+
+    const balance = parseFloat(input.value);
+    if (isNaN(balance)) {
+        alert('Enter a balance first.');
+        return;
+    }
+
+    const date = new Date().toISOString().split('T')[0];
+
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    try {
+        const resp = await fetch('/api/manual-balance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ account, date, balance }),
+        });
+        const result = await resp.json();
+
+        if (result.status === 'ok') {
+            location.reload();
+        } else {
+            alert('Save failed: ' + (result.message || 'Unknown error'));
+            btn.disabled = false;
+            btn.textContent = 'Update';
+        }
+    } catch (err) {
+        alert('Save failed: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = 'Update';
     }
 }
 

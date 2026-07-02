@@ -28,20 +28,43 @@ const ACCOUNT_LINE_COLORS = [
     '#38bdf8', '#e879f9', '#4ade80', '#f87171',
 ];
 
+let netWorthChartInstance = null;
+
+/**
+ * Render the net worth chart.
+ *
+ * `data` is the /api/net-worth response shape:
+ *   { labels, net_worth, assets, liabilities,
+ *     accounts: [{ name, type, is_liability, data }], stats }
+ *
+ * Dataset 0 is the Net Worth line (gradient-filled, colored by trend).
+ * Datasets 1-2 are Assets / Liabilities bands (liabilities plotted as a
+ * negative-valued area so it reads as a band below the x-axis).
+ * Remaining datasets are per-account lines, hidden by default and
+ * toggleable via the custom legend (liability accounts plotted negative
+ * to match the Liabilities band).
+ */
 function renderNetWorthChart(data) {
     const canvas = document.getElementById('netWorthChart');
-    if (!canvas || !data.labels.length) return;
+    if (!canvas || !data.labels || !data.labels.length) return;
 
-    let mainGradient = null;
+    if (netWorthChartInstance) {
+        netWorthChartInstance.destroy();
+        netWorthChartInstance = null;
+    }
 
-    const latestValue = data.datasets[0].data[data.datasets[0].data.length - 1];
-    const earliestValue = data.datasets[0].data[0];
+    const netWorth = data.net_worth || [];
+    const assets = data.assets || [];
+    const liabilities = (data.liabilities || []).map(v => -Math.abs(v));
+
+    const latestValue = netWorth[netWorth.length - 1];
+    const earliestValue = netWorth[0];
     const isPositiveTrend = latestValue >= earliestValue;
     const trendColor = isPositiveTrend ? '#22c55e' : '#ef4444';
 
     const datasets = [{
-        label: data.datasets[0].label,
-        data: data.datasets[0].data,
+        label: 'Net Worth',
+        data: netWorth,
         borderColor: trendColor,
         backgroundColor: 'transparent',
         fill: true,
@@ -53,14 +76,46 @@ function renderNetWorthChart(data) {
         pointHoverBorderWidth: 2,
         pointHitRadius: 20,
         borderWidth: 2.5,
+        order: 0,
     }];
 
-    // Per-account lines (hidden by default)
-    for (let i = 1; i < data.datasets.length; i++) {
-        const color = ACCOUNT_LINE_COLORS[(i - 1) % ACCOUNT_LINE_COLORS.length];
+    if (assets.length) {
         datasets.push({
-            label: data.datasets[i].label,
-            data: data.datasets[i].data,
+            label: 'Assets',
+            data: assets,
+            borderColor: 'rgba(74, 222, 128, 0.85)',
+            backgroundColor: 'rgba(74, 222, 128, 0.08)',
+            borderWidth: 1.5,
+            fill: 'origin',
+            tension: 0.3,
+            pointRadius: 0,
+            pointHitRadius: 15,
+            order: 2,
+        });
+    }
+
+    if (liabilities.length) {
+        datasets.push({
+            label: 'Liabilities',
+            data: liabilities,
+            borderColor: 'rgba(248, 113, 113, 0.85)',
+            backgroundColor: 'rgba(248, 113, 113, 0.08)',
+            borderWidth: 1.5,
+            fill: 'origin',
+            tension: 0.3,
+            pointRadius: 0,
+            pointHitRadius: 15,
+            order: 2,
+        });
+    }
+
+    // Per-account lines (hidden by default), toggleable via legend
+    const accounts = data.accounts || [];
+    accounts.forEach((acct, i) => {
+        const color = ACCOUNT_LINE_COLORS[i % ACCOUNT_LINE_COLORS.length];
+        datasets.push({
+            label: acct.name,
+            data: acct.data,
             borderColor: color,
             backgroundColor: color + '11',
             borderWidth: 1.8,
@@ -74,8 +129,11 @@ function renderNetWorthChart(data) {
             pointHoverBorderWidth: 2,
             pointHitRadius: 15,
             hidden: true,
+            order: 3,
         });
-    }
+    });
+
+    let mainGradient = null;
 
     // Use let so the filter closure can reference the chart after construction
     let nwChart = null;
@@ -140,7 +198,10 @@ function renderNetWorthChart(data) {
                             let name = ctx.dataset.label;
                             const idMatch = name.match(/[\s_-]+\d{6,}/);
                             if (idMatch) name = name.substring(0, idMatch.index);
-                            return ' ' + name + ':  ' + formatCurrency(ctx.parsed.y);
+                            const val = ['Liabilities'].includes(ctx.dataset.label)
+                                ? Math.abs(ctx.parsed.y)
+                                : ctx.parsed.y;
+                            return ' ' + name + ':  ' + formatCurrency(val);
                         },
                     },
                     filter: (item) => {
@@ -195,27 +256,29 @@ function renderNetWorthChart(data) {
         }]
     });
 
+    netWorthChartInstance = nwChart;
+
     // Build custom HTML legend with toggle pills
-    buildNetWorthLegend(nwChart, data);
+    buildNetWorthLegend(nwChart);
+    updateNetWorthHeadline(data.stats);
 }
 
-function buildNetWorthLegend(chart, data) {
+function buildNetWorthLegend(chart) {
     const container = document.getElementById('netWorthLegend');
     if (!container) return;
     container.innerHTML = '';
 
-    data.datasets.forEach((ds, i) => {
-        const isMain = i === 0;
-        const color = isMain
-            ? chart.data.datasets[0].borderColor
-            : ACCOUNT_LINE_COLORS[(i - 1) % ACCOUNT_LINE_COLORS.length];
+    chart.data.datasets.forEach((ds, i) => {
+        const color = ds.borderColor;
 
-        // Get the latest (most recent) value for this dataset
-        const latestVal = ds.data[ds.data.length - 1];
+        // Get the latest (most recent) value for this dataset. Liabilities
+        // (and liability accounts) are plotted negative for the band visual —
+        // show the legend value as a positive debt magnitude.
+        const rawVal = ds.data[ds.data.length - 1];
+        const latestVal = ds.label === 'Liabilities' ? Math.abs(rawVal) : rawVal;
 
         // Clean up label: remove long account IDs after name
         let displayName = ds.label;
-        // Truncate at first occurrence of a long number sequence
         const idMatch = displayName.match(/[\s_-]+\d{6,}/);
         if (idMatch) {
             displayName = displayName.substring(0, idMatch.index);
@@ -223,7 +286,7 @@ function buildNetWorthLegend(chart, data) {
 
         const item = document.createElement('div');
         item.className = 'nw-legend-item';
-        item.classList.add(chart.data.datasets[i].hidden ? 'inactive' : 'active');
+        item.classList.add(ds.hidden ? 'inactive' : 'active');
         item.style.setProperty('--legend-color', color + '55');
         item.style.setProperty('--legend-bg', color + '15');
 
@@ -255,6 +318,31 @@ function buildNetWorthLegend(chart, data) {
 
         container.appendChild(item);
     });
+}
+
+function updateNetWorthHeadline(stats) {
+    if (!stats) return;
+
+    const valueEl = document.getElementById('nw-headline-value');
+    if (valueEl) valueEl.textContent = formatCurrency(stats.current_net_worth || 0);
+
+    const assetsEl = document.getElementById('nw-assets-total');
+    if (assetsEl) assetsEl.textContent = formatCurrency(stats.total_assets || 0);
+
+    const liabilitiesEl = document.getElementById('nw-liabilities-total');
+    if (liabilitiesEl) liabilitiesEl.textContent = formatCurrency(stats.total_liabilities || 0);
+
+    const setChangePill = (id, change, pct, label) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const sign = change >= 0 ? '+' : '-';
+        el.textContent = `${label} ${sign}${formatCurrency(Math.abs(change))} (${pct >= 0 ? '+' : ''}${pct}%)`;
+        el.classList.remove('positive', 'negative');
+        el.classList.add(change >= 0 ? 'positive' : 'negative');
+    };
+
+    setChangePill('nw-change-30d', stats.change_30d || 0, stats.change_30d_pct || 0, '30d');
+    setChangePill('nw-change-90d', stats.change_90d || 0, stats.change_90d_pct || 0, '90d');
 }
 
 function renderBiweeklyChart(data) {

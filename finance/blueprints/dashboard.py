@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 
+import pandas as pd
 import yaml
 from flask import Blueprint, jsonify, render_template, request
 
@@ -12,6 +13,15 @@ from finance.manual_balances import get_manual_account_names
 logger = logging.getLogger(__name__)
 
 dashboard_bp = Blueprint("dashboard", __name__)
+
+# Account types whose balances represent debt owed (subtracted from net worth).
+LIABILITY_TYPES = {"credit_card", "loan"}
+
+# Net-worth-series columns that are aggregates, not individual accounts.
+_NET_WORTH_AGGREGATE_COLUMNS = {"date", "net_worth", "assets_total", "liabilities_total"}
+
+# Time-range selector windows, in days, for the /api/net-worth `range` param.
+_NET_WORTH_RANGE_DAYS = {"3m": 90, "6m": 180, "1y": 365}
 
 
 @dashboard_bp.route("/")
@@ -31,33 +41,117 @@ def dashboard():
     )
 
 
+def _net_worth_empty_response() -> dict:
+    return {
+        "labels": [],
+        "net_worth": [],
+        "assets": [],
+        "liabilities": [],
+        "accounts": [],
+        "stats": {
+            "current_net_worth": 0,
+            "total_assets": 0,
+            "total_liabilities": 0,
+            "change_30d": 0,
+            "change_30d_pct": 0,
+            "change_90d": 0,
+            "change_90d_pct": 0,
+        },
+    }
+
+
+def _net_worth_change(nw: pd.DataFrame, days: int) -> dict:
+    """Change in net_worth over the trailing `days`, as of the series' latest date."""
+    if nw.empty:
+        return {"change": 0, "pct": 0}
+    current = float(nw["net_worth"].iloc[-1])
+    cutoff = nw["date"].max() - pd.Timedelta(days=days)
+    past = nw[nw["date"] <= cutoff]
+    if past.empty:
+        return {"change": 0, "pct": 0}
+    old = float(past["net_worth"].iloc[-1])
+    change = current - old
+    pct = round(change / abs(old) * 100, 1) if old != 0 else 0
+    return {"change": round(change, 2), "pct": pct}
+
+
 @dashboard_bp.route("/api/net-worth")
 def api_net_worth():
+    """
+    Net worth over time: total net worth, assets/liabilities bands, and
+    per-account series (each tagged with its account type), plus headline
+    stats for the dashboard's net worth card.
+
+    Query params:
+        range: 3m | 6m | 1y | all (default: all) — restricts the returned
+               labels/series to a trailing window; `stats` are always
+               computed against the full series regardless of `range`.
+    """
     nw = get_cache().get("net_worth_series")
     if nw is None or nw.empty:
-        return jsonify({"labels": [], "datasets": []})
+        return jsonify(_net_worth_empty_response())
 
-    labels = [d.strftime("%Y-%m-%d") for d in nw["date"]]
+    # account_name -> most recently known account type (checking, savings,
+    # credit_card, loan, investment, manual_balance, ...).
+    daily_bal = get_cache().get("daily_balances")
+    type_lookup: dict[str, str] = {}
+    if daily_bal is not None and not daily_bal.empty:
+        type_lookup = (
+            daily_bal[["account_name", "account_type"]]
+            .drop_duplicates()
+            .set_index("account_name")["account_type"]
+            .to_dict()
+        )
 
-    datasets = [
-        {
-            "label": "Net Worth",
-            "data": [round(float(v), 2) for v in nw["net_worth"]],
-        }
-    ]
+    range_param = request.args.get("range", "all")
+    nw_view = nw
+    if range_param in _NET_WORTH_RANGE_DAYS:
+        cutoff = nw["date"].max() - pd.Timedelta(days=_NET_WORTH_RANGE_DAYS[range_param])
+        nw_view = nw[nw["date"] >= cutoff]
 
-    # Add per-account lines
+    labels = [d.strftime("%Y-%m-%d") for d in nw_view["date"]]
+
+    accounts = []
     for col in nw.columns:
-        if col in ("date", "net_worth"):
+        if col in _NET_WORTH_AGGREGATE_COLUMNS:
             continue
-        datasets.append(
+        acct_type = type_lookup.get(col, "checking")
+        is_liability = acct_type in LIABILITY_TYPES
+        # Report liability account balances as positive debt magnitudes so
+        # the front end doesn't need to know the sign convention.
+        series = nw_view[col].abs() if is_liability else nw_view[col]
+        accounts.append(
             {
-                "label": col,
-                "data": [round(float(v), 2) for v in nw[col]],
+                "name": col,
+                "type": acct_type,
+                "is_liability": is_liability,
+                "data": [round(float(v), 2) for v in series],
             }
         )
 
-    return jsonify({"labels": labels, "datasets": datasets})
+    change_30d = _net_worth_change(nw, 30)
+    change_90d = _net_worth_change(nw, 90)
+
+    stats = {
+        "current_net_worth": round(float(nw["net_worth"].iloc[-1]), 2),
+        "total_assets": round(float(nw["assets_total"].iloc[-1]), 2) if "assets_total" in nw.columns else 0,
+        "total_liabilities": round(float(nw["liabilities_total"].iloc[-1]), 2) if "liabilities_total" in nw.columns else 0,
+        "change_30d": change_30d["change"],
+        "change_30d_pct": change_30d["pct"],
+        "change_90d": change_90d["change"],
+        "change_90d_pct": change_90d["pct"],
+    }
+
+    return jsonify(
+        {
+            "labels": labels,
+            "net_worth": [round(float(v), 2) for v in nw_view["net_worth"]],
+            "assets": [round(float(v), 2) for v in nw_view["assets_total"]] if "assets_total" in nw_view.columns else [],
+            "liabilities": [round(float(v), 2) for v in nw_view["liabilities_total"]] if "liabilities_total" in nw_view.columns else [],
+            "accounts": accounts,
+            "stats": stats,
+        }
+    )
 
 
 @dashboard_bp.route("/api/biweekly-spending")

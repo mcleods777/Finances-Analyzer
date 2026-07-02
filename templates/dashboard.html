@@ -919,6 +919,184 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Net Worth Headline */
+        .nw-headline {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .nw-headline-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            letter-spacing: -0.02em;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .nw-headline-changes {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nw-change-pill {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-variant-numeric: tabular-nums;
+            background: rgba(148, 163, 184, 0.1);
+            color: #94a3b8;
+        }
+
+        .nw-change-pill.positive {
+            color: #4ade80;
+            background: rgba(74, 222, 128, 0.12);
+        }
+
+        .nw-change-pill.negative {
+            color: #f87171;
+            background: rgba(248, 113, 113, 0.12);
+        }
+
+        .nw-headline-sub {
+            display: flex;
+            gap: 18px;
+            width: 100%;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .nw-headline-sub .nw-assets-value {
+            color: #4ade80;
+            font-weight: 600;
+        }
+
+        .nw-headline-sub .nw-liabilities-value {
+            color: #f87171;
+            font-weight: 600;
+        }
+
+        #netWorthChart {
+            max-height: 340px;
+        }
+
+        /* Manual balance quick-update cards */
+        .mb-quick-update-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .mb-quick-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .mb-account-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 12px 14px;
+        }
+
+        .mb-account-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .mb-account-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .mb-staleness {
+            flex-shrink: 0;
+            font-size: 0.68rem;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 10px;
+            color: #94a3b8;
+            background: rgba(148, 163, 184, 0.12);
+            white-space: nowrap;
+        }
+
+        .mb-staleness.stale {
+            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.12);
+        }
+
+        .mb-account-card-balance {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-bottom: 10px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .mb-account-date {
+            font-size: 0.72rem;
+            font-weight: 400;
+            color: #64748b;
+            margin-left: 6px;
+        }
+
+        .mb-account-card-form {
+            display: flex;
+            gap: 6px;
+        }
+
+        .mb-quick-input {
+            flex: 1;
+            min-width: 0;
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #f1f5f9;
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            outline: none;
+        }
+
+        .mb-quick-input:focus {
+            border-color: #3b82f6;
+        }
+
+        .mb-account-card-form button {
+            background: #334155;
+            color: #e2e8f0;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .mb-account-card-form button:hover {
+            background: #3b82f6;
+        }
+
+        .mb-account-card-form button:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
     </style>
 {% endblock %}
 
@@ -1085,6 +1263,14 @@
             <span class="toggle-icon" id="manual-toggle">+</span>
         </div>
         <div class="manual-balance-content" id="manual-balance-content" style="display: none;">
+            <!-- Quick Update: last known balance + staleness per manual/investment account -->
+            <div class="mb-quick-update-section" id="mb-quick-update-section" style="display: none;">
+                <div class="mb-quick-update-title">Update Balances</div>
+                <div class="mb-quick-grid" id="mb-quick-grid">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
             <form id="manual-balance-form" onsubmit="submitManualBalance(event)">
                 <div class="form-row">
                     <div class="form-group">
@@ -1212,7 +1398,26 @@ Fidelity Roth IRA, 2024-04-01, 18750.00"></textarea>
 
     <!-- Charts -->
     <div class="chart-container">
-        <h2>Net Worth Over Time</h2>
+        <div class="chart-header">
+            <h2>Net Worth</h2>
+            <div class="chart-controls" id="nw-range-controls">
+                <button class="chart-btn" data-range="3m" onclick="updateNetWorthRange('3m')">3M</button>
+                <button class="chart-btn" data-range="6m" onclick="updateNetWorthRange('6m')">6M</button>
+                <button class="chart-btn" data-range="1y" onclick="updateNetWorthRange('1y')">1Y</button>
+                <button class="chart-btn active" data-range="all" onclick="updateNetWorthRange('all')">All</button>
+            </div>
+        </div>
+        <div class="nw-headline">
+            <div class="nw-headline-value" id="nw-headline-value">—</div>
+            <div class="nw-headline-changes">
+                <span class="nw-change-pill" id="nw-change-30d">30d —</span>
+                <span class="nw-change-pill" id="nw-change-90d">90d —</span>
+            </div>
+            <div class="nw-headline-sub">
+                <span>Assets <span class="nw-assets-value" id="nw-assets-total">—</span></span>
+                <span>Liabilities <span class="nw-liabilities-value" id="nw-liabilities-total">—</span></span>
+            </div>
+        </div>
         <div id="netWorthLegend" class="nw-legend"></div>
         <canvas id="netWorthChart"></canvas>
     </div>
