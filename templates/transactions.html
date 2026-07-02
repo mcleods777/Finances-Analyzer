@@ -94,6 +94,18 @@
             opacity: 0.8;
         }
 
+        .cat-cell {
+            cursor: pointer;
+        }
+
+        .cat-cell .cat-display {
+            display: inline-block;
+        }
+
+        .cat-edit-input {
+            background-color: #0f172a;
+        }
+
         .badge-income {
             background-color: rgba(74, 222, 128, 0.2);
             color: #4ade80;
@@ -1048,6 +1060,12 @@
                 {% set active_cats = current_category.split(',') if current_category else [] %}
                 {% set active_accts = current_account.split(',') if current_account else [] %}
 
+                <datalist id="allCategoriesDatalist">
+                    {% for sub in all_subcategories %}
+                    <option value="{{ sub }}">
+                    {% endfor %}
+                </datalist>
+
                 <div class="filter-banner" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                         {% if filter_start and filter_end %}
@@ -1315,7 +1333,7 @@
                             onclick="toggleTxDetail(event, {{ loop.index }})">
                             <td style="text-align: center;" onclick="event.stopPropagation();">
                                 <input type="checkbox" class="tx-checkbox" value="{{ t.description }}"
-                                    onclick="updateBulkBar()">
+                                    data-txn-id="{{ t.id if t.id is not none else '' }}" onclick="updateBulkBar()">
                             </td>
                             <td style="white-space: nowrap;">
                                 {{ t.date.strftime('%b %d, %Y') }}
@@ -1339,15 +1357,18 @@
                                     class="category-badge badge-{{ t.category }}" onclick="event.stopPropagation();">{{
                                     t.category }}</a>
                             </td>
-                            <td>
-                                {% if t.subcategory %}
-                                <a href="/transactions?category={{ t.subcategory | urlencode }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
-                                    class="category-badge subcategory-badge" data-subcategory="{{ t.subcategory }}"
-                                    onclick="event.stopPropagation();">{{
-                                    t.subcategory }}</a>
-                                {% else %}
-                                <span style="color: #64748b;">-</span>
-                                {% endif %}
+                            <td class="cat-cell" data-txn-id="{{ t.id if t.id is not none else '' }}"
+                                onclick="event.stopPropagation();">
+                                <span class="cat-display" onclick="startCategoryEdit(this)" title="Click to edit category">
+                                    {% if t.subcategory %}
+                                    <a href="/transactions?category={{ t.subcategory | urlencode }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}"
+                                        class="category-badge subcategory-badge" data-subcategory="{{ t.subcategory }}"
+                                        onclick="event.stopPropagation(); startCategoryEdit(this.parentElement); return false;">{{
+                                        t.subcategory }}</a>
+                                    {% else %}
+                                    <span style="color: #64748b;">-</span>
+                                    {% endif %}
+                                </span>
                             </td>
                             <td>{{ t.account_name }}</td>
                             <td style="text-align: right;"
@@ -1645,20 +1666,124 @@
         });
 
         async function applyBulkCategory() {
-            const category = document.getElementById("bulkCategoryInput").value;
+            const category = document.getElementById("bulkCategoryInput").value.trim();
             if (!category) {
                 alert("Please select or enter a category.");
                 return;
             }
 
             const checked = document.querySelectorAll(".tx-checkbox:checked");
-            const descriptions = Array.from(checked).map(cb => cb.value);
+            const ids = Array.from(checked)
+                .map(cb => parseInt(cb.dataset.txnId, 10))
+                .filter(id => !isNaN(id));
 
-            if (descriptions.length === 0) return;
+            if (ids.length === 0) return;
 
-            if (confirm(`Categorize ${descriptions.length} transactions as '${category}'?`)) {
-                await submitRule(descriptions, category);
+            if (confirm(`Categorize ${ids.length} transactions as '${category}'?`)) {
+                await submitBulkCategory(ids, category);
             }
+        }
+
+        async function submitBulkCategory(ids, category) {
+            try {
+                const response = await fetch('/api/transactions/bulk-category', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids, category }),
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'ok') {
+                    window.location.reload();
+                } else {
+                    alert('Error categorizing transactions: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to bulk categorize.');
+            }
+        }
+
+        // --- Inline single-row category edit ---
+
+        function startCategoryEdit(displaySpan) {
+            const cell = displaySpan.closest('.cat-cell');
+            if (!cell || cell.querySelector('.cat-edit-input')) return;
+
+            const txnId = cell.dataset.txnId;
+            if (!txnId) {
+                alert('Could not resolve this transaction — try reloading the page.');
+                return;
+            }
+
+            const currentValue = displaySpan.getAttribute('data-current') ||
+                (displaySpan.querySelector('.subcategory-badge')?.textContent.trim() || '');
+            const originalHtml = displaySpan.outerHTML;
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-input cat-edit-input';
+            input.setAttribute('list', 'allCategoriesDatalist');
+            input.value = currentValue;
+            input.style.cssText = 'width: 140px; padding: 4px 8px; font-size: 0.85rem;';
+
+            cell.innerHTML = '';
+            cell.appendChild(input);
+            input.focus();
+            input.select();
+
+            let settled = false;
+            const restore = () => { cell.innerHTML = originalHtml; };
+
+            const cancel = () => {
+                if (settled) return;
+                settled = true;
+                restore();
+            };
+
+            const commit = async () => {
+                if (settled) return;
+                const value = input.value.trim();
+                if (!value || value === currentValue) {
+                    cancel();
+                    return;
+                }
+                settled = true;
+                input.disabled = true;
+                try {
+                    const response = await fetch(`/api/transactions/${txnId}/category`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ category: value }),
+                    });
+                    const result = await response.json();
+                    if (result.status === 'ok') {
+                        window.location.reload();
+                    } else {
+                        alert('Error saving category: ' + result.message);
+                        restore();
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Failed to save category.');
+                    restore();
+                }
+            };
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    commit();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancel();
+                }
+            });
+            input.addEventListener('blur', () => {
+                // Small delay so a datalist-option click still registers before we bail out
+                setTimeout(commit, 150);
+            });
         }
 
         // --- Recurring Bills Logic ---

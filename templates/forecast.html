@@ -5,33 +5,305 @@
 {% block head %}
     <style>
         .forecast-container {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
             padding: 20px;
         }
 
-        .forecast-placeholder {
-            background: #1e293b;
-            border: 1px dashed #334155;
-            border-radius: 12px;
-            padding: 60px 24px;
-            text-align: center;
-            color: #94a3b8;
+        .forecast-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 20px;
         }
 
-        .forecast-placeholder h2 {
+        .forecast-summary-cards {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .forecast-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 16px 20px;
+            min-width: 200px;
+        }
+
+        .forecast-card h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .forecast-card .value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .forecast-card.warning {
+            border-color: #7f1d1d;
+            background: rgba(127, 29, 29, 0.2);
+        }
+
+        .forecast-card.warning .value {
+            color: #f87171;
+        }
+
+        .horizon-selector {
+            display: flex;
+            gap: 4px;
+        }
+
+        .horizon-btn {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .horizon-btn:hover {
+            background: #1e293b;
+            border-color: #475569;
             color: #e2e8f0;
-            margin-bottom: 8px;
+        }
+
+        .horizon-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .calendar-nav button {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #e2e8f0;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .calendar-nav button:hover:not(:disabled) {
+            background: #334155;
+        }
+
+        .calendar-nav button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .calendar-nav h2 {
+            font-size: 1.1rem;
+            color: #f1f5f9;
+            font-weight: 600;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            margin-bottom: 24px;
+        }
+
+        .calendar-weekday {
+            text-align: center;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            padding-bottom: 4px;
+        }
+
+        .calendar-day {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            min-height: 96px;
+            padding: 6px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .calendar-day.outside-month {
+            opacity: 0.35;
+        }
+
+        .calendar-day.today {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+
+        .calendar-day.negative {
+            background: rgba(127, 29, 29, 0.3);
+            border-color: #7f1d1d;
+        }
+
+        .calendar-day .day-number {
+            font-size: 0.78rem;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .calendar-day .day-events {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow: hidden;
+        }
+
+        .event-chip {
+            font-size: 0.68rem;
+            padding: 1px 5px;
+            border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .event-chip.income {
+            background: rgba(74, 222, 128, 0.15);
+            color: #4ade80;
+        }
+
+        .event-chip.bill {
+            background: rgba(248, 113, 113, 0.15);
+            color: #f87171;
+        }
+
+        .event-chip.temporary {
+            background: rgba(192, 132, 252, 0.18);
+            color: #c084fc;
+        }
+
+        .calendar-day .day-balance {
+            margin-top: auto;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .calendar-day.negative .day-balance {
+            color: #f87171;
+        }
+
+        .monthly-summary-strip {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .monthly-summary-item {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px 14px;
+            min-width: 150px;
+            flex-shrink: 0;
+        }
+
+        .monthly-summary-item .month-label {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .monthly-summary-item .month-net {
+            font-size: 0.95rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .monthly-summary-item .month-net.positive {
+            color: #4ade80;
+        }
+
+        .monthly-summary-item .month-net.negative {
+            color: #f87171;
+        }
+
+        .monthly-summary-item .month-detail {
+            font-size: 0.72rem;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .forecast-loading,
+        .forecast-empty {
+            color: #94a3b8;
+            text-align: center;
+            padding: 40px;
+        }
+
+        @media (max-width: 700px) {
+            .calendar-day {
+                min-height: 64px;
+                padding: 4px;
+            }
+
+            .event-chip {
+                font-size: 0.6rem;
+            }
         }
     </style>
 {% endblock %}
 
 {% block content %}
     <div class="forecast-container">
-        <h1>Cash-Flow Forecast</h1>
-        <div class="forecast-placeholder" style="margin-top: 16px;">
-            <h2>Coming soon</h2>
-            <p>A calendar view projecting your balances forward from recurring bills and income.</p>
+        <div class="forecast-header">
+            <div>
+                <h1>Cash-Flow Forecast</h1>
+                <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 4px;">Projected daily balance from recurring bills, paychecks, and one-off expenses</p>
+            </div>
+            <div class="horizon-selector" id="horizon-selector">
+                <button class="horizon-btn" data-horizon="30">30d</button>
+                <button class="horizon-btn active" data-horizon="90">90d</button>
+                <button class="horizon-btn" data-horizon="180">180d</button>
+                <button class="horizon-btn" data-horizon="365">365d</button>
+            </div>
+        </div>
+
+        <div class="forecast-summary-cards">
+            <div class="forecast-card">
+                <h3>Starting Balance</h3>
+                <div class="value" id="starting-balance-value">—</div>
+            </div>
+            <div class="forecast-card" id="min-balance-card">
+                <h3>Lowest Point</h3>
+                <div class="value" id="min-balance-value">—</div>
+            </div>
+        </div>
+
+        <div id="forecast-body">
+            <div class="forecast-loading">Loading forecast…</div>
         </div>
     </div>
+
+    <script src="/static/js/forecast.js"></script>
 {% endblock %}

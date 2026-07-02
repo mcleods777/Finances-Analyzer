@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 
 import pandas as pd
 import yaml
@@ -14,6 +15,20 @@ from finance.importer import reapply_rules
 logger = logging.getLogger(__name__)
 
 rules_bp = Blueprint("rules", __name__)
+
+_MERCHANT_TOKEN_RE = re.compile(r"[a-zA-Z]{3,}")
+
+
+def normalize_merchant(description: str) -> str:
+    """
+    Normalize a transaction description into a merchant grouping key for the
+    uncategorized review queue: lowercase alphabetic tokens of length >= 3,
+    whitespace-joined. This naturally drops digits, dates, store/reference
+    codes, and punctuation without needing bespoke strip rules, e.g.
+    "AMAZON MKTPL*2K3J7" -> "amazon mktpl".
+    """
+    tokens = _MERCHANT_TOKEN_RE.findall(str(description).lower())
+    return " ".join(tokens)
 
 
 @rules_bp.route("/rules")
@@ -65,7 +80,129 @@ def categories_page():
     # Sort categories: Uncategorized last, then by transaction count descending
     categories.sort(key=lambda c: (c["name"] == "Uncategorized", -c["transaction_count"]))
 
-    return render_template("categories.html", categories=categories, error=None)
+    category_names = sorted(c["name"] for c in categories if c["name"] != "Uncategorized")
+
+    return render_template(
+        "categories.html", categories=categories, category_names=category_names, error=None
+    )
+
+
+# --- Uncategorized review queue API (DB-backed) ---
+
+
+@rules_bp.route("/api/uncategorized-groups", methods=["GET"])
+def api_uncategorized_groups():
+    """
+    Group uncategorized, non-user-edited transactions by normalized merchant
+    for the review queue on /categories. Excludes transfers (they don't need
+    subcategories, same convention as the /transactions uncategorized filter).
+    """
+    try:
+        conn = get_db_connection()
+        try:
+            rows = conn.execute(
+                "SELECT t.description, t.amount FROM transactions t "
+                "JOIN accounts a ON a.id = t.account_id "
+                "WHERE a.active = 1 AND t.user_edited = 0 "
+                "AND (t.category IS NULL OR t.category = '') "
+                "AND t.txn_type != 'transfer'"
+            ).fetchall()
+        finally:
+            conn.close()
+
+        groups: dict[str, dict] = {}
+        for row in rows:
+            key = normalize_merchant(row["description"])
+            if not key:
+                continue
+            g = groups.setdefault(
+                key, {"keyword": key, "count": 0, "total_amount": 0.0, "samples": []}
+            )
+            g["count"] += 1
+            g["total_amount"] += float(row["amount"])
+            if row["description"] not in g["samples"] and len(g["samples"]) < 5:
+                g["samples"].append(row["description"])
+
+        result = sorted(groups.values(), key=lambda g: -g["count"])
+        for g in result:
+            g["total_amount"] = round(g["total_amount"], 2)
+
+        return jsonify({"groups": result})
+
+    except Exception as e:
+        logger.exception("Failed to load uncategorized groups")
+        return jsonify({"error": str(e)}), 500
+
+
+@rules_bp.route("/api/categorize-group", methods=["POST"])
+def api_categorize_group():
+    """
+    Categorize a merchant group surfaced by the uncategorized review queue.
+    Body: { "keyword": "amazon mktpl", "category": "Shopping", "create_rule": true }
+
+    create_rule=true: inserts a categorization_rules row (bumped to the
+    highest priority, mirroring api_save_rule) and reapplies rules DB-wide
+    via reapply_rules() -- which already skips user_edited=1 rows -- so the
+    new rule also catches future imports. user_edited stays 0 on affected
+    rows since they were categorized by a rule, not a manual edit.
+
+    create_rule=false: one-off bulk update. Only touches transactions that
+    are still uncategorized and non-user-edited, matched by the normalized
+    merchant containing the keyword (LIKE-style substring match on the
+    normalized description, not the raw one). Sets user_edited=1 since
+    there's no rule backing the categorization.
+    """
+    data = request.get_json(silent=True) or {}
+    keyword = str(data.get("keyword", "")).strip().lower()
+    category = str(data.get("category", "")).strip()
+    create_rule = bool(data.get("create_rule", False))
+
+    if not keyword or not category:
+        return jsonify({"status": "error", "message": "keyword and category are required"}), 400
+
+    try:
+        conn = get_db_connection()
+        try:
+            if create_rule:
+                with conn:
+                    priority = db.next_rule_priority(conn)
+                    conn.execute(
+                        "UPDATE categorization_rules SET priority = ? WHERE category = ?",
+                        (priority, category),
+                    )
+                    conn.execute(
+                        "INSERT OR IGNORE INTO categorization_rules (category, keyword, priority) "
+                        "VALUES (?, ?, ?)",
+                        (category, keyword, priority),
+                    )
+                updated = reapply_rules(conn)
+            else:
+                rows = conn.execute(
+                    "SELECT id, description FROM transactions "
+                    "WHERE user_edited = 0 AND (category IS NULL OR category = '')"
+                ).fetchall()
+                matching_ids = [
+                    row["id"] for row in rows if keyword in normalize_merchant(row["description"])
+                ]
+                updated = 0
+                if matching_ids:
+                    placeholders = ",".join("?" * len(matching_ids))
+                    with conn:
+                        cur = conn.execute(
+                            f"UPDATE transactions SET category = ?, user_edited = 1 "
+                            f"WHERE id IN ({placeholders})",
+                            (category, *matching_ids),
+                        )
+                        updated = cur.rowcount
+        finally:
+            conn.close()
+
+        refresh_data()
+        return jsonify({"status": "ok", "updated": updated})
+
+    except Exception as e:
+        logger.exception("Failed to categorize group")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # --- Categorization rules API (DB-backed) ---

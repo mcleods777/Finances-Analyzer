@@ -1,16 +1,41 @@
 from __future__ import annotations
 
 import logging
+import sqlite3
 
 import pandas as pd
-from flask import Blueprint, render_template, request
+from flask import Blueprint, jsonify, render_template, request
 
 from finance.config_loader import load_config
-from finance.data_service import get_cache, get_config_path
+from finance.data_service import get_cache, get_config_path, get_db_connection, refresh_data
+from finance.importer import compute_dedup_hash
 
 logger = logging.getLogger(__name__)
 
 transactions_bp = Blueprint("transactions", __name__)
+
+
+def _attach_transaction_ids(conn: sqlite3.Connection, rows: list[dict]) -> None:
+    """
+    Attach each row's real transactions.id by recomputing its dedup_hash
+    (account_id + date + amount + description) and looking it up against the
+    DB. The in-memory DataFrame contract (finance/db.py load_transactions_df)
+    intentionally doesn't expose id, so we resolve it here instead of
+    changing that shared loader.
+    """
+    account_ids = {r["name"]: r["id"] for r in conn.execute("SELECT id, name FROM accounts").fetchall()}
+    hash_to_id = {
+        r["dedup_hash"]: r["id"] for r in conn.execute("SELECT id, dedup_hash FROM transactions").fetchall()
+    }
+    for t in rows:
+        account_id = account_ids.get(t.get("account_name"))
+        if account_id is None:
+            t["id"] = None
+            continue
+        date_val = t["date"]
+        date_iso = date_val.strftime("%Y-%m-%d") if hasattr(date_val, "strftime") else str(date_val)
+        dedup_hash = compute_dedup_hash(account_id, date_iso, t["amount"], t["description"])
+        t["id"] = hash_to_id.get(dedup_hash)
 
 
 @transactions_bp.route("/transactions")
@@ -123,6 +148,13 @@ def transactions():
     else:
         transactions = filtered_df.sort_values(col, ascending=asc).to_dict(orient="records")
 
+    # Attach real DB ids for inline/bulk category editing (see docstring above)
+    conn = get_db_connection()
+    try:
+        _attach_transaction_ids(conn, transactions)
+    finally:
+        conn.close()
+
     # Match recurring bills
     config = load_config(get_config_path())
     recurring_bills = config.recurring_bills
@@ -198,3 +230,83 @@ def transactions():
         all_subcategories=all_subcategories,
         all_accounts=all_accounts,
     )
+
+
+# --- Category edit APIs (DB-backed) ---
+
+
+@transactions_bp.route("/api/transactions/<int:txn_id>/category", methods=["POST"])
+def api_set_transaction_category(txn_id: int):
+    """
+    Set a single transaction's category from the /transactions row edit UI.
+    Marks user_edited=1 so rule reapplication never overwrites the edit.
+    Body: { "category": "Coffee" }
+    """
+    data = request.get_json(silent=True) or {}
+    category = str(data.get("category", "")).strip()
+    if not category:
+        return jsonify({"status": "error", "message": "category is required"}), 400
+
+    try:
+        conn = get_db_connection()
+        try:
+            exists = conn.execute("SELECT 1 FROM transactions WHERE id = ?", (txn_id,)).fetchone()
+            if exists is None:
+                return jsonify({"status": "error", "message": "Transaction not found"}), 404
+
+            with conn:
+                conn.execute(
+                    "UPDATE transactions SET category = ?, user_edited = 1 WHERE id = ?",
+                    (category, txn_id),
+                )
+        finally:
+            conn.close()
+
+        refresh_data()
+        return jsonify({"status": "ok"})
+
+    except Exception as e:
+        logger.exception("Failed to set transaction category for id=%s", txn_id)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@transactions_bp.route("/api/transactions/bulk-category", methods=["POST"])
+def api_bulk_set_category():
+    """
+    Set category on many transactions at once (row-checkbox bulk action).
+    Marks user_edited=1 on all affected rows.
+    Body: { "ids": [1, 2, 3], "category": "Groceries" }
+    """
+    data = request.get_json(silent=True) or {}
+    category = str(data.get("category", "")).strip()
+    raw_ids = data.get("ids", [])
+
+    if not category:
+        return jsonify({"status": "error", "message": "category is required"}), 400
+    if not isinstance(raw_ids, list) or not raw_ids:
+        return jsonify({"status": "error", "message": "ids is required"}), 400
+
+    try:
+        txn_ids = [int(i) for i in raw_ids]
+    except (TypeError, ValueError):
+        return jsonify({"status": "error", "message": "ids must be integers"}), 400
+
+    try:
+        conn = get_db_connection()
+        try:
+            placeholders = ",".join("?" * len(txn_ids))
+            with conn:
+                cur = conn.execute(
+                    f"UPDATE transactions SET category = ?, user_edited = 1 WHERE id IN ({placeholders})",
+                    (category, *txn_ids),
+                )
+                updated = cur.rowcount
+        finally:
+            conn.close()
+
+        refresh_data()
+        return jsonify({"status": "ok", "updated": updated})
+
+    except Exception as e:
+        logger.exception("Failed to bulk set category")
+        return jsonify({"status": "error", "message": str(e)}), 500

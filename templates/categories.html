@@ -334,6 +334,144 @@
             padding: 40px 20px;
             grid-column: 1 / -1;
         }
+
+        /* Uncategorized review queue */
+        .review-queue-panel {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .review-queue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            cursor: pointer;
+        }
+
+        .review-queue-header h2 {
+            margin: 0;
+            font-size: 1.05rem;
+            color: #f1f5f9;
+        }
+
+        .review-queue-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .review-queue-body {
+            border-top: 1px solid #334155;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .review-group-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .review-group-keyword {
+            font-weight: 600;
+            color: #60a5fa;
+            font-size: 0.95rem;
+        }
+
+        .review-group-meta {
+            color: #94a3b8;
+            font-size: 0.82rem;
+            margin-top: 2px;
+        }
+
+        .review-group-samples {
+            margin-top: 6px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .review-sample {
+            font-size: 0.72rem;
+            color: #64748b;
+            background: rgba(100, 116, 139, 0.15);
+            padding: 2px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 220px;
+        }
+
+        .review-group-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .review-group-actions .form-input {
+            width: 150px;
+            padding: 7px 10px;
+            font-size: 0.85rem;
+        }
+
+        .review-rule-toggle {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .review-rule-toggle input[type="checkbox"] {
+            accent-color: #3b82f6;
+            cursor: pointer;
+        }
+
+        .form-input {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: #e2e8f0;
+            font-size: 0.95rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
     </style>
 {% endblock %}
 
@@ -356,6 +494,31 @@
             <h2>{{ error }}</h2>
         </div>
         {% else %}
+
+        <datalist id="allCategoriesDatalist">
+            {% for name in category_names %}
+            <option value="{{ name }}">
+            {% endfor %}
+        </datalist>
+
+        <!-- Uncategorized review queue: transactions grouped by normalized merchant -->
+        <div class="review-queue-panel" id="reviewQueuePanel">
+            <div class="review-queue-header" onclick="toggleReviewQueue()">
+                <div class="review-queue-header-left">
+                    <h2>Uncategorized Review Queue</h2>
+                    <span class="category-count" id="reviewQueueCount"></span>
+                </div>
+                <svg class="chevron-icon" id="reviewQueueChevron" width="20" height="20" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </div>
+            <div class="review-queue-body" id="reviewQueueBody" style="display: none;">
+                <p id="reviewQueueLoading" style="color: #64748b; margin: 0;">Loading&hellip;</p>
+                <div id="reviewQueueList"></div>
+            </div>
+        </div>
 
         <!-- Summary stats -->
         <div class="categories-stats">
@@ -469,6 +632,105 @@
             const noResults = document.getElementById('noResults');
             if (noResults) {
                 noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+        }
+
+        // --- Uncategorized review queue ---
+
+        let reviewQueueLoaded = false;
+
+        function toggleReviewQueue() {
+            const body = document.getElementById('reviewQueueBody');
+            const chevron = document.getElementById('reviewQueueChevron');
+            const isHidden = body.style.display === 'none';
+            body.style.display = isHidden ? 'flex' : 'none';
+            if (chevron) chevron.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+            if (isHidden && !reviewQueueLoaded) {
+                loadReviewQueue();
+            }
+        }
+
+        async function loadReviewQueue() {
+            try {
+                const res = await fetch('/api/uncategorized-groups');
+                const data = await res.json();
+                reviewQueueLoaded = true;
+                renderReviewQueue(data.groups || []);
+            } catch (error) {
+                console.error('Failed to load review queue:', error);
+                document.getElementById('reviewQueueLoading').textContent = 'Failed to load review queue.';
+            }
+        }
+
+        function formatReviewCurrency(v) {
+            const abs = Math.abs(v).toFixed(2);
+            return v < 0 ? `-$${abs}` : `$${abs}`;
+        }
+
+        function escapeReviewHtml(s) {
+            const div = document.createElement('div');
+            div.textContent = s;
+            return div.innerHTML;
+        }
+
+        function renderReviewQueue(groups) {
+            const loading = document.getElementById('reviewQueueLoading');
+            const list = document.getElementById('reviewQueueList');
+            const countEl = document.getElementById('reviewQueueCount');
+            loading.style.display = 'none';
+            countEl.textContent = groups.length ? `${groups.length} groups` : '';
+
+            if (groups.length === 0) {
+                list.innerHTML = '<p style="color: #64748b; margin: 0;">No uncategorized transactions to review. Nice work!</p>';
+                return;
+            }
+
+            list.innerHTML = groups.map((g, i) => `
+                <div class="review-group-card">
+                    <div class="review-group-info">
+                        <div class="review-group-keyword">${escapeReviewHtml(g.keyword)}</div>
+                        <div class="review-group-meta">${g.count} transaction${g.count !== 1 ? 's' : ''} &middot; ${formatReviewCurrency(g.total_amount)}</div>
+                        <div class="review-group-samples">
+                            ${g.samples.map(s => `<span class="review-sample" title="${escapeReviewHtml(s)}">${escapeReviewHtml(s)}</span>`).join('')}
+                        </div>
+                    </div>
+                    <div class="review-group-actions">
+                        <input type="text" class="form-input" id="review-kw-${i}" value="${escapeReviewHtml(g.keyword)}" placeholder="match keyword">
+                        <input type="text" class="form-input" id="review-cat-${i}" list="allCategoriesDatalist" placeholder="category">
+                        <label class="review-rule-toggle">
+                            <input type="checkbox" id="review-rule-${i}" checked> Create rule
+                        </label>
+                        <button class="btn-primary" onclick="categorizeReviewGroup(${i})">Categorize All</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function categorizeReviewGroup(i) {
+            const keyword = document.getElementById(`review-kw-${i}`).value.trim();
+            const category = document.getElementById(`review-cat-${i}`).value.trim();
+            const createRule = document.getElementById(`review-rule-${i}`).checked;
+
+            if (!keyword || !category) {
+                alert('Please enter both a match keyword and a category.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/categorize-group', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keyword, category, create_rule: createRule }),
+                });
+                const result = await res.json();
+                if (result.status === 'ok') {
+                    window.location.reload();
+                } else {
+                    alert('Error categorizing group: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to categorize group.');
             }
         }
     </script>
