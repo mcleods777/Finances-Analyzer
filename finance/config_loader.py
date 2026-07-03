@@ -93,6 +93,22 @@ class IncomeAttributionConfig:
 
 
 @dataclass
+class BriefingConfig:
+    """
+    AI briefing settings (pattern detectors + LLM briefing writer).
+
+    model: Claude model used by the briefing writer (Phase 2).
+    max_per_day: cost-amp guard — per-day LLM call cap before the writer
+        short-circuits to the cached briefing.
+    enabled: if false, the briefing degrades to templated pattern headlines
+        (no LLM call).
+    """
+    model: str = "claude-haiku-4-5"
+    max_per_day: int = 20
+    enabled: bool = True
+
+
+@dataclass
 class AppConfig:
     pay_period: PayPeriodConfig
     accounts: list[AccountConfig]
@@ -102,6 +118,7 @@ class AppConfig:
     temporary_expenses: list[TemporaryExpense] = field(default_factory=list)
     budget_overrides: BudgetOverrides = field(default_factory=BudgetOverrides)
     income_attribution: IncomeAttributionConfig = field(default_factory=IncomeAttributionConfig)
+    briefing: BriefingConfig = field(default_factory=BriefingConfig)
 
 
 def _parse_column_mapping(raw: dict) -> ColumnMapping:
@@ -218,6 +235,16 @@ def _parse_income_attribution(raw: dict | None) -> IncomeAttributionConfig:
     )
 
 
+def _parse_briefing(raw: dict | None) -> BriefingConfig:
+    if not raw:
+        return BriefingConfig()
+    return BriefingConfig(
+        model=str(raw.get("model", "claude-haiku-4-5")),
+        max_per_day=int(raw.get("max_per_day", 20)),
+        enabled=bool(raw.get("enabled", True)),
+    )
+
+
 def load_config(config_path: str) -> AppConfig:
     """Load and parse config.yaml into typed dataclasses."""
     with open(config_path, "r", encoding="utf-8") as f:
@@ -231,6 +258,7 @@ def load_config(config_path: str) -> AppConfig:
     temporary_expenses = _parse_temporary_expenses(raw.get("temporary_expenses"))
     budget_overrides = _parse_budget_overrides(raw.get("budget_overrides"))
     income_attribution = _parse_income_attribution(raw.get("income_attribution"))
+    briefing = _parse_briefing(raw.get("briefing"))
 
     return AppConfig(
         pay_period=pay_period,
@@ -241,6 +269,7 @@ def load_config(config_path: str) -> AppConfig:
         temporary_expenses=temporary_expenses,
         budget_overrides=budget_overrides,
         income_attribution=income_attribution,
+        briefing=briefing,
     )
 
 

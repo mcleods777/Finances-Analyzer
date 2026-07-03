@@ -62,3 +62,10 @@ income_attribution:
   - payroll
   - direct deposit
   - salary
+
+# AI briefing (pattern detectors + daily LLM briefing). All keys optional;
+# omitting the whole block uses these defaults.
+briefing:
+  model: claude-haiku-4-5   # one of: claude-haiku-4-5, claude-sonnet-4-6, claude-opus-4-7
+  max_per_day: 20           # cost-amp guard: per-day LLM call cap before short-circuit to cache
+  enabled: true             # if false, briefing degrades to templated pattern headlines
