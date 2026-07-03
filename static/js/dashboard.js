@@ -313,8 +313,7 @@ function populatePendingBillCards(halves) {
         totalEl.style.color = '#fbbf24';
     }
 
-    // Only show pending bills by default
-    let html = pendingBills.map((b) => {
+    const pendingCardHtml = (b) => {
         const dueDate = new Date(b.due_date + 'T00:00:00');
         const dateStr = dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
         const searchTerm = encodeURIComponent(b.search_keyword || b.name);
@@ -332,7 +331,26 @@ function populatePendingBillCards(halves) {
                 <span class="bill-card-status pending">\u25CB Pending</span>
             </div>
         </a>`;
-    }).join('');
+    };
+
+    // Split pending cards into the two half-month groups, mirroring the
+    // Budget Runway halves (labels like "Jul 1-15" come from the server).
+    let html = '';
+    halves.forEach((h, hi) => {
+        const groupPending = (h.pending_bills || []).filter(b => b.status === 'pending');
+        const groupCommitted = groupPending.reduce((s, b) => s + b.amount, 0);
+
+        html += `<div class="bill-group-header${hi > 0 ? ' bill-group-divider' : ''}">
+            <span class="bill-group-label">${escapeHtml(h.label || '')}</span>
+            <span class="bill-group-total">${groupPending.length} pending \u2022 $${groupCommitted.toFixed(2)} committed</span>
+        </div>`;
+
+        if (groupPending.length === 0) {
+            html += `<div class="bill-group-empty">No pending bills</div>`;
+        } else {
+            html += groupPending.map(pendingCardHtml).join('');
+        }
+    });
 
     // Add a "Show paid" toggle if there are paid bills
     if (paidBills.length > 0) {

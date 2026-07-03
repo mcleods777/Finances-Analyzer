@@ -297,6 +297,98 @@ def get_spending_breakdown(df: pd.DataFrame, days: int) -> list[dict]:
     return grouped.to_dict(orient="records")
 
 
+def _assign_bill_payments(
+    period_txns: pd.DataFrame,
+    bills: list[RecurringBill],
+) -> dict[int, dict | None]:
+    """
+    Assign transactions in a window to bill occurrences (shared matching core
+    for get_recurring_bill_status and _get_bill_status_for_range).
+
+    Matching semantics:
+    - Keywords are lowercase substrings matched against the lowercased
+      transaction description (plain substring, no regex).
+    - A transaction whose description matches exactly ONE bill's keywords is
+      a candidate for that bill regardless of amount (variable-amount bills
+      like utilities must still match on keyword alone).
+    - A transaction matching MULTIPLE bills' keywords is assigned to the bill
+      whose configured amount is closest to the transaction's |amount|.
+    - Each transaction is consumed by at most one bill occurrence, and each
+      bill occurrence is paid by its earliest assigned transaction.
+
+    Returns {bill_index: {"paid_date": ..., "paid_amount": ...} | None}.
+    """
+    paid: dict[int, dict | None] = {i: None for i in range(len(bills))}
+    if bills == [] or period_txns.empty:
+        return paid
+
+    # df is date-ordered, so iteration order == chronological order.
+    for txn in period_txns.itertuples(index=False):
+        desc = txn.desc_lower
+        matching = [
+            i for i, bill in enumerate(bills)
+            if any(criteria in desc for criteria in bill.match_criteria)
+        ]
+        if not matching:
+            continue
+        if len(matching) > 1:
+            # Amount-aware disambiguation: closest configured amount wins.
+            best = min(
+                matching,
+                key=lambda i: abs(abs(txn.amount) - abs(bills[i].amount)),
+            )
+        else:
+            best = matching[0]
+        if paid[best] is None:
+            paid[best] = {
+                "paid_date": txn.date.strftime("%Y-%m-%d"),
+                "paid_amount": abs(txn.amount),
+            }
+    return paid
+
+
+def _best_search_keyword(
+    bill: RecurringBill,
+    df: pd.DataFrame,
+    lookback_days: int = 120,
+) -> str:
+    """
+    Pick the match_criteria entry most likely to surface *current*
+    transactions in the /transactions?search= drill-down: the keyword that
+    matched the most transactions in the last `lookback_days`.
+    Falls back to the first entry (or bill name if no criteria).
+    """
+    if not bill.match_criteria:
+        return bill.name
+    best = bill.match_criteria[0]
+    if df is None or df.empty:
+        return best
+    cutoff = pd.Timestamp(date.today() - timedelta(days=lookback_days))
+    recent_desc = df.loc[df["date"] >= cutoff, "description"].str.lower()
+    if recent_desc.empty:
+        return best
+    best_count = 0
+    for criteria in bill.match_criteria:
+        count = int(recent_desc.str.contains(criteria, na=False, regex=False).sum())
+        if count > best_count:
+            best, best_count = criteria, count
+    return best
+
+
+def _filter_period_expenses(
+    df: pd.DataFrame, start_date: date, end_date: date
+) -> pd.DataFrame:
+    """Expense transactions within [start_date, end_date] with desc_lower."""
+    period_txns = df[
+        (df["date"].dt.date >= start_date)
+        & (df["date"].dt.date <= end_date)
+        & (df["category"] == "expense")
+    ].copy()
+    if not period_txns.empty:
+        period_txns["desc_lower"] = period_txns["description"].str.lower()
+    return period_txns
+
+
 def get_recurring_bill_status(
     df: pd.DataFrame,
     pay_period: PayPeriodConfig,
@@ -329,58 +421,28 @@ def get_recurring_bill_status(
     period_end = period_start + timedelta(days=freq - 1)
 
     # Filter applicable transactions (expenses in this period)
-    period_txns = df[
-        (df["date"].dt.date >= period_start)
-        & (df["date"].dt.date <= period_end)
-        & (df["category"] == "expense")
-    ].copy()
-    
-    # Pre-process descriptions for matching
-    period_txns["desc_lower"] = period_txns["description"].str.lower()
+    period_txns = _filter_period_expenses(df, period_start, period_end)
 
-    results = []
-
+    # Bills whose due day falls inside this pay period
+    in_window: list[tuple[RecurringBill, date]] = []
     for bill in recurring_bills:
-        # Check if bill falls in this period
-        # Iterate days in period
-        bill_due_date = None
         for i in range(freq):
             d = period_start + timedelta(days=i)
             if d.day == bill.day_of_month:
-                bill_due_date = d
+                in_window.append((bill, d))
                 break
-        
-        if not bill_due_date:
-            continue
 
-        # Check for payment
-        is_paid = False
-        paid_details = {}
+    paid_map = _assign_bill_payments(period_txns, [b for b, _ in in_window])
 
-        if not period_txns.empty:
-            # Check for exact matches first? Or just contains
-            # Config has match_criteria (list of keywords)
-            for criteria in bill.match_criteria:
-                match = period_txns[period_txns["desc_lower"].str.contains(criteria, na=False)]
-                if not match.empty:
-                    # Found it!
-                    is_paid = True
-                    # Take the first match (most likely the payment)
-                    row = match.iloc[0]
-                    paid_details = {
-                        "paid_date": row["date"].strftime("%Y-%m-%d"),
-                        "paid_amount": abs(row["amount"])
-                    }
-                    break
-        
-        status = "paid" if is_paid else "pending"
-        
+    results = []
+    for idx, (bill, bill_due_date) in enumerate(in_window):
+        paid_details = paid_map[idx] or {}
         results.append({
             "name": bill.name,
             "amount": bill.amount,
             "due_date": bill_due_date.isoformat(),
-            "status": status,
-            "search_keyword": bill.match_criteria[0] if bill.match_criteria else bill.name,
+            "status": "paid" if paid_details else "pending",
+            "search_keyword": _best_search_keyword(bill, df),
             **paid_details
         })
 
@@ -403,20 +465,13 @@ def _get_bill_status_for_range(
         return []
 
     # Filter applicable transactions (expenses in this range)
-    period_txns = df[
-        (df["date"].dt.date >= start_date)
-        & (df["date"].dt.date <= end_date)
-        & (df["category"] == "expense")
-    ].copy()
+    period_txns = _filter_period_expenses(df, start_date, end_date)
 
-    if not period_txns.empty:
-        period_txns["desc_lower"] = period_txns["description"].str.lower()
-
-    results = []
     last_day = end_date.day
 
+    # Bills whose due day falls inside this range
+    in_window: list[tuple[RecurringBill, date]] = []
     for bill in recurring_bills:
-        # Determine if this bill's day falls in the range
         bill_day = bill.day_of_month
         # Clamp to last day of month if needed
         if bill_day > last_day and end_date.day == calendar.monthrange(end_date.year, end_date.month)[1]:
@@ -425,30 +480,19 @@ def _get_bill_status_for_range(
         if bill_day < start_date.day or bill_day > end_date.day:
             continue
 
-        bill_due_date = date(start_date.year, start_date.month, bill_day)
+        in_window.append((bill, date(start_date.year, start_date.month, bill_day)))
 
-        # Check for payment
-        is_paid = False
-        paid_details = {}
+    paid_map = _assign_bill_payments(period_txns, [b for b, _ in in_window])
 
-        if not period_txns.empty:
-            for criteria in bill.match_criteria:
-                match = period_txns[period_txns["desc_lower"].str.contains(criteria, na=False)]
-                if not match.empty:
-                    is_paid = True
-                    row = match.iloc[0]
-                    paid_details = {
-                        "paid_date": row["date"].strftime("%Y-%m-%d"),
-                        "paid_amount": abs(row["amount"]),
-                    }
-                    break
-
+    results = []
+    for idx, (bill, bill_due_date) in enumerate(in_window):
+        paid_details = paid_map[idx] or {}
         results.append({
             "name": bill.name,
             "amount": bill.amount,
             "due_date": bill_due_date.isoformat(),
-            "status": "paid" if is_paid else "pending",
-            "search_keyword": bill.match_criteria[0] if bill.match_criteria else bill.name,
+            "status": "paid" if paid_details else "pending",
+            "search_keyword": _best_search_keyword(bill, df),
             **paid_details,
         })
 

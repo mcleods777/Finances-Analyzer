@@ -210,6 +210,42 @@
             gap: 8px;
         }
 
+        /* Half-month groups within the bills list (mirror Budget Runway halves) */
+        .bill-group-header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-top: 2px;
+        }
+
+        .bill-group-header.bill-group-divider {
+            border-top: 1px solid #334155;
+            margin-top: 12px;
+            padding-top: 12px;
+        }
+
+        .bill-group-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .bill-group-total {
+            font-size: 0.75rem;
+            color: #fbbf24;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .bill-group-empty {
+            grid-column: 1 / -1;
+            color: #64748b;
+            font-size: 0.78rem;
+            padding: 2px 0 4px;
+        }
+
         .bill-card {
             background: #0f172a;
             border: 1px solid #334155;
