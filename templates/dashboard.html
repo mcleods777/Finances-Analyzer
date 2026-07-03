@@ -12,25 +12,34 @@
 
         .btn-link {
             text-decoration: none;
-            background-color: #3b82f6;
-            color: white;
+            background-color: var(--brass);
+            color: var(--ink);
             padding: 8px 16px;
-            border-radius: 4px;
+            border-radius: 2px;
             font-size: 14px;
             font-weight: 500;
         }
 
         .btn-link:hover {
-            background-color: #2563eb;
+            background-color: var(--brass-bright);
         }
 
         /* Daily Briefing card */
         .briefing-card {
-            background: linear-gradient(145deg, #0f172a 0%, #131d33 100%);
-            border: 1px solid #1e293b;
-            border-radius: 12px;
-            padding: 18px 20px;
+            background: transparent;
+            border-top: 1px solid var(--rule);
+            position: relative;
+            padding: 18px 0;
             margin-bottom: 20px;
+        }
+
+        .briefing-card::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 0;
+            right: 0;
+            border-top: 1px solid var(--rule);
         }
 
         .briefing-header {
@@ -42,22 +51,26 @@
         }
 
         .briefing-header h3 {
-            font-size: 0.8rem;
+            font-size: 11px;
+            font-family: var(--mono);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #94a3b8;
-            font-weight: 500;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            font-weight: 400;
             margin: 0;
         }
 
         .briefing-meta {
-            font-size: 0.75rem;
-            color: #64748b;
+            font-family: var(--mono);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
             white-space: nowrap;
         }
 
         .briefing-meta a {
-            color: #60a5fa;
+            color: var(--brass);
             text-decoration: none;
         }
 
@@ -67,27 +80,20 @@
 
         .briefing-body {
             font-size: 0.92rem;
-            color: #e2e8f0;
+            color: var(--text);
             line-height: 1.6;
         }
 
         .briefing-body.briefing-error {
-            color: #94a3b8;
+            color: var(--muted);
             font-size: 0.85rem;
         }
 
         .briefing-skeleton-line {
             height: 12px;
-            border-radius: 6px;
+            border-radius: 2px;
             margin: 9px 0;
-            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-            background-size: 200% 100%;
-            animation: briefing-shimmer 1.4s ease-in-out infinite;
-        }
-
-        @keyframes briefing-shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
+            background: var(--surface);
         }
 
         .briefing-chips {
@@ -107,10 +113,10 @@
             gap: 6px;
             max-width: 320px;
             padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid #334155;
-            background: rgba(59, 130, 246, 0.06);
-            color: #93c5fd;
+            border-radius: 2px;
+            border: 1px solid var(--rule);
+            background: rgba(217, 160, 63, 0.06);
+            color: var(--brass);
             font-size: 0.76rem;
             font-weight: 500;
             text-decoration: none;
@@ -121,18 +127,18 @@
         }
 
         .briefing-chip:hover {
-            border-color: #60a5fa;
-            background: rgba(59, 130, 246, 0.14);
+            border-color: var(--brass);
+            background: rgba(217, 160, 63, 0.14);
         }
 
         .briefing-chip .chip-arrow {
-            color: #475569;
+            color: var(--muted);
             flex-shrink: 0;
         }
 
         .briefing-hint {
             font-size: 0.72rem;
-            color: #475569;
+            color: var(--muted);
             margin-top: 10px;
         }
 
@@ -168,12 +174,12 @@
             grid-template-rows: auto auto;
             gap: 2px 12px;
             padding: 8px 12px;
-            border-radius: 8px;
+            border-radius: 2px;
             transition: background-color 0.15s;
         }
 
         .legend-row:hover {
-            background-color: rgba(255, 255, 255, 0.04);
+            background-color: rgba(237, 232, 223, 0.04);
         }
 
         .legend-left {
@@ -187,14 +193,14 @@
         .legend-dot {
             width: 10px;
             height: 10px;
-            border-radius: 50%;
+            border-radius: 2px;
             flex-shrink: 0;
         }
 
         .legend-label {
             font-size: 0.88rem;
             font-weight: 500;
-            color: #e2e8f0;
+            color: var(--text);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -212,14 +218,14 @@
         .legend-amount {
             font-size: 0.88rem;
             font-weight: 600;
-            color: #f1f5f9;
+            color: var(--text);
             font-variant-numeric: tabular-nums;
         }
 
         .legend-pct {
             font-size: 0.75rem;
             font-weight: 500;
-            color: #64748b;
+            color: var(--muted);
             min-width: 40px;
             text-align: right;
         }
@@ -228,7 +234,7 @@
             grid-column: 1 / -1;
             grid-row: 2;
             height: 3px;
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(237, 232, 223, 0.04);
             border-radius: 2px;
             overflow: hidden;
             margin-top: 4px;
@@ -253,9 +259,8 @@
             align-items: center;
             gap: 7px;
             padding: 5px 12px;
-            border-radius: 20px;
+            border-radius: 2px;
             cursor: pointer;
-            transition: all 0.2s ease;
             border: 1px solid transparent;
             user-select: none;
         }
@@ -270,20 +275,20 @@
         }
 
         .nw-legend-item:hover {
-            background: rgba(255, 255, 255, 0.06);
+            background: rgba(237, 232, 223, 0.06);
         }
 
         .nw-legend-dot {
             width: 9px;
             height: 9px;
-            border-radius: 50%;
+            border-radius: 2px;
             flex-shrink: 0;
         }
 
         .nw-legend-name {
             font-size: 0.78rem;
             font-weight: 500;
-            color: #cbd5e1;
+            color: var(--text);
             white-space: nowrap;
             max-width: 160px;
             overflow: hidden;
@@ -293,7 +298,7 @@
         .nw-legend-value {
             font-size: 0.72rem;
             font-weight: 600;
-            color: #94a3b8;
+            color: var(--muted);
             font-variant-numeric: tabular-nums;
         }
 
@@ -306,10 +311,9 @@
         }
 
         .pending-bills-title {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #94a3b8;
+            font-family: var(--serif);
+            font-size: 1.05rem;
+            color: var(--text);
             font-weight: 500;
             margin: 0;
         }
@@ -317,7 +321,7 @@
         .pending-bills-total {
             font-size: 0.85rem;
             font-weight: 600;
-            color: #fbbf24;
+            color: var(--brass);
         }
 
         .pending-bills-list {
@@ -336,52 +340,53 @@
         }
 
         .bill-group-header.bill-group-divider {
-            border-top: 1px solid #334155;
+            border-top: 1px solid var(--rule);
             margin-top: 12px;
             padding-top: 12px;
         }
 
         .bill-group-label {
-            font-size: 0.72rem;
+            font-size: 11px;
+            font-family: var(--mono);
             text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #94a3b8;
-            font-weight: 600;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            font-weight: 400;
         }
 
         .bill-group-total {
             font-size: 0.75rem;
-            color: #fbbf24;
+            color: var(--brass);
             font-variant-numeric: tabular-nums;
         }
 
         .bill-group-empty {
             grid-column: 1 / -1;
-            color: #64748b;
+            color: var(--muted);
             font-size: 0.78rem;
             padding: 2px 0 4px;
         }
 
         .bill-card {
-            background: #0f172a;
-            border: 1px solid #334155;
+            background: var(--ink);
+            border: 1px solid var(--rule);
             padding: 10px 12px;
-            border-radius: 8px;
+            border-radius: 2px;
             transition: border-color 0.2s;
         }
 
         .bill-card.pending {
-            border-left: 3px solid #fbbf24;
+            border-left: 3px solid var(--brass);
         }
 
         .bill-card.paid {
-            border-left: 3px solid #22c55e;
+            border-left: 3px solid var(--ledger-green);
             opacity: 0.7;
         }
 
         .bill-card-name {
             font-size: 0.85rem;
-            color: #f1f5f9;
+            color: var(--text);
             font-weight: 600;
             margin-bottom: 4px;
             white-space: nowrap;
@@ -401,37 +406,38 @@
         }
 
         .bill-card-amount.pending {
-            color: #fbbf24;
+            color: var(--brass);
         }
 
         .bill-card-amount.paid {
-            color: #4ade80;
+            color: var(--ledger-green);
         }
 
         .bill-card-date {
-            color: #64748b;
+            color: var(--muted);
             font-size: 0.75rem;
         }
 
         .bill-card-status {
-            font-size: 0.7rem;
-            font-weight: 600;
+            font-size: 11px;
+            font-weight: 400;
+            font-family: var(--mono);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
             padding: 2px 6px;
-            border-radius: 4px;
+            border-radius: 2px;
             display: inline-block;
             margin-top: 4px;
         }
 
         .bill-card-status.pending {
-            color: #fbbf24;
-            background: rgba(251, 191, 36, 0.1);
+            color: var(--brass);
+            background: rgba(217, 160, 63, 0.1);
         }
 
         .bill-card-status.paid {
-            color: #4ade80;
-            background: rgba(34, 197, 94, 0.1);
+            color: var(--ledger-green);
+            background: rgba(124, 175, 126, 0.1);
         }
 
         .bill-card-link {
@@ -441,17 +447,17 @@
         }
 
         .bill-card-link:hover .bill-card {
-            border-color: #60a5fa;
-            background: #1a2540;
+            border-color: var(--brass);
+            background: var(--elevated);
             cursor: pointer;
         }
 
         .bill-card-link:hover .bill-card.pending {
-            border-left-color: #fbbf24;
+            border-left-color: var(--brass);
         }
 
         .bill-card-link:hover .bill-card.paid {
-            border-left-color: #22c55e;
+            border-left-color: var(--ledger-green);
         }
 
         /* Runway bar wrapper with percentage badge */
@@ -468,22 +474,22 @@
         .runway-pct-badge {
             flex-shrink: 0;
             font-size: 0.82rem;
-            font-weight: 700;
-            color: #f1f5f9;
+            font-weight: 600;
+            color: var(--text);
             min-width: 48px;
             text-align: right;
             font-variant-numeric: tabular-nums;
             letter-spacing: -0.02em;
         }
 
-        .runway-pct-badge.pct-good { color: #4ade80; }
-        .runway-pct-badge.pct-warn { color: #fbbf24; }
-        .runway-pct-badge.pct-danger { color: #f87171; }
+        .runway-pct-badge.pct-good { color: var(--ledger-green); }
+        .runway-pct-badge.pct-warn { color: var(--brass); }
+        .runway-pct-badge.pct-danger { color: var(--red-ink); }
 
         /* Explainer text */
         .runway-explainer {
             font-size: 0.8rem;
-            color: #64748b;
+            color: var(--muted);
             line-height: 1.5;
             margin-top: 2px;
         }
@@ -492,9 +498,18 @@
         .runway-segments {
             display: flex;
             height: 100%;
-            border-radius: 8px;
+            width: 100%;
             overflow: hidden;
-            transition: width 0.8s ease;
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .runway-segments {
+                transition: width 400ms ease-out;
+            }
+
+            .runway-bar-container:not(.runway-revealed) .runway-segments {
+                width: 0;
+            }
         }
 
         .runway-segment {
@@ -508,18 +523,6 @@
             overflow: hidden;
         }
 
-        .runway-segment:first-child {
-            border-radius: 8px 0 0 8px;
-        }
-
-        .runway-segment:last-child {
-            border-radius: 0 8px 8px 0;
-        }
-
-        .runway-segment:only-child {
-            border-radius: 8px;
-        }
-
         .runway-segment:hover {
             filter: brightness(1.25);
         }
@@ -528,7 +531,7 @@
         .segment-inline-label {
             font-size: 0.68rem;
             font-weight: 600;
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(237, 232, 223, 0.9);
             white-space: nowrap;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
             padding: 0 4px;
@@ -542,9 +545,9 @@
             bottom: calc(100% + 10px);
             left: 50%;
             transform: translateX(-50%);
-            background: #0f172a;
-            border: 1px solid #475569;
-            border-radius: 8px;
+            background: var(--ink);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
             padding: 10px 14px;
             white-space: nowrap;
             z-index: 100;
@@ -560,7 +563,7 @@
             left: 50%;
             transform: translateX(-50%);
             border: 6px solid transparent;
-            border-top-color: #475569;
+            border-top-color: var(--rule);
         }
 
         .runway-segment:hover .segment-tooltip {
@@ -568,18 +571,18 @@
         }
 
         .segment-tooltip-name {
-            color: #f1f5f9;
+            color: var(--text);
             font-weight: 600;
             margin-bottom: 3px;
         }
 
         .segment-tooltip-amount {
-            color: #e2e8f0;
+            color: var(--text);
             font-weight: 500;
         }
 
         .segment-tooltip-date {
-            color: #64748b;
+            color: var(--muted);
             font-size: 0.75rem;
             margin-top: 2px;
         }
@@ -597,13 +600,13 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            color: #94a3b8;
+            color: var(--muted);
         }
 
         .runway-bar-legend-dot {
             width: 10px;
             height: 10px;
-            border-radius: 3px;
+            border-radius: 2px;
             flex-shrink: 0;
         }
 
@@ -616,20 +619,13 @@
         }
 
         .monthly-half-card {
-            background: linear-gradient(145deg, #0f172a 0%, #131d33 100%);
-            border: 1px solid #1e293b;
-            border-radius: 12px;
-            padding: 20px;
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-
-        .monthly-half-card:hover {
-            border-color: #334155;
+            background: transparent;
+            border-top: 1px solid var(--rule);
+            padding: 16px 0 0;
         }
 
         .monthly-half-card.is-current {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.15), 0 4px 20px rgba(59, 130, 246, 0.08);
+            border-top-color: var(--brass);
         }
 
         .monthly-half-header {
@@ -642,25 +638,26 @@
         .monthly-half-label {
             font-size: 1rem;
             font-weight: 600;
-            color: #f1f5f9;
+            color: var(--text);
         }
 
         .monthly-half-label .current-tag {
-            font-size: 0.6rem;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: white;
+            font-size: 11px;
+            background: var(--brass);
+            color: var(--ink);
             padding: 3px 8px;
-            border-radius: 10px;
+            border-radius: 2px;
             margin-left: 8px;
             vertical-align: middle;
+            font-family: var(--mono);
             text-transform: uppercase;
-            letter-spacing: 0.06em;
-            font-weight: 700;
+            letter-spacing: 0.08em;
+            font-weight: 400;
         }
 
         .monthly-half-days {
             font-size: 0.78rem;
-            color: #64748b;
+            color: var(--muted);
             font-weight: 500;
         }
 
@@ -672,20 +669,21 @@
         }
 
         .budget-label {
-            font-size: 0.7rem;
-            color: #64748b;
+            font-size: 11px;
+            color: var(--muted);
+            font-family: var(--mono);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
             white-space: nowrap;
-            font-weight: 600;
+            font-weight: 400;
         }
 
         .budget-input {
-            background: #1e293b;
-            border: 1px solid #334155;
-            color: #f1f5f9;
+            background: var(--surface);
+            border: 1px solid var(--rule);
+            color: var(--text);
             padding: 5px 10px;
-            border-radius: 6px;
+            border-radius: 2px;
             font-size: 0.85rem;
             width: 100px;
             outline: none;
@@ -694,15 +692,15 @@
         }
 
         .budget-input:focus {
-            border-color: #3b82f6;
+            border-color: var(--brass);
         }
 
         .budget-save-btn {
-            background: #334155;
-            color: #e2e8f0;
+            background: var(--elevated);
+            color: var(--text);
             border: none;
             padding: 5px 12px;
-            border-radius: 6px;
+            border-radius: 2px;
             font-size: 0.75rem;
             cursor: pointer;
             transition: background 0.2s;
@@ -710,7 +708,7 @@
         }
 
         .budget-save-btn:hover {
-            background: #3b82f6;
+            background: var(--brass);
         }
 
         .monthly-half-stats {
@@ -722,7 +720,7 @@
 
         .half-stat {
             font-size: 0.75rem;
-            color: #94a3b8;
+            color: var(--muted);
             display: flex;
             flex-direction: column;
             gap: 2px;
@@ -730,25 +728,25 @@
 
         .half-stat strong {
             font-size: 0.95rem;
-            color: #f1f5f9;
+            color: var(--text);
         }
 
         .half-stat.free-cash strong {
-            color: #22c55e;
+            color: var(--ledger-green);
         }
 
         .half-stat.free-cash.negative strong {
-            color: #ef4444;
+            color: var(--red-ink);
         }
 
         .half-stat.spent strong {
-            color: #f87171;
+            color: var(--red-ink);
         }
 
         /* Simulator Panel */
         .simulator-section {
             margin-top: 20px;
-            border-top: 1px solid #334155;
+            border-top: 1px solid var(--rule);
             padding-top: 16px;
         }
 
@@ -761,12 +759,13 @@
         }
 
         .simulator-header h3 {
-            font-size: 0.85rem;
+            font-size: 11px;
+            font-family: var(--mono);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #94a3b8;
+            letter-spacing: 0.08em;
+            color: var(--muted);
             margin: 0;
-            font-weight: 500;
+            font-weight: 400;
         }
 
         .simulator-content {
@@ -775,11 +774,11 @@
 
         .simulator-delta {
             font-size: 0.8rem;
-            color: #94a3b8;
+            color: var(--muted);
             margin-bottom: 12px;
             padding: 8px 12px;
-            background: #0f172a;
-            border-radius: 6px;
+            background: var(--ink);
+            border-radius: 2px;
             display: none;
         }
 
@@ -792,11 +791,11 @@
         }
 
         .simulator-delta .delta-positive {
-            color: #22c55e;
+            color: var(--ledger-green);
         }
 
         .simulator-delta .delta-negative {
-            color: #ef4444;
+            color: var(--red-ink);
         }
 
         .slider-grid {
@@ -814,7 +813,7 @@
 
         .slider-label {
             font-size: 0.8rem;
-            color: #e2e8f0;
+            color: var(--text);
             width: 100px;
             white-space: nowrap;
             overflow: hidden;
@@ -827,7 +826,7 @@
             -webkit-appearance: none;
             appearance: none;
             height: 4px;
-            background: #334155;
+            background: var(--elevated);
             border-radius: 2px;
             outline: none;
         }
@@ -837,19 +836,19 @@
             appearance: none;
             width: 14px;
             height: 14px;
-            border-radius: 50%;
-            background: #3b82f6;
+            border-radius: 2px;
+            background: var(--brass);
             cursor: pointer;
             transition: background 0.2s;
         }
 
         .slider-input::-webkit-slider-thumb:hover {
-            background: #2563eb;
+            background: var(--brass-bright);
         }
 
         .slider-value {
             font-size: 0.78rem;
-            color: #f1f5f9;
+            color: var(--text);
             font-weight: 500;
             width: 55px;
             text-align: right;
@@ -866,31 +865,32 @@
         }
 
         .slider-diff.positive {
-            color: #22c55e;
+            color: var(--ledger-green);
         }
 
         .slider-diff.negative {
-            color: #ef4444;
+            color: var(--red-ink);
         }
 
         .slider-diff.neutral {
-            color: #64748b;
+            color: var(--muted);
         }
 
         /* Temp Expenses section */
         .temp-expenses-section {
             margin-top: 16px;
-            border-top: 1px solid rgba(51, 65, 85, 0.5);
+            border-top: 1px solid rgba(51, 48, 42, 0.5);
             padding-top: 12px;
         }
 
         .temp-expenses-title {
-            font-size: 0.8rem;
+            font-size: 11px;
+            font-family: var(--mono);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #94a3b8;
+            letter-spacing: 0.08em;
+            color: var(--muted);
             margin-bottom: 8px;
-            font-weight: 500;
+            font-weight: 400;
         }
 
         .temp-expense-form {
@@ -903,18 +903,18 @@
 
         .temp-expense-form input,
         .temp-expense-form select {
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #f1f5f9;
+            background: var(--ink);
+            border: 1px solid var(--rule);
+            color: var(--text);
             padding: 6px 10px;
-            border-radius: 4px;
+            border-radius: 2px;
             font-size: 0.82rem;
             outline: none;
         }
 
         .temp-expense-form input:focus,
         .temp-expense-form select:focus {
-            border-color: #3b82f6;
+            border-color: var(--brass);
         }
 
         .temp-expense-form select {
@@ -922,11 +922,11 @@
         }
 
         .temp-expense-form button {
-            background: #a855f7;
-            color: white;
+            background: var(--brass);
+            color: var(--ink);
             border: none;
             padding: 6px 14px;
-            border-radius: 4px;
+            border-radius: 2px;
             font-size: 0.82rem;
             cursor: pointer;
             transition: background 0.2s;
@@ -934,7 +934,7 @@
         }
 
         .temp-expense-form button:hover {
-            background: #9333ea;
+            background: var(--brass-bright);
         }
 
         .temp-expense-list {
@@ -947,31 +947,31 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            background: rgba(168, 85, 247, 0.1);
-            border: 1px solid rgba(168, 85, 247, 0.3);
-            border-radius: 6px;
+            background: rgba(138, 111, 59, 0.1);
+            border: 1px solid rgba(138, 111, 59, 0.3);
+            border-radius: 2px;
             padding: 6px 10px;
             font-size: 0.8rem;
         }
 
         .temp-expense-name {
-            color: #c084fc;
+            color: #B8A276;
             font-weight: 500;
         }
 
         .temp-expense-amount {
-            color: #e2e8f0;
+            color: var(--text);
         }
 
         .temp-expense-half {
-            color: #64748b;
+            color: var(--muted);
             font-size: 0.72rem;
         }
 
         .temp-expense-delete {
             background: none;
             border: none;
-            color: #64748b;
+            color: var(--muted);
             cursor: pointer;
             font-size: 1rem;
             padding: 0 2px;
@@ -979,7 +979,7 @@
         }
 
         .temp-expense-delete:hover {
-            color: #f87171;
+            color: var(--red-ink);
         }
 
         @media (max-width: 768px) {
@@ -1000,56 +1000,58 @@
 
         #recurring-bills-table th {
             text-align: left;
-            font-size: 0.75rem;
+            font-size: 11px;
+            font-family: var(--mono);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #64748b;
+            letter-spacing: 0.08em;
+            color: var(--muted);
             padding: 6px 8px;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid var(--rule);
             position: sticky;
             top: 0;
-            background: #1e293b;
+            background: var(--surface);
         }
 
         #recurring-bills-table td {
             padding: 8px;
             font-size: 0.875rem;
-            color: #e2e8f0;
-            border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+            color: var(--text);
+            border-bottom: 1px solid rgba(27, 25, 23, 0.5);
         }
 
         #recurring-bills-table tr:hover {
-            background: rgba(59, 130, 246, 0.05);
+            background: rgba(217, 160, 63, 0.05);
         }
 
         .status-badge {
-            font-size: 0.7rem;
-            font-weight: 600;
+            font-size: 11px;
+            font-weight: 400;
+            font-family: var(--mono);
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.08em;
             padding: 2px 8px;
-            border-radius: 10px;
+            border-radius: 2px;
             display: inline-block;
         }
 
         .status-badge.paid {
-            color: #4ade80;
-            background: rgba(34, 197, 94, 0.12);
+            color: var(--ledger-green);
+            background: rgba(124, 175, 126, 0.12);
         }
 
         .status-badge.pending {
-            color: #fbbf24;
-            background: rgba(251, 191, 36, 0.12);
+            color: var(--brass);
+            background: rgba(217, 160, 63, 0.12);
         }
 
         .status-badge.no-period {
-            color: #64748b;
-            background: rgba(100, 116, 139, 0.12);
+            color: var(--muted);
+            background: rgba(151, 144, 126, 0.12);
         }
 
         .match-keywords {
             font-size: 0.75rem;
-            color: #64748b;
+            color: var(--muted);
             max-width: 180px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1083,8 +1085,8 @@
 
         .nw-headline-value {
             font-size: 2.2rem;
-            font-weight: 700;
-            color: #f1f5f9;
+            font-weight: 600;
+            color: var(--text);
             letter-spacing: -0.02em;
             font-variant-numeric: tabular-nums;
         }
@@ -1098,20 +1100,20 @@
             font-size: 0.8rem;
             font-weight: 600;
             padding: 4px 10px;
-            border-radius: 20px;
+            border-radius: 2px;
             font-variant-numeric: tabular-nums;
-            background: rgba(148, 163, 184, 0.1);
-            color: #94a3b8;
+            background: rgba(151, 144, 126, 0.1);
+            color: var(--muted);
         }
 
         .nw-change-pill.positive {
-            color: #4ade80;
-            background: rgba(74, 222, 128, 0.12);
+            color: var(--ledger-green);
+            background: rgba(124, 175, 126, 0.12);
         }
 
         .nw-change-pill.negative {
-            color: #f87171;
-            background: rgba(248, 113, 113, 0.12);
+            color: var(--red-ink);
+            background: rgba(206, 106, 87, 0.12);
         }
 
         .nw-headline-sub {
@@ -1119,16 +1121,16 @@
             gap: 18px;
             width: 100%;
             font-size: 0.8rem;
-            color: #64748b;
+            color: var(--muted);
         }
 
         .nw-headline-sub .nw-assets-value {
-            color: #4ade80;
+            color: var(--ledger-green);
             font-weight: 600;
         }
 
         .nw-headline-sub .nw-liabilities-value {
-            color: #f87171;
+            color: var(--red-ink);
             font-weight: 600;
         }
 
@@ -1138,11 +1140,12 @@
 
         /* Manual balance quick-update cards */
         .mb-quick-update-title {
-            font-size: 0.8rem;
+            font-size: 11px;
+            font-family: var(--mono);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #94a3b8;
-            font-weight: 500;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            font-weight: 400;
             margin-bottom: 10px;
         }
 
@@ -1154,9 +1157,9 @@
         }
 
         .mb-account-card {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
+            background: var(--ink);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
             padding: 12px 14px;
         }
 
@@ -1171,7 +1174,7 @@
         .mb-account-name {
             font-size: 0.85rem;
             font-weight: 600;
-            color: #f1f5f9;
+            color: var(--text);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -1182,21 +1185,21 @@
             font-size: 0.68rem;
             font-weight: 600;
             padding: 2px 7px;
-            border-radius: 10px;
-            color: #94a3b8;
-            background: rgba(148, 163, 184, 0.12);
+            border-radius: 2px;
+            color: var(--muted);
+            background: rgba(151, 144, 126, 0.12);
             white-space: nowrap;
         }
 
         .mb-staleness.stale {
-            color: #fbbf24;
-            background: rgba(251, 191, 36, 0.12);
+            color: var(--brass);
+            background: rgba(217, 160, 63, 0.12);
         }
 
         .mb-account-card-balance {
             font-size: 1.05rem;
-            font-weight: 700;
-            color: #e2e8f0;
+            font-weight: 600;
+            color: var(--text);
             margin-bottom: 10px;
             font-variant-numeric: tabular-nums;
         }
@@ -1204,7 +1207,7 @@
         .mb-account-date {
             font-size: 0.72rem;
             font-weight: 400;
-            color: #64748b;
+            color: var(--muted);
             margin-left: 6px;
         }
 
@@ -1216,25 +1219,25 @@
         .mb-quick-input {
             flex: 1;
             min-width: 0;
-            background: #1e293b;
-            border: 1px solid #334155;
-            color: #f1f5f9;
+            background: var(--surface);
+            border: 1px solid var(--rule);
+            color: var(--text);
             padding: 5px 8px;
-            border-radius: 6px;
+            border-radius: 2px;
             font-size: 0.8rem;
             outline: none;
         }
 
         .mb-quick-input:focus {
-            border-color: #3b82f6;
+            border-color: var(--brass);
         }
 
         .mb-account-card-form button {
-            background: #334155;
-            color: #e2e8f0;
+            background: var(--elevated);
+            color: var(--text);
             border: none;
             padding: 5px 10px;
-            border-radius: 6px;
+            border-radius: 2px;
             font-size: 0.75rem;
             cursor: pointer;
             transition: background 0.2s;
@@ -1242,7 +1245,7 @@
         }
 
         .mb-account-card-form button:hover {
-            background: #3b82f6;
+            background: var(--brass);
         }
 
         .mb-account-card-form button:disabled {
@@ -1257,8 +1260,8 @@
         <h1>Personal Finance Dashboard</h1>
         <div class="header-actions">
             <a href="/transactions" class="btn-link">View Transactions</a>
-            <a href="/categories" class="btn-link" style="background-color: #475569;">Categories</a>
-            <a href="/rules" class="btn-link" style="background-color: #475569;">Rules</a>
+            <a href="/categories" class="btn-link secondary">Categories</a>
+            <a href="/rules" class="btn-link secondary">Rules</a>
             <a href="/transactions?status=uncategorized" class="btn-link secondary">View Uncategorized</a>
             <button id="refresh-btn" onclick="refreshData()">Refresh Data</button>
         </div>
@@ -1412,7 +1415,7 @@
                 <div class="slider-grid" id="simulator-sliders">
                     <!-- Populated by JS -->
                 </div>
-                <button onclick="resetSimulator()" style="margin-top:10px; background:none; border:1px solid #475569; color:#94a3b8; padding:4px 12px; border-radius:4px; font-size:0.78rem; cursor:pointer;">Reset All</button>
+                <button onclick="resetSimulator()" style="margin-top:10px; background:none; border:1px solid var(--rule); color:var(--muted); padding:4px 12px; border-radius: 2px; font-size:0.78rem; cursor:pointer;">Reset All</button>
 
                 <!-- Temporary Expenses -->
                 <div class="temp-expenses-section">

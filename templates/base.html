@@ -7,47 +7,58 @@
     <title>{% block title %}Personal Finance Dashboard{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="/static/css/dashboard.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
     <style>
+        /* Masthead nav — quiet text links over a scotch rule */
         .main-nav {
             display: flex;
-            align-items: center;
+            align-items: baseline;
             gap: 4px;
-            padding: 10px 24px;
-            background: #0f172a;
-            border-bottom: 1px solid #1e293b;
-            margin-bottom: 16px;
+            padding: 12px 0 10px;
+            background: transparent;
+            border-bottom: 1px solid var(--rule);
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .main-nav::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -4px;
+            border-bottom: 1px solid var(--rule);
         }
 
         .main-nav .nav-brand {
-            font-weight: 700;
-            color: #f1f5f9;
+            font-family: var(--serif);
+            font-variant: small-caps;
+            letter-spacing: 0.04em;
+            font-weight: 500;
+            color: var(--text);
             text-decoration: none;
-            margin-right: 20px;
-            font-size: 1rem;
+            margin-right: 24px;
+            font-size: 1.2rem;
         }
 
         .main-nav a.nav-link {
             text-decoration: none;
-            color: #94a3b8;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.9rem;
+            color: var(--muted);
+            padding: 6px 10px;
+            font-size: 0.85rem;
             font-weight: 500;
         }
 
         .main-nav a.nav-link:hover {
-            color: #e2e8f0;
-            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
         }
 
         .main-nav a.nav-link.active {
-            color: #fff;
-            background: #3b82f6;
+            color: var(--brass);
         }
     </style>
     {% block head %}{% endblock %}

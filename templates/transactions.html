@@ -19,7 +19,7 @@
 
         .back-link {
             text-decoration: none;
-            color: #3b82f6;
+            color: var(--brass);
             font-weight: 500;
         }
 
@@ -50,12 +50,13 @@
         .category-badge {
             display: inline-block;
             padding: 2px 8px;
-            border-radius: 9999px;
+            border-radius: 2px;
             font-size: 0.75rem;
             font-weight: 500;
             line-height: 1.5;
-            background-color: #334155;
-            color: #e2e8f0;
+            background-color: transparent;
+            border: 1px solid var(--rule);
+            color: var(--muted);
             text-decoration: none;
             cursor: pointer;
             transition: opacity 0.15s;
@@ -79,25 +80,25 @@
         }
 
         .cat-edit-input {
-            background-color: #0f172a;
+            background-color: var(--ink);
         }
 
         .badge-income {
-            background-color: rgba(74, 222, 128, 0.2);
-            color: #4ade80;
-            border: 1px solid rgba(74, 222, 128, 0.3);
+            background-color: rgba(124, 175, 126, 0.2);
+            color: var(--ledger-green);
+            border: 1px solid rgba(124, 175, 126, 0.3);
         }
 
         .badge-expense {
-            background-color: rgba(248, 113, 113, 0.2);
-            color: #f87171;
-            border: 1px solid rgba(248, 113, 113, 0.3);
+            background-color: rgba(206, 106, 87, 0.2);
+            color: var(--red-ink);
+            border: 1px solid rgba(206, 106, 87, 0.3);
         }
 
         .badge-transfer {
-            background-color: rgba(59, 130, 246, 0.2);
-            color: #60a5fa;
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            background-color: rgba(217, 160, 63, 0.2);
+            color: var(--brass);
+            border: 1px solid rgba(217, 160, 63, 0.3);
         }
 
         /* Custom Dropdown Styling */
@@ -110,17 +111,17 @@
         .dropdown-input {
             width: 100%;
             padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid #334155;
-            background-color: #0f172a;
-            color: #e2e8f0;
+            border-radius: 2px;
+            border: 1px solid var(--rule);
+            background-color: var(--ink);
+            color: var(--text);
             font-size: 0.9rem;
         }
 
         .dropdown-input:focus {
             outline: none;
-            border-color: #3b82f6;
-            outline: 2px solid rgba(59, 130, 246, 0.5);
+            border-color: var(--brass);
+            outline: 2px solid rgba(217, 160, 63, 0.5);
         }
 
         .dropdown-content {
@@ -129,9 +130,9 @@
             top: 100%;
             left: 0;
             right: 0;
-            background-color: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 6px;
+            background-color: var(--surface);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
             z-index: 50;
             max-height: 300px;
@@ -145,12 +146,13 @@
         }
 
         .dropdown-section-title {
-            font-size: 0.75rem;
-            color: #94a3b8;
+            font-size: 11px;
+            color: var(--muted);
+            font-family: var(--mono);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
             margin: 8px 4px 4px 4px;
-            font-weight: 600;
+            font-weight: 400;
         }
 
         .pills-container {
@@ -162,39 +164,38 @@
 
         .pill {
             padding: 4px 10px;
-            background-color: #334155;
-            border: 1px solid #475569;
-            border-radius: 99px;
+            background-color: var(--elevated);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
             font-size: 0.8rem;
-            color: #e2e8f0;
+            color: var(--text);
             cursor: pointer;
-            transition: all 0.2s;
         }
 
         .pill:hover {
-            background-color: #475569;
-            border-color: #64748b;
+            background-color: var(--elevated);
+            border-color: var(--muted);
         }
 
         .dropdown-item {
             padding: 8px 12px;
             cursor: pointer;
-            color: #cbd5e1;
-            border-radius: 4px;
+            color: var(--text);
+            border-radius: 2px;
             font-size: 0.9rem;
         }
 
         .dropdown-item:hover {
-            background-color: #334155;
-            color: #f1f5f9;
+            background-color: var(--elevated);
+            color: var(--text);
         }
 
         .filter-banner {
-            background-color: #1e293b;
-            border: 1px solid #3b82f6;
-            color: #e2e8f0;
+            background-color: transparent;
+            border: 1px solid var(--rule);
+            color: var(--text);
             padding: 12px 16px;
-            border-radius: 8px;
+            border-radius: 2px;
             margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
@@ -202,17 +203,17 @@
         }
 
         .clear-filter-btn {
-            background-color: #3b82f6;
-            color: white;
+            background-color: var(--brass);
+            color: var(--ink);
             text-decoration: none;
             padding: 6px 12px;
-            border-radius: 4px;
+            border-radius: 2px;
             font-size: 0.85rem;
             font-weight: 500;
         }
 
         .clear-filter-btn:hover {
-            background-color: #2563eb;
+            background-color: var(--brass-bright);
         }
 
         .sort-header {
@@ -225,7 +226,7 @@
         }
 
         .sort-header:hover {
-            color: #f1f5f9;
+            color: var(--text);
         }
 
         /* Fixed-width arrow slot so toggling sort doesn't shift the header text */
@@ -236,7 +237,7 @@
         }
 
         .sort-header.sort-active {
-            color: #60a5fa;
+            color: var(--brass);
         }
 
         /* Category multi-select dropdown */
@@ -250,35 +251,34 @@
             align-items: center;
             gap: 6px;
             padding: 6px 14px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            color: #94a3b8;
+            background: var(--ink);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            color: var(--muted);
             font-size: 0.85rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
             white-space: nowrap;
         }
 
         .cat-filter-btn:hover {
-            border-color: #475569;
-            color: #e2e8f0;
+            border-color: var(--rule);
+            color: var(--text);
         }
 
         .cat-filter-btn.has-selection {
-            border-color: #3b82f6;
-            color: #60a5fa;
-            background: rgba(59, 130, 246, 0.08);
+            border-color: var(--brass);
+            color: var(--brass);
+            background: rgba(217, 160, 63, 0.08);
         }
 
         .cat-filter-btn .cat-count-badge {
-            background: #3b82f6;
-            color: white;
+            background: var(--brass);
+            color: var(--ink);
             font-size: 0.7rem;
-            font-weight: 700;
+            font-weight: 600;
             padding: 1px 6px;
-            border-radius: 10px;
+            border-radius: 2px;
             min-width: 18px;
             text-align: center;
         }
@@ -288,9 +288,9 @@
             position: absolute;
             top: calc(100% + 6px);
             left: 0;
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 8px;
+            background: var(--surface);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
             z-index: 200;
             min-width: 260px;
@@ -312,26 +312,26 @@
 
         .cat-filter-search {
             padding: 10px 12px;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid var(--rule);
         }
 
         .cat-filter-search input {
             width: 100%;
             padding: 7px 10px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            color: #e2e8f0;
+            background: var(--ink);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            color: var(--text);
             font-size: 0.85rem;
             outline: none;
         }
 
         .cat-filter-search input:focus {
-            border-color: #3b82f6;
+            border-color: var(--brass);
         }
 
         .cat-filter-search input::placeholder {
-            color: #475569;
+            color: var(--muted);
         }
 
         .cat-filter-list {
@@ -348,16 +348,16 @@
             cursor: pointer;
             transition: background 0.1s;
             font-size: 0.88rem;
-            color: #cbd5e1;
+            color: var(--text);
             user-select: none;
         }
 
         .cat-filter-item:hover {
-            background: rgba(59, 130, 246, 0.06);
+            background: rgba(217, 160, 63, 0.06);
         }
 
         .cat-filter-item input[type="checkbox"] {
-            accent-color: #3b82f6;
+            accent-color: var(--brass);
             width: 15px;
             height: 15px;
             cursor: pointer;
@@ -367,7 +367,7 @@
         .cat-filter-item .cat-swatch {
             width: 10px;
             height: 10px;
-            border-radius: 3px;
+            border-radius: 2px;
             flex-shrink: 0;
         }
 
@@ -376,38 +376,37 @@
             justify-content: space-between;
             align-items: center;
             padding: 10px 14px;
-            border-top: 1px solid #334155;
+            border-top: 1px solid var(--rule);
             gap: 8px;
         }
 
         .cat-filter-actions button {
             padding: 5px 14px;
-            border-radius: 6px;
+            border-radius: 2px;
             font-size: 0.8rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.15s;
         }
 
         .cat-filter-apply {
-            background: #3b82f6;
-            color: white;
+            background: var(--brass);
+            color: var(--ink);
             border: none;
         }
 
         .cat-filter-apply:hover {
-            background: #2563eb;
+            background: var(--brass-bright);
         }
 
         .cat-filter-clear {
             background: transparent;
-            color: #94a3b8;
-            border: 1px solid #475569;
+            color: var(--muted);
+            border: 1px solid var(--rule);
         }
 
         .cat-filter-clear:hover {
-            border-color: #64748b;
-            color: #e2e8f0;
+            border-color: var(--muted);
+            color: var(--text);
         }
 
         /* Search and Filter Styles */
@@ -430,46 +429,45 @@
             width: 100%;
             padding: 10px 16px;
             padding-right: 40px;
-            border-radius: 8px;
-            border: 1px solid #334155;
-            background-color: #0f172a;
-            color: #e2e8f0;
+            border-radius: 2px;
+            border: 1px solid var(--rule);
+            background-color: var(--ink);
+            color: var(--text);
             font-size: 0.95rem;
         }
 
         .search-input:focus {
             outline: none;
-            border-color: #3b82f6;
-            border-color: #3b82f6;
-            outline: 2px solid rgba(59, 130, 246, 0.5);
+            border-color: var(--brass);
+            border-color: var(--brass);
+            outline: 2px solid rgba(217, 160, 63, 0.5);
         }
 
         .filter-tabs {
             display: flex;
-            background-color: #0f172a;
+            background-color: var(--ink);
             padding: 4px;
-            border-radius: 8px;
-            border: 1px solid #334155;
+            border-radius: 2px;
+            border: 1px solid var(--rule);
         }
 
         .filter-tab {
             padding: 6px 16px;
-            border-radius: 6px;
-            color: #94a3b8;
+            border-radius: 2px;
+            color: var(--muted);
             text-decoration: none;
             font-size: 0.9rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
         }
 
         .filter-tab:hover {
-            color: #e2e8f0;
+            color: var(--text);
         }
 
         .filter-tab.active {
-            background-color: #3b82f6;
-            color: white;
+            background-color: var(--brass);
+            color: var(--ink);
         }
 
         /* Sidebar Layout */
@@ -487,11 +485,10 @@
 
         .sidebar {
             width: 280px;
-            background: #1e293b;
-            padding: 16px;
-            border-radius: 8px;
-            border: 1px solid #334155;
-            color: #e2e8f0;
+            background: transparent;
+            padding: 16px 0;
+            border-top: 1px solid var(--rule);
+            color: var(--text);
             flex-shrink: 0;
             position: sticky;
             top: 20px;
@@ -501,11 +498,12 @@
         .sidebar h3 {
             margin-top: 0;
             margin-bottom: 12px;
-            font-size: 0.85rem;
-            color: #94a3b8;
+            font-size: 11px;
+            color: var(--muted);
+            font-family: var(--mono);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 600;
+            letter-spacing: 0.08em;
+            font-weight: 400;
         }
 
         .freq-list {
@@ -519,11 +517,11 @@
             justify-content: space-between;
             align-items: center;
             padding: 8px 0;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid var(--rule);
             cursor: pointer;
             font-size: 0.9rem;
             text-decoration: none;
-            color: #cbd5e1;
+            color: var(--text);
         }
 
         .freq-item:last-child {
@@ -531,15 +529,15 @@
         }
 
         .freq-item:hover {
-            color: #3b82f6;
+            color: var(--brass);
         }
 
         .freq-count {
-            background: #334155;
+            background: var(--elevated);
             padding: 2px 8px;
-            border-radius: 999px;
+            border-radius: 2px;
             font-size: 0.75rem;
-            color: #e2e8f0;
+            color: var(--text);
             font-weight: 600;
         }
 
@@ -549,17 +547,17 @@
             gap: 6px;
             cursor: pointer;
             font-size: 0.85rem;
-            color: #94a3b8;
+            color: var(--muted);
             white-space: nowrap;
             user-select: none;
         }
 
         .transfer-toggle:hover {
-            color: #e2e8f0;
+            color: var(--text);
         }
 
         .transfer-toggle input[type="checkbox"] {
-            accent-color: #3b82f6;
+            accent-color: var(--brass);
             width: 16px;
             height: 16px;
             cursor: pointer;
@@ -580,9 +578,9 @@
         }
 
         .tx-modal-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 12px;
+            background: var(--surface);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
             width: 100%;
             max-width: 500px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
@@ -596,27 +594,27 @@
             justify-content: space-between;
             align-items: center;
             padding: 16px 20px;
-            border-bottom: 1px solid #334155;
-            background: #0f172a;
+            border-bottom: 1px solid var(--rule);
+            background: var(--ink);
         }
 
         .modal-header h2 {
             font-size: 1.1rem;
             margin: 0;
-            color: #f1f5f9;
+            color: var(--text);
         }
 
         .close-btn {
             background: none;
             border: none;
-            color: #94a3b8;
+            color: var(--muted);
             font-size: 1.5rem;
             cursor: pointer;
             line-height: 1;
         }
 
         .close-btn:hover {
-            color: #f1f5f9;
+            color: var(--text);
         }
 
         .modal-body {
@@ -625,8 +623,8 @@
 
         .modal-footer {
             padding: 16px 20px;
-            border-top: 1px solid #334155;
-            background: #0f172a;
+            border-top: 1px solid var(--rule);
+            background: var(--ink);
             display: flex;
             justify-content: flex-end;
             gap: 10px;
@@ -640,52 +638,52 @@
             display: block;
             margin-bottom: 6px;
             font-size: 0.85rem;
-            color: #94a3b8;
+            color: var(--muted);
             font-weight: 500;
         }
 
         .form-input {
             width: 100%;
             padding: 8px 12px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            color: #e2e8f0;
+            background: var(--ink);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            color: var(--text);
             font-size: 0.95rem;
         }
 
         .form-input:focus {
-            outline: 2px solid #3b82f6;
-            border-color: #3b82f6;
+            outline: 2px solid var(--brass);
+            border-color: var(--brass);
         }
 
         .btn-primary {
-            background: #3b82f6;
-            color: white;
+            background: var(--brass);
+            color: var(--ink);
             border: none;
             padding: 8px 16px;
-            border-radius: 6px;
+            border-radius: 2px;
             font-weight: 500;
             cursor: pointer;
         }
 
         .btn-primary:hover {
-            background: #2563eb;
+            background: var(--brass-bright);
         }
 
         .btn-secondary {
             background: transparent;
-            color: #94a3b8;
-            border: 1px solid #475569;
+            color: var(--muted);
+            border: 1px solid var(--rule);
             padding: 8px 16px;
-            border-radius: 6px;
+            border-radius: 2px;
             font-weight: 500;
             cursor: pointer;
         }
 
         .btn-secondary:hover {
-            border-color: #64748b;
-            color: #e2e8f0;
+            border-color: var(--muted);
+            color: var(--text);
         }
 
         /* Expandable Transaction Detail Row */
@@ -699,7 +697,7 @@
         }
 
         .tx-row.expanded {
-            background-color: rgba(59, 130, 246, 0.06);
+            background-color: rgba(217, 160, 63, 0.06);
         }
 
         .tx-row.expanded td {
@@ -716,14 +714,14 @@
 
         .tx-detail-row td {
             padding: 0 16px 16px 16px;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid var(--rule);
             overflow: visible;
         }
 
         .tx-detail-panel {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
+            background: var(--ink);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
             padding: 16px 20px;
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -750,29 +748,30 @@
         }
 
         .detail-label {
-            font-size: 0.7rem;
+            font-size: 11px;
+            font-family: var(--mono);
             text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #64748b;
-            font-weight: 600;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            font-weight: 400;
         }
 
         .detail-value {
             font-size: 0.88rem;
-            color: #e2e8f0;
+            color: var(--text);
             font-weight: 500;
         }
 
         .detail-value.positive {
-            color: #4ade80;
+            color: var(--ledger-green);
         }
 
         .detail-value.negative {
-            color: #f87171;
+            color: var(--red-ink);
         }
 
         .detail-value.muted {
-            color: #94a3b8;
+            color: var(--muted);
         }
 
         .detail-actions {
@@ -783,30 +782,29 @@
 
         .detail-action-btn {
             padding: 5px 12px;
-            border-radius: 6px;
+            border-radius: 2px;
             font-size: 0.78rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.15s;
-            border: 1px solid #475569;
+            border: 1px solid var(--rule);
             background: transparent;
-            color: #94a3b8;
+            color: var(--muted);
             text-decoration: none;
         }
 
         .detail-action-btn:hover {
-            border-color: #3b82f6;
-            color: #60a5fa;
-            background: rgba(59, 130, 246, 0.08);
+            border-color: var(--brass);
+            color: var(--brass);
+            background: rgba(217, 160, 63, 0.08);
         }
 
         .detail-action-btn.recurring-btn {
-            border-color: #eab308;
-            color: #eab308;
+            border-color: var(--brass);
+            color: var(--brass);
         }
 
         .detail-action-btn.recurring-btn:hover {
-            background: rgba(234, 179, 8, 0.08);
+            background: rgba(217, 160, 63, 0.08);
         }
 
         .detail-recurring-badge {
@@ -814,10 +812,10 @@
             align-items: center;
             gap: 5px;
             padding: 3px 10px;
-            background: rgba(234, 179, 8, 0.1);
-            border: 1px solid rgba(234, 179, 8, 0.25);
-            border-radius: 6px;
-            color: #eab308;
+            background: rgba(217, 160, 63, 0.1);
+            border: 1px solid rgba(217, 160, 63, 0.25);
+            border-radius: 2px;
+            color: var(--brass);
             font-size: 0.8rem;
             font-weight: 500;
             cursor: pointer;
@@ -825,29 +823,29 @@
         }
 
         .detail-recurring-badge:hover {
-            background: rgba(239, 68, 68, 0.15);
-            border-color: rgba(239, 68, 68, 0.4);
-            color: #f87171;
+            background: rgba(206, 106, 87, 0.15);
+            border-color: rgba(206, 106, 87, 0.4);
+            color: var(--red-ink);
         }
 
         .detail-recurring-badge:hover::after {
             content: ' ✕ Remove';
             font-size: 0.7rem;
             margin-left: 4px;
-            color: #f87171;
+            color: var(--red-ink);
         }
 
         .tx-expand-icon {
             display: inline-block;
             transition: transform 0.2s ease;
             font-size: 0.75rem;
-            color: #475569;
+            color: var(--muted);
             margin-left: 6px;
         }
 
         .tx-row.expanded .tx-expand-icon {
             transform: rotate(90deg);
-            color: #3b82f6;
+            color: var(--brass);
         }
 
         /* Client-side pagination */
@@ -861,7 +859,7 @@
             align-items: center;
             gap: 12px;
             margin: 12px 0;
-            color: #94a3b8;
+            color: var(--muted);
             font-size: 0.85rem;
             flex-wrap: wrap;
         }
@@ -874,19 +872,18 @@
         }
 
         .pagination-controls button {
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #cbd5e1;
+            background: var(--ink);
+            border: 1px solid var(--rule);
+            color: var(--text);
             padding: 5px 12px;
-            border-radius: 6px;
+            border-radius: 2px;
             font-size: 0.82rem;
             cursor: pointer;
-            transition: all 0.15s;
         }
 
         .pagination-controls button:hover:not(:disabled) {
-            border-color: #475569;
-            color: #f1f5f9;
+            border-color: var(--rule);
+            color: var(--text);
         }
 
         .pagination-controls button:disabled {
@@ -895,11 +892,11 @@
         }
 
         .pagination-controls select {
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #cbd5e1;
+            background: var(--ink);
+            border: 1px solid var(--rule);
+            color: var(--text);
             padding: 5px 8px;
-            border-radius: 6px;
+            border-radius: 2px;
             font-size: 0.82rem;
             cursor: pointer;
         }
@@ -910,7 +907,7 @@
 
         .pg-page-label {
             white-space: nowrap;
-            color: #cbd5e1;
+            color: var(--text);
         }
 
         /* Responsive sidebar */
@@ -934,9 +931,9 @@
             <h1>Transactions</h1>
             <div class="header-actions">
                 <a href="/categories"
-                    style="margin-right: 12px; text-decoration: none; color: #94a3b8; font-weight: 500;">Categories</a>
+                    style="margin-right: 12px; text-decoration: none; color: var(--muted); font-weight: 500;">Categories</a>
                 <a href="/rules"
-                    style="margin-right: 12px; text-decoration: none; color: #94a3b8; font-weight: 500;">Rules</a>
+                    style="margin-right: 12px; text-decoration: none; color: var(--muted); font-weight: 500;">Rules</a>
                 <button onclick="openModal()" class="btn-primary">Bulk Categorize</button>
                 <a href="/" class="back-link" style="margin-left: 12px;">&larr; Back to Dashboard</a>
             </div>
@@ -950,7 +947,7 @@
                     <button onclick="closeModal()" class="close-btn">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <p style="margin-bottom: 16px; color: #94a3b8; font-size: 0.9rem;">
+                    <p style="margin-bottom: 16px; color: var(--muted); font-size: 0.9rem;">
                         Automatically categorize transactions based on their description.
                     </p>
                     <div class="form-group">
@@ -989,7 +986,7 @@
                     <button onclick="closeRecurringModal()" class="close-btn">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <p style="margin-bottom: 16px; color: #94a3b8; font-size: 0.9rem;">
+                    <p style="margin-bottom: 16px; color: var(--muted); font-size: 0.9rem;">
                         Track this bill in your Budget Runway.
                     </p>
                     <div class="form-group">
@@ -1008,7 +1005,7 @@
                         <label for="billCriteria">Match Criteria (auto-filled)</label>
                         <input type="text" id="billCriteria" class="form-input"
                             placeholder="Keyword to match transaction">
-                        <small style="color: #64748b; font-size: 0.8rem;">We'll look for this keyword in transaction
+                        <small style="color: var(--muted); font-size: 0.8rem;">We'll look for this keyword in transaction
                             descriptions.</small>
                     </div>
                 </div>
@@ -1055,14 +1052,14 @@
 
         <!-- Bulk Actions Header (Hidden by default, replaces Controls) -->
         <div id="bulkActionsHeader" class="controls-container"
-            style="display: none; background-color: #1e293b; border: 1px solid #3b82f6; padding: 10px 16px; border-radius: 8px; margin-bottom: 20px;">
+            style="display: none; background-color: var(--surface); border: 1px solid var(--brass); padding: 10px 16px; border-radius: 2px; margin-bottom: 20px;">
             <div style="display: flex; align-items: center; gap: 16px;">
-                <span id="selectedCount" style="font-weight: 600; color: #fff;">0 selected</span>
+                <span id="selectedCount" style="font-weight: 600; color: var(--text);">0 selected</span>
                 <a href="#" id="selectAllMatchingLink"
-                    style="display: none; color: #60a5fa; font-size: 0.85rem; text-decoration: none;"
+                    style="display: none; color: var(--brass); font-size: 0.85rem; text-decoration: none;"
                     onclick="selectAllMatching(); return false;"></a>
                 <button onclick="clearSelection()" class="clear-filter-btn"
-                    style="background: transparent; border: 1px solid #475569; color: #94a3b8;">Clear</button>
+                    style="background: transparent; border: 1px solid var(--rule); color: var(--muted);">Clear</button>
             </div>
 
             <div style="display: flex; gap: 10px; align-items: center;">
@@ -1091,9 +1088,9 @@
                 </div>
 
                 <button onclick="applyBulkCategory()" class="btn-primary">Apply</button>
-                <div style="width: 1px; height: 24px; background: #334155; margin: 0 8px;"></div>
+                <div style="width: 1px; height: 24px; background: var(--elevated); margin: 0 8px;"></div>
                 <button onclick="openRecurringModal()" class="btn-secondary"
-                    style="border-color: #eab308; color: #eab308;">Make Recurring</button>
+                    style="border-color: var(--brass); color: var(--brass);">Make Recurring</button>
             </div>
         </div>
 
@@ -1123,10 +1120,10 @@
                         </p>
                         <a href="/transactions?status={{ current_status }}{{ '&search=' + (current_search | urlencode) if current_search }}{{ '&category=' + (current_category | urlencode) if current_category }}{{ '&account=' + (current_account | urlencode) if current_account }}{{ '&sort=' + current_sort if current_sort }}"
                             class="clear-filter-btn" style="font-size: 0.78rem; padding: 4px 10px;">Clear Dates</a>
-                        <span style="color: #334155;">|</span>
+                        <span style="color: var(--rule);">|</span>
                         {% endif %}
 
-                        <span style="font-size: 0.85rem; color: #94a3b8;">Date:</span>
+                        <span style="font-size: 0.85rem; color: var(--muted);">Date:</span>
                         <button onclick="applyDateFilter(30)" class="btn-secondary"
                             style="padding: 4px 10px; font-size: 0.8rem;">30d</button>
                         <button onclick="applyDateFilter(60)" class="btn-secondary"
@@ -1163,7 +1160,7 @@
                                     <label class="cat-filter-item" data-name="uncategorized">
                                         <input type="checkbox" value="Uncategorized" {{ 'checked' if 'Uncategorized' in
                                             active_cats }}>
-                                        <span style="color: #64748b; font-style: italic;">Uncategorized</span>
+                                        <span style="color: var(--muted); font-style: italic;">Uncategorized</span>
                                     </label>
                                 </div>
                                 <div class="cat-filter-actions">
@@ -1406,13 +1403,13 @@
                             </td>
                             <td style="white-space: nowrap;" title="{{ t.description }}">
                                 <a href="/transactions?search={{ t.description | urlencode }}&status={{ current_status }}{{ '&sort=' + current_sort if current_sort }}{{ '&start=' + filter_start if filter_start }}{{ '&end=' + filter_end if filter_end }}{{ '&category=' + (current_category | urlencode) if current_category }}"
-                                    style="color: inherit; text-decoration: none; border-bottom: 1px dotted #64748b;"
+                                    style="color: inherit; text-decoration: none; border-bottom: 1px dotted var(--muted);"
                                     title="Filter by this description" onclick="event.stopPropagation();">
                                     {{ t.description }}
                                 </a>
                                 {% if t.recurring_bill %}
                                 <span title="Recurring Bill: {{ t.recurring_bill }}"
-                                    style="cursor: help; margin-left: 6px; color: #eab308; font-size: 1.1em;">
+                                    style="cursor: help; margin-left: 6px; color: var(--brass); font-size: 1.1em;">
                                     &#8635;
                                 </span>
                                 {% endif %}
@@ -1431,7 +1428,7 @@
                                         onclick="event.stopPropagation(); startCategoryEdit(this.parentElement); return false;">{{
                                         t.subcategory }}</a>
                                     {% else %}
-                                    <span style="color: #64748b;">-</span>
+                                    <span style="color: var(--muted);">-</span>
                                     {% endif %}
                                 </span>
                             </td>
@@ -1529,7 +1526,7 @@
             {% if common_uncategorized and current_status == 'uncategorized' %}
             <div class="sidebar">
                 <h3>Frequent Keywords</h3>
-                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px;">Click to filter & categorize</p>
+                <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 10px;">Click to filter & categorize</p>
                 <ul class="freq-list">
                     {% for item in common_uncategorized %}
                     <li>
@@ -1842,15 +1839,8 @@
             return Math.abs(hash) % 360;
         }
 
-        document.querySelectorAll('.subcategory-badge').forEach(badge => {
-            const name = badge.getAttribute('data-subcategory');
-            if (name) {
-                const hue = hashStringToHue(name);
-                badge.style.backgroundColor = `hsla(${hue}, 60%, 40%, 0.25)`;
-                badge.style.color = `hsl(${hue}, 70%, 70%)`;
-                badge.style.border = `1px solid hsla(${hue}, 60%, 50%, 0.3)`;
-            }
-        });
+        // Subcategory badges keep the shared hairline chip treatment (Private Wire:
+        // no rainbow hues); the category name itself is the differentiator.
 
         async function applyBulkCategory() {
             const category = document.getElementById("bulkCategoryInput").value.trim();
@@ -2072,7 +2062,7 @@
                     if (!descCell.querySelector('.recurring-icon-added')) {
                         const icon = document.createElement('span');
                         icon.title = 'Recurring Bill: ' + billName;
-                        icon.style.cssText = 'cursor: help; margin-left: 6px; color: #eab308; font-size: 1.1em;';
+                        icon.style.cssText = 'cursor: help; margin-left: 6px; color: var(--brass); font-size: 1.1em;';
                         icon.className = 'recurring-icon-added';
                         icon.innerHTML = '&#8635;';
                         descCell.appendChild(icon);

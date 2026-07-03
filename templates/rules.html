@@ -25,9 +25,8 @@
         }
 
         .category-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 8px;
+            background: transparent;
+            border: 1px solid var(--rule);
             padding: 20px;
             display: flex;
             flex-direction: column;
@@ -39,13 +38,13 @@
             align-items: center;
             margin-bottom: 16px;
             padding-bottom: 12px;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid var(--rule);
         }
 
         .category-name {
             font-size: 1.1rem;
             font-weight: 600;
-            color: #f1f5f9;
+            color: var(--text);
         }
 
         .card-actions {
@@ -57,21 +56,20 @@
             background: none;
             border: none;
             cursor: pointer;
-            color: #94a3b8;
+            color: var(--muted);
             font-size: 0.9rem;
             padding: 4px;
-            border-radius: 4px;
-            transition: all 0.2s;
+            border-radius: 2px;
         }
 
         .action-btn:hover {
-            color: #e2e8f0;
-            background: #334155;
+            color: var(--text);
+            background: var(--elevated);
         }
 
         .action-btn.delete:hover {
-            color: #f87171;
-            background: rgba(248, 113, 113, 0.1);
+            color: var(--red-ink);
+            background: rgba(206, 106, 87, 0.1);
         }
 
         .keywords-list {
@@ -83,12 +81,12 @@
         }
 
         .keyword-tag {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 4px;
+            background: var(--ink);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
             padding: 4px 8px;
             font-size: 0.85rem;
-            color: #cbd5e1;
+            color: var(--text);
             display: flex;
             align-items: center;
             gap: 6px;
@@ -100,19 +98,19 @@
 
         .keyword-remove {
             cursor: pointer;
-            color: #64748b;
-            font-weight: bold;
+            color: var(--muted);
+            font-weight: 600;
             font-size: 1rem;
             line-height: 1;
         }
 
         .keyword-remove:hover {
-            color: #f87171;
+            color: var(--red-ink);
         }
 
         .empty-keywords {
             font-style: italic;
-            color: #64748b;
+            color: var(--muted);
             font-size: 0.9rem;
         }
 
@@ -121,18 +119,18 @@
             margin-top: 16px;
             text-align: center;
             font-size: 0.9rem;
-            color: #3b82f6;
+            color: var(--brass);
             text-decoration: none;
             padding: 8px;
-            border-top: 1px solid #334155;
+            border-top: 1px solid var(--rule);
             transition: background 0.2s;
-            border-radius: 0 0 8px 8px;
+            border-radius: 2px;
             margin: 16px -20px -20px -20px;
-            background: #0f172a;
+            background: var(--ink);
         }
 
         .view-tx-link:hover {
-            background: #1e293b;
+            background: var(--surface);
             text-decoration: underline;
         }
 
@@ -151,9 +149,9 @@
         }
 
         .modal-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 12px;
+            background: var(--surface);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
             width: 100%;
             max-width: 400px;
             padding: 24px;
@@ -162,61 +160,60 @@
 
         /* Card Colors */
         .card-variant-0 {
-            --card-accent: #f472b6;
-            --card-bg: rgba(244, 114, 182, 0.1);
+            --card-accent: #A98467;
+            --card-bg: rgba(169, 132, 103, 0.07);
         }
 
         /* Pink */
         .card-variant-1 {
-            --card-accent: #c084fc;
-            --card-bg: rgba(192, 132, 252, 0.1);
+            --card-accent: #8A6F3B;
+            --card-bg: rgba(138, 111, 59, 0.07);
         }
 
         /* Purple */
         .card-variant-2 {
-            --card-accent: #818cf8;
-            --card-bg: rgba(129, 140, 248, 0.1);
+            --card-accent: #6B5A34;
+            --card-bg: rgba(107, 90, 52, 0.07);
         }
 
         /* Indigo */
         .card-variant-3 {
-            --card-accent: #60a5fa;
-            --card-bg: rgba(96, 165, 250, 0.1);
+            --card-accent: #D9A03F;
+            --card-bg: rgba(217, 160, 63, 0.06);
         }
 
         /* Blue */
         .card-variant-4 {
-            --card-accent: #34d399;
-            --card-bg: rgba(52, 211, 153, 0.1);
+            --card-accent: #7CAF7E;
+            --card-bg: rgba(124, 175, 126, 0.07);
         }
 
         /* Emerald */
         .card-variant-5 {
-            --card-accent: #fbbf24;
-            --card-bg: rgba(251, 191, 36, 0.1);
+            --card-accent: #B8A276;
+            --card-bg: rgba(184, 162, 118, 0.07);
         }
 
         /* Amber */
         .card-variant-6 {
-            --card-accent: #f87171;
-            --card-bg: rgba(248, 113, 113, 0.1);
+            --card-accent: #CE6A57;
+            --card-bg: rgba(206, 106, 87, 0.07);
         }
 
         /* Red */
         .card-variant-7 {
-            --card-accent: #2dd4bf;
-            --card-bg: rgba(45, 212, 191, 0.1);
+            --card-accent: #5F7A61;
+            --card-bg: rgba(95, 122, 97, 0.07);
         }
 
         /* Teal */
 
         .category-card {
-            background: linear-gradient(145deg, #1e293b, #0f172a);
-            border: 1px solid #334155;
-            border-left: 4px solid var(--card-accent);
+            background: transparent;
+            border: 1px solid var(--rule);
+            border-left: 2px solid var(--card-accent);
             position: relative;
             overflow: hidden;
-            transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .category-card::before {
@@ -233,8 +230,6 @@
         }
 
         .category-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
             border-color: var(--card-accent);
         }
 
@@ -246,7 +241,6 @@
 
         .category-card .category-name {
             color: var(--card-accent);
-            text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             font-size: 1.2rem;
             letter-spacing: 0.5px;
         }
@@ -258,22 +252,22 @@
         <div class="rules-header">
             <div>
                 <h1>Categorization Rules</h1>
-                <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 4px;">Define keyword rules that automatically categorize transactions</p>
+                <p style="color: var(--muted); font-size: 0.9rem; margin-top: 4px;">Define keyword rules that automatically categorize transactions</p>
             </div>
             <div style="display: flex; gap: 12px;">
                 <button onclick="openAddModal()" class="btn-primary"
-                    style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">+
+                    style="background: var(--brass); color: var(--ink); border: none; padding: 10px 20px; border-radius: 2px; cursor: pointer; font-weight: 500;">+
                     New Rule</button>
                 <a href="/categories"
-                    style="text-decoration: none; color: #94a3b8; padding: 10px 20px; border: 1px solid #334155; border-radius: 6px; display: inline-block;">View
+                    style="text-decoration: none; color: var(--muted); padding: 10px 20px; border: 1px solid var(--rule); border-radius: 2px; display: inline-block;">View
                     Categories</a>
                 <a href="/"
-                    style="text-decoration: none; color: #94a3b8; padding: 10px 20px; border: 1px solid #334155; border-radius: 6px; display: inline-block;">&larr;
+                    style="text-decoration: none; color: var(--muted); padding: 10px 20px; border: 1px solid var(--rule); border-radius: 2px; display: inline-block;">&larr;
                     Dashboard</a>
             </div>
         </div>
 
-        <div id="loading" style="text-align: center; color: #94a3b8; margin-top: 40px;">
+        <div id="loading" style="text-align: center; color: var(--muted); margin-top: 40px;">
             Loading categorization rules...
         </div>
 
@@ -285,18 +279,18 @@
     <!-- Rename Modal -->
     <div id="renameModal" class="modal-overlay">
         <div class="modal-card">
-            <h2 style="margin-top: 0; margin-bottom: 16px; color: #f1f5f9; font-size: 1.2rem;">Rename Category</h2>
+            <h2 style="margin-top: 0; margin-bottom: 16px; color: var(--text); font-size: 1.2rem;">Rename Category</h2>
             <input type="hidden" id="oldCategoryName">
             <div style="margin-bottom: 20px;">
-                <label style="display: block; color: #94a3b8; font-size: 0.85rem; margin-bottom: 6px;">New Name</label>
+                <label style="display: block; color: var(--muted); font-size: 0.85rem; margin-bottom: 6px;">New Name</label>
                 <input type="text" id="newCategoryName"
-                    style="width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; color: #f1f5f9; border-radius: 6px; outline: none;">
+                    style="width: 100%; padding: 10px; background: var(--ink); border: 1px solid var(--rule); color: var(--text); border-radius: 2px; outline: none;">
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
                 <button onclick="closeRenameModal()"
-                    style="background: transparent; border: 1px solid #475569; color: #94a3b8; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Cancel</button>
+                    style="background: transparent; border: 1px solid var(--rule); color: var(--muted); padding: 8px 16px; border-radius: 2px; cursor: pointer;">Cancel</button>
                 <button onclick="submitRename()"
-                    style="background: #3b82f6; border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Rename</button>
+                    style="background: var(--brass); border: none; color: var(--ink); padding: 8px 16px; border-radius: 2px; cursor: pointer;">Rename</button>
             </div>
         </div>
     </div>
@@ -304,29 +298,29 @@
     <!-- Add Category Modal -->
     <div id="addModal" class="modal-overlay">
         <div class="modal-card">
-            <h2 style="margin-top: 0; margin-bottom: 16px; color: #f1f5f9; font-size: 1.2rem;">Add New Rule</h2>
-            <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 16px;">Create a new categorization rule. Transactions
+            <h2 style="margin-top: 0; margin-bottom: 16px; color: var(--text); font-size: 1.2rem;">Add New Rule</h2>
+            <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 16px;">Create a new categorization rule. Transactions
                 matching the keyword will be assigned to this category.</p>
 
             <div style="margin-bottom: 16px;">
-                <label style="display: block; color: #94a3b8; font-size: 0.85rem; margin-bottom: 6px;">Category
+                <label style="display: block; color: var(--muted); font-size: 0.85rem; margin-bottom: 6px;">Category
                     Name</label>
                 <input type="text" id="addCategoryName" placeholder="e.g. Groceries"
-                    style="width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; color: #f1f5f9; border-radius: 6px; outline: none;">
+                    style="width: 100%; padding: 10px; background: var(--ink); border: 1px solid var(--rule); color: var(--text); border-radius: 2px; outline: none;">
             </div>
 
             <div style="margin-bottom: 20px;">
-                <label style="display: block; color: #94a3b8; font-size: 0.85rem; margin-bottom: 6px;">Initial
+                <label style="display: block; color: var(--muted); font-size: 0.85rem; margin-bottom: 6px;">Initial
                     Keyword</label>
                 <input type="text" id="addCategoryKeyword" placeholder="e.g. walmart"
-                    style="width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; color: #f1f5f9; border-radius: 6px; outline: none;">
+                    style="width: 100%; padding: 10px; background: var(--ink); border: 1px solid var(--rule); color: var(--text); border-radius: 2px; outline: none;">
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
                 <button onclick="closeAddModal()"
-                    style="background: transparent; border: 1px solid #475569; color: #94a3b8; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Cancel</button>
+                    style="background: transparent; border: 1px solid var(--rule); color: var(--muted); padding: 8px 16px; border-radius: 2px; cursor: pointer;">Cancel</button>
                 <button onclick="submitAdd()"
-                    style="background: #3b82f6; border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Create</button>
+                    style="background: var(--brass); border: none; color: var(--ink); padding: 8px 16px; border-radius: 2px; cursor: pointer;">Create</button>
             </div>
         </div>
     </div>
@@ -352,7 +346,7 @@
             grid.innerHTML = '';
 
             if (rules.length === 0) {
-                grid.innerHTML = '<p style="color: #64748b; grid-column: 1/-1; text-align: center;">No rules found.</p>';
+                grid.innerHTML = '<p style="color: var(--muted); grid-column: 1/-1; text-align: center;">No rules found.</p>';
                 return;
             }
 
@@ -386,7 +380,7 @@
                     <div class="card-header">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <div class="category-name">${rule.category}</div>
-                            <span class="keyword-count" style="font-size: 0.8rem; color: #64748b;">(${validKeywords.length})</span>
+                            <span class="keyword-count" style="font-size: 0.8rem; color: var(--muted);">(${validKeywords.length})</span>
                         </div>
                         <div class="card-actions">
                             <button class="action-btn" onclick="openRenameModal(event, '${rule.category}')" title="Rename Category">
@@ -395,7 +389,7 @@
                             <button class="action-btn delete" onclick="deleteCategory(event, '${rule.category}')" title="Delete Category">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                             </button>
-                            <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#97907E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>
                     </div>
                     <div class="keywords-list" style="display: none;">

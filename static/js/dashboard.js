@@ -27,6 +27,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Failed to load dashboard data:', err);
     }
 
+    // Motion #3 — runway bars fill on first viewport entry, once
+    initRunwayReveal();
+
     // Load manual balance history
     loadManualBalances();
 
@@ -62,7 +65,7 @@ function briefingDrillDownUrl(filter) {
 function renderBriefingError(message) {
     const body = document.getElementById('briefing-body');
     body.className = 'briefing-body briefing-error';
-    body.innerHTML = `${escapeHtml(message)} <a href="#" onclick="loadBriefing(true); return false;" style="color:#60a5fa; text-decoration:none;">Retry</a>`;
+    body.innerHTML = `${escapeHtml(message)} <a href="#" onclick="loadBriefing(true); return false;" style="color:var(--brass); text-decoration:none;">Retry</a>`;
 }
 
 async function loadBriefing(force = false) {
@@ -183,11 +186,35 @@ function updateRunwayBar(data) {
     window._runwayData = data;
 }
 
+// Motion #3 (DESIGN.md): runway bars fill 400ms ease-out on first viewport
+// entry, once. CSS holds .runway-segments at width 0 until the container
+// gets .runway-revealed (only under prefers-reduced-motion: no-preference).
+function initRunwayReveal() {
+    const containers = document.querySelectorAll('.runway-bar-container');
+    if (!containers.length) return;
+
+    if (!('IntersectionObserver' in window)) {
+        containers.forEach(c => c.classList.add('runway-revealed'));
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('runway-revealed');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.2 });
+
+    containers.forEach(c => observer.observe(c));
+}
+
 // --- Monthly Half Runway ---
 
 const BILL_COLORS = [
-    '#f59e0b', '#f97316', '#ef4444', '#ec4899',
-    '#a855f7', '#6366f1', '#0ea5e9', '#14b8a6',
+    '#D9A03F', '#8A6F3B', '#B8A276', '#A98467',
+    '#6B5A34', '#5F7A61', '#97907E', '#C2B49A',
 ];
 
 const fmtCurrency = (v) => v < 0 ? `-$${Math.abs(v).toFixed(2)}` : `$${v.toFixed(2)}`;
@@ -284,7 +311,7 @@ function renderHalfBar(bar, legendEl, half, delta) {
     // Free cash color
     const freeVal = adjustedFreeCash;
     const freePct = Math.max(0, (freeVal / budget) * 100);
-    const freeColor = freeVal > budget * 0.35 ? '#22c55e' : (freeVal > budget * 0.15 ? '#eab308' : '#ef4444');
+    const freeColor = freeVal > budget * 0.35 ? '#7CAF7E' : (freeVal > budget * 0.15 ? '#D9A03F' : '#CE6A57');
 
     // Helper: inline label if segment is wide enough
     const inlineLabel = (text, pct) => pct > 12 ? `<span class="segment-inline-label">${text}</span>` : '';
@@ -293,7 +320,7 @@ function renderHalfBar(bar, legendEl, half, delta) {
     if (spentPct > 0) {
         const spentLabel = inlineLabel(fmtCurrency(half.spent_so_far), spentPct);
         segmentsEl.innerHTML += `
-            <div class="runway-segment" style="width: ${Math.min(spentPct, 100)}%; background: linear-gradient(180deg, #64748b 0%, #475569 100%);">
+            <div class="runway-segment" style="width: ${Math.min(spentPct, 100)}%; background: #3A362E;">
                 ${spentLabel}
                 <div class="segment-tooltip">
                     <div class="segment-tooltip-name">Already Spent</div>
@@ -306,9 +333,7 @@ function renderHalfBar(bar, legendEl, half, delta) {
     if (pendingBills.length > 0) {
         pendingBills.forEach((bill, bi) => {
             const billPct = Math.max(0.5, (bill.amount / budget) * 100);
-            const shade = bi % 2 === 0
-                ? 'linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%)'
-                : 'linear-gradient(180deg, #f59e0b 0%, #d97706 100%)';
+            const shade = bi % 2 === 0 ? '#D9A03F' : '#8A6F3B';
             const dueDate = new Date(bill.due_date + 'T00:00:00');
             const dateStr = dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
             const billLabel = inlineLabel(escapeHtml(bill.name), billPct);
@@ -330,7 +355,7 @@ function renderHalfBar(bar, legendEl, half, delta) {
         const tePct = Math.max(0.5, (te.amount / budget) * 100);
         const teLabel = inlineLabel(escapeHtml(te.name), tePct);
         segmentsEl.innerHTML += `
-            <div class="runway-segment" style="width: ${tePct}%; background: linear-gradient(180deg, #c084fc 0%, #a855f7 100%); border-right: 1px solid rgba(0,0,0,0.15);">
+            <div class="runway-segment" style="width: ${tePct}%; background: #6B5A34; border-right: 1px solid rgba(0,0,0,0.15);">
                 ${teLabel}
                 <div class="segment-tooltip">
                     <div class="segment-tooltip-name">${escapeHtml(te.name)}</div>
@@ -342,11 +367,7 @@ function renderHalfBar(bar, legendEl, half, delta) {
 
     // Free cash
     if (freePct > 0) {
-        const freeGrad = freeVal > budget * 0.35
-            ? 'linear-gradient(180deg, #4ade80 0%, #22c55e 100%)'
-            : (freeVal > budget * 0.15
-                ? 'linear-gradient(180deg, #fde047 0%, #eab308 100%)'
-                : 'linear-gradient(180deg, #f87171 0%, #ef4444 100%)');
+        const freeGrad = freeColor;
         const freeLabel = inlineLabel(fmtCurrency(freeVal), Math.min(freePct, 100 - spentPct));
         segmentsEl.innerHTML += `
             <div class="runway-segment" style="width: ${Math.min(freePct, 100 - spentPct)}%; background: ${freeGrad};">
@@ -373,14 +394,14 @@ function renderHalfBar(bar, legendEl, half, delta) {
     legendEl.innerHTML = '';
     const items = [];
     if (spentPct > 0) {
-        items.push(`<span class="runway-bar-legend-item"><span class="runway-bar-legend-dot" style="background:#64748b;"></span>Spent ${fmtCurrency(half.spent_so_far)}</span>`);
+        items.push(`<span class="runway-bar-legend-item"><span class="runway-bar-legend-dot" style="background:#3A362E;"></span>Spent ${fmtCurrency(half.spent_so_far)}</span>`);
     }
     if (pendingBills.length > 0) {
-        items.push(`<span class="runway-bar-legend-item"><span class="runway-bar-legend-dot" style="background:#f59e0b;"></span>${pendingBills.length} upcoming bill${pendingBills.length !== 1 ? 's' : ''} ${fmtCurrency(half.pending_total)}</span>`);
+        items.push(`<span class="runway-bar-legend-item"><span class="runway-bar-legend-dot" style="background:#D9A03F;"></span>${pendingBills.length} upcoming bill${pendingBills.length !== 1 ? 's' : ''} ${fmtCurrency(half.pending_total)}</span>`);
     }
     if (tempExpenses.length > 0) {
         const tempSum = tempExpenses.reduce((s, t) => s + t.amount, 0);
-        items.push(`<span class="runway-bar-legend-item"><span class="runway-bar-legend-dot" style="background:#a855f7;"></span>Temporary ${fmtCurrency(tempSum)}</span>`);
+        items.push(`<span class="runway-bar-legend-item"><span class="runway-bar-legend-dot" style="background:#6B5A34;"></span>Temporary ${fmtCurrency(tempSum)}</span>`);
     }
     items.push(`<span class="runway-bar-legend-item"><span class="runway-bar-legend-dot" style="background:${freeColor};"></span>Free ${fmtCurrency(freeVal)}</span>`);
     legendEl.innerHTML = items.join('');
@@ -413,7 +434,7 @@ function populatePendingBillCards(halves) {
 
     if (totalEl) {
         totalEl.textContent = `${pendingBills.length} pending \u2022 $${pendingTotal.toFixed(2)} committed`;
-        totalEl.style.color = '#fbbf24';
+        totalEl.style.color = 'var(--brass)';
     }
 
     const pendingCardHtml = (b) => {
@@ -424,7 +445,7 @@ function populatePendingBillCards(halves) {
         return `<a href="/transactions?search=${searchTerm}&status=all" class="bill-card-link">
             <div class="bill-card pending">
                 <div class="bill-card-name">
-                    <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#f59e0b;margin-right:6px;vertical-align:middle;"></span>
+                    <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--brass);margin-right:6px;vertical-align:middle;"></span>
                     ${escapeHtml(b.name)}
                 </div>
                 <div class="bill-card-row">
@@ -458,7 +479,7 @@ function populatePendingBillCards(halves) {
     // Add a "Show paid" toggle if there are paid bills
     if (paidBills.length > 0) {
         html += `<div id="paid-bills-toggle" style="grid-column: 1 / -1; text-align: center; padding: 6px 0;">
-            <a href="#" onclick="togglePaidBills(event)" style="color: #64748b; font-size: 0.78rem; text-decoration: none;">
+            <a href="#" onclick="togglePaidBills(event)" style="color: var(--muted); font-size: 0.78rem; text-decoration: none;">
                 Show ${paidBills.length} paid bill${paidBills.length !== 1 ? 's' : ''} &darr;
             </a>
         </div>`;
@@ -471,7 +492,7 @@ function populatePendingBillCards(halves) {
             return `<a href="/transactions?search=${searchTerm}&status=all" class="bill-card-link" style="display: none;">
                 <div class="bill-card paid paid-bill-card">
                     <div class="bill-card-name">
-                        <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#4ade80;margin-right:6px;vertical-align:middle;"></span>
+                        <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--ledger-green);margin-right:6px;vertical-align:middle;"></span>
                         ${escapeHtml(b.name)}
                     </div>
                     <div class="bill-card-row">
@@ -503,8 +524,8 @@ function togglePaidBills(event) {
     if (toggle) {
         const count = paidLinks.length;
         toggle.innerHTML = isHidden
-            ? `<a href="#" onclick="togglePaidBills(event)" style="color: #64748b; font-size: 0.78rem; text-decoration: none;">Hide paid bills &uarr;</a>`
-            : `<a href="#" onclick="togglePaidBills(event)" style="color: #64748b; font-size: 0.78rem; text-decoration: none;">Show ${count} paid bill${count !== 1 ? 's' : ''} &darr;</a>`;
+            ? `<a href="#" onclick="togglePaidBills(event)" style="color: var(--muted); font-size: 0.78rem; text-decoration: none;">Hide paid bills &uarr;</a>`
+            : `<a href="#" onclick="togglePaidBills(event)" style="color: var(--muted); font-size: 0.78rem; text-decoration: none;">Show ${count} paid bill${count !== 1 ? 's' : ''} &darr;</a>`;
     }
 }
 
@@ -528,7 +549,7 @@ function initSimulator(data) {
 
     const cats = data.category_averages || [];
     if (cats.length === 0) {
-        grid.innerHTML = '<p style="color:#64748b; font-size:0.82rem;">No category data available for simulation.</p>';
+        grid.innerHTML = '<p style="color:var(--muted); font-size:0.82rem;">No category data available for simulation.</p>';
         return;
     }
 
@@ -721,7 +742,7 @@ function renderTempExpenses(expenses) {
     if (!list) return;
 
     if (!expenses || expenses.length === 0) {
-        list.innerHTML = '<span style="color:#64748b; font-size:0.8rem;">No temporary expenses configured.</span>';
+        list.innerHTML = '<span style="color:var(--muted); font-size:0.8rem;">No temporary expenses configured.</span>';
         return;
     }
 

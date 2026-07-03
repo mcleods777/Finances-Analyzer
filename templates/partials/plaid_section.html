@@ -2,14 +2,13 @@
 <style>
     .plaid-card {
         margin-top: 32px;
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        padding: 20px 24px;
+        background: transparent;
+        border-top: 1px solid var(--rule);
+        padding: 20px 0;
     }
 
     .plaid-card h2 {
-        color: #e2e8f0;
+        color: var(--text);
         font-size: 1.1rem;
         margin: 0;
     }
@@ -23,7 +22,7 @@
     }
 
     .plaid-subtitle {
-        color: #94a3b8;
+        color: var(--muted);
         font-size: 0.85rem;
         margin-top: 4px;
     }
@@ -35,44 +34,45 @@
     }
 
     .plaid-btn {
-        background: #3b82f6;
-        color: #fff;
+        background: var(--brass);
+        color: var(--ink);
         border: none;
-        border-radius: 6px;
+        border-radius: 2px;
         padding: 8px 16px;
         font-size: 0.85rem;
         font-weight: 600;
         cursor: pointer;
     }
 
-    .plaid-btn:hover { background: #2563eb; }
-    .plaid-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+    .plaid-btn:hover { background: var(--brass-bright); }
+    .plaid-btn:disabled { background: var(--elevated); color: var(--muted); cursor: not-allowed; }
 
     .plaid-btn-secondary {
-        background: rgba(59, 130, 246, 0.15);
-        color: #93c5fd;
+        background: transparent;
+        border: 1px solid var(--rule);
+        color: var(--text);
     }
 
-    .plaid-btn-secondary:hover { background: rgba(59, 130, 246, 0.3); }
+    .plaid-btn-secondary:hover { border-color: var(--muted); }
 
     .plaid-setup {
         margin-top: 16px;
-        color: #94a3b8;
+        color: var(--muted);
         font-size: 0.9rem;
         line-height: 1.6;
     }
 
     .plaid-setup code {
-        background: #0f172a;
-        border: 1px solid #334155;
-        border-radius: 4px;
+        background: var(--ink);
+        border: 1px solid var(--rule);
+        border-radius: 2px;
         padding: 1px 6px;
         font-size: 0.8rem;
-        color: #93c5fd;
+        color: var(--brass);
     }
 
     .plaid-setup ol { margin: 8px 0 0 20px; }
-    .plaid-setup a { color: #60a5fa; }
+    .plaid-setup a { color: var(--brass); }
 
     .plaid-items { margin-top: 16px; }
 
@@ -83,17 +83,17 @@
         gap: 12px;
         flex-wrap: wrap;
         padding: 12px 0;
-        border-top: 1px solid #334155;
+        border-top: 1px solid var(--rule);
     }
 
     .plaid-item-name {
-        color: #e2e8f0;
+        color: var(--text);
         font-size: 0.9rem;
         font-weight: 600;
     }
 
     .plaid-item-meta {
-        color: #64748b;
+        color: var(--muted);
         font-size: 0.8rem;
         margin-top: 2px;
     }
@@ -102,24 +102,24 @@
         display: inline-block;
         margin-top: 4px;
         padding: 2px 10px;
-        border-radius: 999px;
+        border-radius: 2px;
         font-size: 0.75rem;
-        background: rgba(239, 68, 68, 0.15);
-        color: #fca5a5;
+        background: rgba(206, 106, 87, 0.15);
+        color: var(--red-ink);
     }
 
     .plaid-status-msg {
         margin-top: 12px;
         font-size: 0.85rem;
-        color: #94a3b8;
+        color: var(--muted);
     }
 
-    .plaid-status-msg.error { color: #fca5a5; }
-    .plaid-status-msg.ok { color: #86efac; }
+    .plaid-status-msg.error { color: var(--red-ink); }
+    .plaid-status-msg.ok { color: var(--ledger-green); }
 
     .plaid-empty {
         margin-top: 16px;
-        color: #64748b;
+        color: var(--muted);
         font-size: 0.85rem;
     }
 </style>

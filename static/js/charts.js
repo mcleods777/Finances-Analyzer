@@ -1,18 +1,19 @@
-// Chart color palette
+// Chart color palette — Private Wire (brass / ledger green / red ink + earth tones).
+// Canvas can't resolve CSS variables, so these are the literal token values.
 const COLORS = {
-    primary: '#3b82f6',
-    primaryFill: 'rgba(59, 130, 246, 0.15)',
-    green: 'rgba(74, 222, 128, 0.7)',
-    red: 'rgba(248, 113, 113, 0.7)',
-    yellow: '#f59e0b',
-    purple: '#8b5cf6',
-    grid: 'rgba(148, 163, 184, 0.1)',
-    text: '#94a3b8',
+    primary: '#D9A03F',                       // brass
+    primaryFill: 'rgba(217, 160, 63, 0.15)',
+    green: 'rgba(124, 175, 126, 0.7)',        // ledger green
+    red: 'rgba(206, 106, 87, 0.7)',           // red ink
+    yellow: '#D9A03F',                        // average marker -> brass
+    purple: '#97907E',                        // rolling average -> muted stone
+    grid: '#26231F',                          // near var(--rule), quieter on ink
+    text: '#97907E',                          // muted
 };
 
-// Account line colors for net worth breakdown
+// Account line colors for net worth breakdown — earthy, desaturated
 const ACCOUNT_COLORS = [
-    '#22d3ee', '#a78bfa', '#fb923c', '#f472b6', '#34d399', '#fbbf24',
+    '#D9A03F', '#7CAF7E', '#CE6A57', '#B8A276', '#8A6F3B', '#5F7A61',
 ];
 
 function formatCurrency(value) {
@@ -22,10 +23,10 @@ function formatCurrency(value) {
     return '$' + value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-// Polished account line colors
+// Polished account line colors — derived earth palette, no neon
 const ACCOUNT_LINE_COLORS = [
-    '#22d3ee', '#a78bfa', '#fb923c', '#f472b6', '#34d399', '#fbbf24',
-    '#38bdf8', '#e879f9', '#4ade80', '#f87171',
+    '#D9A03F', '#7CAF7E', '#CE6A57', '#B8A276', '#8A6F3B', '#5F7A61',
+    '#A98467', '#6B5A34', '#97907E', '#C2B49A',
 ];
 
 let netWorthChartInstance = null;
@@ -60,7 +61,7 @@ function renderNetWorthChart(data) {
     const latestValue = netWorth[netWorth.length - 1];
     const earliestValue = netWorth[0];
     const isPositiveTrend = latestValue >= earliestValue;
-    const trendColor = isPositiveTrend ? '#22c55e' : '#ef4444';
+    const trendColor = isPositiveTrend ? '#7CAF7E' : '#CE6A57';
 
     const datasets = [{
         label: 'Net Worth',
@@ -72,7 +73,7 @@ function renderNetWorthChart(data) {
         pointRadius: 0,
         pointHoverRadius: 6,
         pointHoverBackgroundColor: trendColor,
-        pointHoverBorderColor: '#fff',
+        pointHoverBorderColor: '#EDE8DF',
         pointHoverBorderWidth: 2,
         pointHitRadius: 20,
         borderWidth: 2.5,
@@ -83,8 +84,8 @@ function renderNetWorthChart(data) {
         datasets.push({
             label: 'Assets',
             data: assets,
-            borderColor: 'rgba(74, 222, 128, 0.85)',
-            backgroundColor: 'rgba(74, 222, 128, 0.08)',
+            borderColor: 'rgba(124, 175, 126, 0.85)',
+            backgroundColor: 'rgba(124, 175, 126, 0.08)',
             borderWidth: 1.5,
             fill: 'origin',
             tension: 0.3,
@@ -98,8 +99,8 @@ function renderNetWorthChart(data) {
         datasets.push({
             label: 'Liabilities',
             data: liabilities,
-            borderColor: 'rgba(248, 113, 113, 0.85)',
-            backgroundColor: 'rgba(248, 113, 113, 0.08)',
+            borderColor: 'rgba(206, 106, 87, 0.85)',
+            backgroundColor: 'rgba(206, 106, 87, 0.08)',
             borderWidth: 1.5,
             fill: 'origin',
             tension: 0.3,
@@ -125,7 +126,7 @@ function renderNetWorthChart(data) {
             pointRadius: 0,
             pointHoverRadius: 5,
             pointHoverBackgroundColor: color,
-            pointHoverBorderColor: '#fff',
+            pointHoverBorderColor: '#EDE8DF',
             pointHoverBorderWidth: 2,
             pointHitRadius: 15,
             hidden: true,
@@ -153,11 +154,11 @@ function renderNetWorthChart(data) {
                     type: 'time',
                     time: { unit: 'month', displayFormats: { month: 'MMM yyyy' } },
                     grid: {
-                        color: 'rgba(148, 163, 184, 0.06)',
+                        color: 'rgba(151, 144, 126, 0.08)',
                         drawTicks: false,
                     },
                     ticks: {
-                        color: '#64748b',
+                        color: '#97907E',
                         maxTicksLimit: 12,
                         padding: 8,
                         font: { size: 11 },
@@ -166,11 +167,11 @@ function renderNetWorthChart(data) {
                 },
                 y: {
                     grid: {
-                        color: 'rgba(148, 163, 184, 0.06)',
+                        color: 'rgba(151, 144, 126, 0.08)',
                         drawTicks: false,
                     },
                     ticks: {
-                        color: '#64748b',
+                        color: '#97907E',
                         callback: value => formatCurrency(value),
                         padding: 8,
                         font: { size: 11 },
@@ -182,12 +183,12 @@ function renderNetWorthChart(data) {
             plugins: {
                 legend: { display: false }, // We use custom legend
                 tooltip: {
-                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                    titleColor: '#f1f5f9',
-                    bodyColor: '#e2e8f0',
-                    borderColor: '#475569',
+                    backgroundColor: 'rgba(36, 32, 25, 0.96)',
+                    titleColor: '#EDE8DF',
+                    bodyColor: '#EDE8DF',
+                    borderColor: '#33302A',
                     borderWidth: 1,
-                    cornerRadius: 8,
+                    cornerRadius: 2,
                     padding: 12,
                     displayColors: true,
                     boxPadding: 6,
@@ -223,13 +224,13 @@ function renderNetWorthChart(data) {
                 if (!mainGradient || mainGradient._h !== chartArea.bottom - chartArea.top) {
                     mainGradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
                     if (isPositiveTrend) {
-                        mainGradient.addColorStop(0, 'rgba(34, 197, 94, 0.25)');
-                        mainGradient.addColorStop(0.5, 'rgba(34, 197, 94, 0.06)');
-                        mainGradient.addColorStop(1, 'rgba(34, 197, 94, 0)');
+                        mainGradient.addColorStop(0, 'rgba(124, 175, 126, 0.25)');
+                        mainGradient.addColorStop(0.5, 'rgba(124, 175, 126, 0.06)');
+                        mainGradient.addColorStop(1, 'rgba(124, 175, 126, 0)');
                     } else {
-                        mainGradient.addColorStop(0, 'rgba(239, 68, 68, 0.25)');
-                        mainGradient.addColorStop(0.5, 'rgba(239, 68, 68, 0.06)');
-                        mainGradient.addColorStop(1, 'rgba(239, 68, 68, 0)');
+                        mainGradient.addColorStop(0, 'rgba(206, 106, 87, 0.25)');
+                        mainGradient.addColorStop(0.5, 'rgba(206, 106, 87, 0.06)');
+                        mainGradient.addColorStop(1, 'rgba(206, 106, 87, 0)');
                     }
                     mainGradient._h = chartArea.bottom - chartArea.top;
                     chart.data.datasets[0].backgroundColor = mainGradient;
@@ -248,7 +249,7 @@ function renderNetWorthChart(data) {
                 ctx.moveTo(x, chartArea.top);
                 ctx.lineTo(x, chartArea.bottom);
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+                ctx.strokeStyle = 'rgba(151, 144, 126, 0.3)';
                 ctx.setLineDash([4, 4]);
                 ctx.stroke();
                 ctx.restore();
@@ -358,7 +359,7 @@ function renderBiweeklyChart(data) {
             label: 'Biweekly Spending',
             data: data.spending,
             backgroundColor: barColors,
-            borderRadius: 4,
+            borderRadius: 0,
             type: 'bar',
             order: 2,
         },
@@ -508,15 +509,15 @@ function renderIncomeVsExpenseChart(spendingData, incomeData) {
                 {
                     label: 'Income',
                     data: income,
-                    backgroundColor: 'rgba(74, 222, 128, 0.7)',
-                    borderRadius: 4,
+                    backgroundColor: 'rgba(124, 175, 126, 0.7)',
+                    borderRadius: 0,
                     order: 2,
                 },
                 {
                     label: 'Expenses',
                     data: expenses,
-                    backgroundColor: 'rgba(248, 113, 113, 0.7)',
-                    borderRadius: 4,
+                    backgroundColor: 'rgba(206, 106, 87, 0.7)',
+                    borderRadius: 0,
                     order: 2,
                 },
                 {
@@ -526,7 +527,7 @@ function renderIncomeVsExpenseChart(spendingData, incomeData) {
                     borderColor: COLORS.primary,
                     borderWidth: 2,
                     pointRadius: 4,
-                    pointBackgroundColor: net.map(v => v >= 0 ? 'rgba(74, 222, 128, 1)' : 'rgba(248, 113, 113, 1)'),
+                    pointBackgroundColor: net.map(v => v >= 0 ? 'rgba(124, 175, 126, 1)' : 'rgba(206, 106, 87, 1)'),
                     fill: false,
                     tension: 0.3,
                     order: 1,
@@ -584,20 +585,20 @@ function renderIncomeVsExpenseChart(spendingData, incomeData) {
     });
 }
 
-// Curated spending palette — vibrant but harmonious on dark backgrounds
+// Curated spending palette — Private Wire earth tones, desaturated, no neon
 const SPENDING_PALETTE = [
-    { bg: '#6366f1', glow: 'rgba(99, 102, 241, 0.35)' },   // indigo
-    { bg: '#f43f5e', glow: 'rgba(244, 63, 94, 0.35)' },    // rose
-    { bg: '#22d3ee', glow: 'rgba(34, 211, 238, 0.35)' },    // cyan
-    { bg: '#f97316', glow: 'rgba(249, 115, 22, 0.35)' },    // orange
-    { bg: '#a78bfa', glow: 'rgba(167, 139, 250, 0.35)' },   // violet
-    { bg: '#34d399', glow: 'rgba(52, 211, 153, 0.35)' },    // emerald
-    { bg: '#fb7185', glow: 'rgba(251, 113, 133, 0.35)' },   // pink
-    { bg: '#fbbf24', glow: 'rgba(251, 191, 36, 0.35)' },    // amber
-    { bg: '#38bdf8', glow: 'rgba(56, 189, 248, 0.35)' },    // sky
-    { bg: '#e879f9', glow: 'rgba(232, 121, 249, 0.35)' },   // fuchsia
-    { bg: '#4ade80', glow: 'rgba(74, 222, 128, 0.35)' },    // green
-    { bg: '#818cf8', glow: 'rgba(129, 140, 248, 0.35)' },   // indigo-light
+    { bg: '#D9A03F', glow: 'rgba(217, 160, 63, 0.35)' },   // brass
+    { bg: '#7CAF7E', glow: 'rgba(124, 175, 126, 0.35)' },  // ledger green
+    { bg: '#CE6A57', glow: 'rgba(206, 106, 87, 0.35)' },   // red ink
+    { bg: '#B8A276', glow: 'rgba(184, 162, 118, 0.35)' },  // tan
+    { bg: '#8A6F3B', glow: 'rgba(138, 111, 59, 0.35)' },   // ochre
+    { bg: '#5F7A61', glow: 'rgba(95, 122, 97, 0.35)' },    // forest
+    { bg: '#A98467', glow: 'rgba(169, 132, 103, 0.35)' },  // clay
+    { bg: '#C2B49A', glow: 'rgba(194, 180, 154, 0.35)' },  // parchment
+    { bg: '#6B5A34', glow: 'rgba(107, 90, 52, 0.35)' },    // olive
+    { bg: '#97907E', glow: 'rgba(151, 144, 126, 0.35)' },  // stone
+    { bg: '#8F5B4A', glow: 'rgba(143, 91, 74, 0.35)' },    // umber
+    { bg: '#4C5B4E', glow: 'rgba(76, 91, 78, 0.35)' },     // moss
 ];
 
 let spendingChartInstance = null;
@@ -678,7 +679,7 @@ function renderSpendingChart(data, days = 30) {
                 hoverBackgroundColor: hoverColors,
                 borderWidth: 0,
                 hoverOffset: 12,
-                borderRadius: 4,
+                borderRadius: 0,
                 spacing: 3,
                 cutout: '72%',
             }]
@@ -698,12 +699,12 @@ function renderSpendingChart(data, days = 30) {
             plugins: {
                 legend: { display: false }, // We use custom legend
                 tooltip: {
-                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                    titleColor: '#f1f5f9',
-                    bodyColor: '#e2e8f0',
-                    borderColor: '#475569',
+                    backgroundColor: 'rgba(36, 32, 25, 0.96)',
+                    titleColor: '#EDE8DF',
+                    bodyColor: '#EDE8DF',
+                    borderColor: '#33302A',
                     borderWidth: 1,
-                    cornerRadius: 8,
+                    cornerRadius: 2,
                     padding: 12,
                     displayColors: true,
                     boxPadding: 6,
@@ -744,8 +745,8 @@ function renderSpendingChart(data, days = 30) {
 
                     // Subtle inner glow
                     const grad = ctx.createRadialGradient(cx, cy, innerR - 8, cx, cy, innerR + 4);
-                    grad.addColorStop(0, 'rgba(15, 23, 42, 0.6)');
-                    grad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+                    grad.addColorStop(0, 'rgba(18, 17, 16, 0.6)');
+                    grad.addColorStop(1, 'rgba(18, 17, 16, 0)');
 
                     ctx.save();
                     ctx.beginPath();
@@ -774,19 +775,19 @@ function renderSpendingChart(data, days = 30) {
                     // "Total Spending" label
                     const labelSize = Math.max(10, chartH * 0.055);
                     ctx.font = `500 ${labelSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
-                    ctx.fillStyle = '#64748b';
+                    ctx.fillStyle = '#97907E';
                     ctx.fillText('Total Spending', cx, cy - chartH * 0.06);
 
                     // Dollar amount
                     const amountSize = Math.max(16, chartH * 0.11);
-                    ctx.font = `700 ${amountSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
-                    ctx.fillStyle = '#f1f5f9';
+                    ctx.font = `600 ${amountSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+                    ctx.fillStyle = '#EDE8DF';
                     ctx.fillText(formatCurrency(totalAmount), cx, cy + chartH * 0.04);
 
                     // Days label
                     const subSize = Math.max(9, chartH * 0.04);
                     ctx.font = `400 ${subSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
-                    ctx.fillStyle = '#475569';
+                    ctx.fillStyle = '#6E6858';
                     ctx.fillText(`Past ${days} days`, cx, cy + chartH * 0.12);
 
                     ctx.restore();
@@ -802,14 +803,14 @@ function renderSpendingChart(data, days = 30) {
 // --- Category Spending Trends ---
 
 const CATEGORY_TREND_COLORS = [
-    { line: '#4ade80', fill: 'rgba(74, 222, 128, 0.12)' },   // green
-    { line: '#38bdf8', fill: 'rgba(56, 189, 248, 0.12)' },   // sky
-    { line: '#f59e0b', fill: 'rgba(245, 158, 11, 0.12)' },   // amber
-    { line: '#a78bfa', fill: 'rgba(167, 139, 250, 0.12)' },  // violet
-    { line: '#fb923c', fill: 'rgba(251, 146, 60, 0.12)' },   // orange
-    { line: '#f472b6', fill: 'rgba(244, 114, 182, 0.12)' },  // pink
-    { line: '#22d3ee', fill: 'rgba(34, 211, 238, 0.12)' },   // cyan
-    { line: '#e879f9', fill: 'rgba(232, 121, 249, 0.12)' },  // fuchsia
+    { line: '#D9A03F', fill: 'rgba(217, 160, 63, 0.12)' },   // brass
+    { line: '#7CAF7E', fill: 'rgba(124, 175, 126, 0.12)' },  // ledger green
+    { line: '#CE6A57', fill: 'rgba(206, 106, 87, 0.12)' },   // red ink
+    { line: '#B8A276', fill: 'rgba(184, 162, 118, 0.12)' },  // tan
+    { line: '#8A6F3B', fill: 'rgba(138, 111, 59, 0.12)' },   // ochre
+    { line: '#5F7A61', fill: 'rgba(95, 122, 97, 0.12)' },    // forest
+    { line: '#A98467', fill: 'rgba(169, 132, 103, 0.12)' },  // clay
+    { line: '#97907E', fill: 'rgba(151, 144, 126, 0.12)' },  // stone
 ];
 
 let categoryTrendsChartInstance = null;
@@ -855,7 +856,7 @@ function renderCategoryTrendsChart(data, months) {
             pointRadius: months <= 3 ? 4 : 2,
             pointHoverRadius: 6,
             pointBackgroundColor: colors.line,
-            pointBorderColor: '#1e293b',
+            pointBorderColor: '#121110',
             pointBorderWidth: 2,
             // Hide categories beyond the top 5 by default for readability
             hidden: i >= 5,
@@ -877,12 +878,12 @@ function renderCategoryTrendsChart(data, months) {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                    titleColor: '#f1f5f9',
-                    bodyColor: '#cbd5e1',
-                    borderColor: '#334155',
+                    backgroundColor: 'rgba(36, 32, 25, 0.96)',
+                    titleColor: '#EDE8DF',
+                    bodyColor: '#C9C2B4',
+                    borderColor: '#33302A',
                     borderWidth: 1,
-                    cornerRadius: 8,
+                    cornerRadius: 2,
                     padding: 12,
                     displayColors: true,
                     boxPadding: 6,

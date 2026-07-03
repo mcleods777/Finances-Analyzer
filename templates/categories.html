@@ -29,28 +29,27 @@
 
         .header-link {
             text-decoration: none;
-            color: #94a3b8;
+            color: var(--muted);
             font-weight: 500;
             padding: 8px 16px;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            transition: all 0.2s;
+            border: 1px solid var(--rule);
+            border-radius: 2px;
         }
 
         .header-link:hover {
-            color: #e2e8f0;
-            border-color: #475569;
-            background: #1e293b;
+            color: var(--text);
+            border-color: var(--rule);
+            background: var(--surface);
         }
 
         .header-link.primary {
-            background: #3b82f6;
-            color: white;
-            border-color: #3b82f6;
+            background: var(--brass);
+            color: var(--ink);
+            border-color: var(--brass);
         }
 
         .header-link.primary:hover {
-            background: #2563eb;
+            background: var(--brass-bright);
         }
 
         /* Summary stats row */
@@ -62,9 +61,8 @@
         }
 
         .stat-pill {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 8px;
+            background: transparent;
+            border-top: 1px solid var(--rule);
             padding: 12px 20px;
             display: flex;
             align-items: center;
@@ -72,12 +70,12 @@
         }
 
         .stat-pill-label {
-            color: #94a3b8;
+            color: var(--muted);
             font-size: 0.85rem;
         }
 
         .stat-pill-value {
-            color: #f1f5f9;
+            color: var(--text);
             font-weight: 600;
             font-size: 1.05rem;
         }
@@ -91,21 +89,21 @@
             width: 100%;
             max-width: 400px;
             padding: 10px 16px;
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            color: #f1f5f9;
+            background: var(--surface);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            color: var(--text);
             font-size: 0.95rem;
             outline: none;
             transition: border-color 0.2s;
         }
 
         .categories-search input:focus {
-            border-color: #3b82f6;
+            border-color: var(--brass);
         }
 
         .categories-search input::placeholder {
-            color: #64748b;
+            color: var(--muted);
         }
 
         /* Category grid */
@@ -117,24 +115,22 @@
         }
 
         /* Card Color Variants */
-        .card-variant-0 { --card-accent: #f472b6; --card-bg: rgba(244, 114, 182, 0.1); }
-        .card-variant-1 { --card-accent: #c084fc; --card-bg: rgba(192, 132, 252, 0.1); }
-        .card-variant-2 { --card-accent: #818cf8; --card-bg: rgba(129, 140, 248, 0.1); }
-        .card-variant-3 { --card-accent: #60a5fa; --card-bg: rgba(96, 165, 250, 0.1); }
-        .card-variant-4 { --card-accent: #34d399; --card-bg: rgba(52, 211, 153, 0.1); }
-        .card-variant-5 { --card-accent: #fbbf24; --card-bg: rgba(251, 191, 36, 0.1); }
-        .card-variant-6 { --card-accent: #f87171; --card-bg: rgba(248, 113, 113, 0.1); }
-        .card-variant-7 { --card-accent: #2dd4bf; --card-bg: rgba(45, 212, 191, 0.1); }
+        .card-variant-0 { --card-accent: #A98467; --card-bg: rgba(169, 132, 103, 0.07); }
+        .card-variant-1 { --card-accent: #8A6F3B; --card-bg: rgba(138, 111, 59, 0.07); }
+        .card-variant-2 { --card-accent: #6B5A34; --card-bg: rgba(107, 90, 52, 0.07); }
+        .card-variant-3 { --card-accent: #D9A03F; --card-bg: rgba(217, 160, 63, 0.06); }
+        .card-variant-4 { --card-accent: #7CAF7E; --card-bg: rgba(124, 175, 126, 0.07); }
+        .card-variant-5 { --card-accent: #B8A276; --card-bg: rgba(184, 162, 118, 0.07); }
+        .card-variant-6 { --card-accent: #CE6A57; --card-bg: rgba(206, 106, 87, 0.07); }
+        .card-variant-7 { --card-accent: #5F7A61; --card-bg: rgba(95, 122, 97, 0.07); }
 
         .category-card {
-            background: linear-gradient(145deg, #1e293b, #0f172a);
-            border: 1px solid #334155;
-            border-left: 4px solid var(--card-accent);
-            border-radius: 8px;
+            background: transparent;
+            border: 1px solid var(--rule);
+            border-left: 2px solid var(--card-accent);
             padding: 0;
             position: relative;
             overflow: hidden;
-            transition: transform 0.2s, box-shadow 0.2s;
             cursor: pointer;
         }
 
@@ -152,8 +148,6 @@
         }
 
         .category-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
             border-color: var(--card-accent);
         }
 
@@ -179,16 +173,15 @@
             font-size: 1.15rem;
             font-weight: 600;
             color: var(--card-accent);
-            text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             letter-spacing: 0.5px;
         }
 
         .category-count {
             font-size: 0.8rem;
-            color: #64748b;
-            background: rgba(100, 116, 139, 0.2);
+            color: var(--muted);
+            background: rgba(151, 144, 126, 0.2);
             padding: 2px 8px;
-            border-radius: 10px;
+            border-radius: 2px;
         }
 
         .card-header-right {
@@ -200,16 +193,16 @@
         .category-total {
             font-size: 1rem;
             font-weight: 600;
-            color: #f87171;
+            color: var(--red-ink);
         }
 
         .category-total.positive {
-            color: #34d399;
+            color: var(--ledger-green);
         }
 
         .chevron-icon {
             transition: transform 0.3s;
-            color: #64748b;
+            color: var(--muted);
             flex-shrink: 0;
         }
 
@@ -220,7 +213,7 @@
         /* Transactions list inside card */
         .card-transactions {
             display: none;
-            border-top: 1px solid #334155;
+            border-top: 1px solid var(--rule);
         }
 
         .category-card.expanded .card-transactions {
@@ -232,7 +225,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 10px 20px;
-            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+            border-bottom: 1px solid rgba(51, 48, 42, 0.5);
             transition: background 0.15s;
         }
 
@@ -241,7 +234,7 @@
         }
 
         .tx-item:hover {
-            background: rgba(51, 65, 85, 0.3);
+            background: rgba(51, 48, 42, 0.3);
         }
 
         .tx-item-left {
@@ -250,7 +243,7 @@
         }
 
         .tx-item-desc {
-            color: #e2e8f0;
+            color: var(--text);
             font-size: 0.9rem;
             white-space: nowrap;
             overflow: hidden;
@@ -265,12 +258,12 @@
         }
 
         .tx-item-date {
-            color: #64748b;
+            color: var(--muted);
             font-size: 0.8rem;
         }
 
         .tx-item-account {
-            color: #64748b;
+            color: var(--muted);
             font-size: 0.8rem;
         }
 
@@ -282,11 +275,11 @@
         }
 
         .tx-item-amount.negative {
-            color: #f87171;
+            color: var(--red-ink);
         }
 
         .tx-item-amount.positive {
-            color: #34d399;
+            color: var(--ledger-green);
         }
 
         /* View all link at bottom of card */
@@ -294,35 +287,35 @@
             display: block;
             text-align: center;
             padding: 10px 20px;
-            border-top: 1px solid #334155;
-            color: #3b82f6;
+            border-top: 1px solid var(--rule);
+            color: var(--brass);
             font-size: 0.85rem;
             text-decoration: none;
-            background: rgba(15, 23, 42, 0.5);
+            background: rgba(18, 17, 16, 0.5);
             transition: background 0.2s;
         }
 
         .card-footer:hover {
-            background: rgba(59, 130, 246, 0.1);
+            background: rgba(217, 160, 63, 0.1);
             text-decoration: underline;
         }
 
         /* Uncategorized card special styling */
         .category-card.uncategorized {
-            border-left-color: #64748b;
-            --card-accent: #64748b;
-            --card-bg: rgba(100, 116, 139, 0.05);
+            border-left-color: var(--muted);
+            --card-accent: var(--muted);
+            --card-bg: rgba(151, 144, 126, 0.05);
         }
 
         /* Empty state */
         .empty-state {
             text-align: center;
-            color: #64748b;
+            color: var(--muted);
             padding: 60px 20px;
         }
 
         .empty-state h2 {
-            color: #94a3b8;
+            color: var(--muted);
             margin-bottom: 8px;
         }
 
@@ -330,16 +323,15 @@
         .no-results {
             display: none;
             text-align: center;
-            color: #64748b;
+            color: var(--muted);
             padding: 40px 20px;
             grid-column: 1 / -1;
         }
 
         /* Uncategorized review queue */
         .review-queue-panel {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 8px;
+            background: transparent;
+            border-top: 1px solid var(--rule);
             margin-bottom: 24px;
             overflow: hidden;
         }
@@ -355,7 +347,7 @@
         .review-queue-header h2 {
             margin: 0;
             font-size: 1.05rem;
-            color: #f1f5f9;
+            color: var(--text);
         }
 
         .review-queue-header-left {
@@ -365,7 +357,7 @@
         }
 
         .review-queue-body {
-            border-top: 1px solid #334155;
+            border-top: 1px solid var(--rule);
             padding: 16px 20px;
             display: flex;
             flex-direction: column;
@@ -373,9 +365,9 @@
         }
 
         .review-group-card {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
+            background: var(--ink);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
             padding: 14px 16px;
             display: flex;
             justify-content: space-between;
@@ -386,12 +378,12 @@
 
         .review-group-keyword {
             font-weight: 600;
-            color: #60a5fa;
+            color: var(--brass);
             font-size: 0.95rem;
         }
 
         .review-group-meta {
-            color: #94a3b8;
+            color: var(--muted);
             font-size: 0.82rem;
             margin-top: 2px;
         }
@@ -405,10 +397,10 @@
 
         .review-sample {
             font-size: 0.72rem;
-            color: #64748b;
-            background: rgba(100, 116, 139, 0.15);
+            color: var(--muted);
+            background: rgba(151, 144, 126, 0.15);
             padding: 2px 8px;
-            border-radius: 4px;
+            border-radius: 2px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -433,36 +425,36 @@
             align-items: center;
             gap: 5px;
             font-size: 0.8rem;
-            color: #94a3b8;
+            color: var(--muted);
             white-space: nowrap;
             cursor: pointer;
             user-select: none;
         }
 
         .review-rule-toggle input[type="checkbox"] {
-            accent-color: #3b82f6;
+            accent-color: var(--brass);
             cursor: pointer;
         }
 
         .form-input {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            color: #e2e8f0;
+            background: var(--ink);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            color: var(--text);
             font-size: 0.95rem;
         }
 
         .form-input:focus {
             outline: none;
-            border-color: #3b82f6;
+            border-color: var(--brass);
         }
 
         .btn-primary {
-            background: #3b82f6;
-            color: white;
+            background: var(--brass);
+            color: var(--ink);
             border: none;
             padding: 8px 16px;
-            border-radius: 6px;
+            border-radius: 2px;
             font-weight: 500;
             cursor: pointer;
             font-size: 0.85rem;
@@ -470,7 +462,7 @@
         }
 
         .btn-primary:hover {
-            background: #2563eb;
+            background: var(--brass-bright);
         }
     </style>
 {% endblock %}
@@ -480,7 +472,7 @@
         <div class="categories-header">
             <div>
                 <h1>Categories</h1>
-                <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 4px;">Browse transactions by category</p>
+                <p style="color: var(--muted); font-size: 0.9rem; margin-top: 4px;">Browse transactions by category</p>
             </div>
             <div class="header-actions">
                 <a href="/rules" class="header-link">Manage Rules</a>
@@ -515,7 +507,7 @@
                 </svg>
             </div>
             <div class="review-queue-body" id="reviewQueueBody" style="display: none;">
-                <p id="reviewQueueLoading" style="color: #64748b; margin: 0;">Loading&hellip;</p>
+                <p id="reviewQueueLoading" style="color: var(--muted); margin: 0;">Loading&hellip;</p>
                 <div id="reviewQueueList"></div>
             </div>
         </div>
@@ -535,7 +527,7 @@
             </div>
             <div class="stat-pill">
                 <span class="stat-pill-label">Uncategorized:</span>
-                <span class="stat-pill-value" id="uncategorized-count" style="color: {% if categories | selectattr('name', 'eq', 'Uncategorized') | list %}#fbbf24{% else %}#34d399{% endif %};">
+                <span class="stat-pill-value" id="uncategorized-count" style="color: {% if categories | selectattr('name', 'eq', 'Uncategorized') | list %}var(--brass){% else %}var(--ledger-green){% endif %};">
                     {% set uncat = categories | selectattr('name', 'eq', 'Uncategorized') | list %}
                     {{ uncat[0].transaction_count if uncat else 0 }}
                 </span>
@@ -681,7 +673,7 @@
             countEl.textContent = groups.length ? `${groups.length} groups` : '';
 
             if (groups.length === 0) {
-                list.innerHTML = '<p style="color: #64748b; margin: 0;">No uncategorized transactions to review. Nice work!</p>';
+                list.innerHTML = '<p style="color: var(--muted); margin: 0;">No uncategorized transactions to review. Nice work!</p>';
                 return;
             }
 

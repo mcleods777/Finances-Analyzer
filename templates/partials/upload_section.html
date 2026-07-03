@@ -142,17 +142,17 @@
     .upload-section {
         margin-top: 32px;
         padding-top: 24px;
-        border-top: 1px solid #334155;
+        border-top: 1px solid var(--rule);
     }
 
     .upload-section-header h2 {
-        color: #f1f5f9;
+        color: var(--text);
         font-size: 1.1rem;
         margin-bottom: 4px;
     }
 
     .upload-section-note {
-        color: #94a3b8;
+        color: var(--muted);
         font-size: 0.85rem;
         margin-bottom: 16px;
     }
@@ -165,9 +165,8 @@
     }
 
     .upload-account-card {
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 8px;
+        background: transparent;
+        border: 1px solid var(--rule);
         padding: 14px;
     }
 
@@ -179,7 +178,7 @@
     }
 
     .upload-account-name {
-        color: #e2e8f0;
+        color: var(--text);
         font-weight: 600;
         font-size: 0.9rem;
     }
@@ -187,7 +186,7 @@
     .upload-link-btn {
         background: none;
         border: none;
-        color: #93c5fd;
+        color: var(--brass);
         font-size: 0.78rem;
         cursor: pointer;
         padding: 2px 4px;
@@ -202,8 +201,8 @@
         align-items: center;
         justify-content: center;
         min-height: 64px;
-        border: 1.5px dashed #475569;
-        border-radius: 6px;
+        border: 1.5px dashed var(--rule);
+        border-radius: 2px;
         cursor: pointer;
         text-align: center;
         padding: 10px;
@@ -212,12 +211,12 @@
 
     .upload-dropzone:hover,
     .upload-dropzone.upload-dragover {
-        border-color: #3b82f6;
-        background: rgba(59, 130, 246, 0.08);
+        border-color: var(--brass);
+        background: rgba(217, 160, 63, 0.08);
     }
 
     .upload-dropzone-text {
-        color: #64748b;
+        color: var(--muted);
         font-size: 0.8rem;
     }
 
@@ -231,23 +230,23 @@
     }
 
     .upload-result.ok {
-        color: #4ade80;
+        color: var(--ledger-green);
     }
 
     .upload-result.error {
-        color: #f87171;
+        color: var(--red-ink);
     }
 
     .upload-result ul {
         margin: 6px 0 0 18px;
         padding: 0;
-        color: #fca5a5;
+        color: var(--red-ink);
     }
 
     .upload-imports-list {
         margin-top: 10px;
         font-size: 0.78rem;
-        color: #94a3b8;
+        color: var(--muted);
     }
 
     /* Density modifiers on top of the shared .data-table component */
@@ -258,14 +257,14 @@
 
     .upload-imports-list td {
         font-size: 0.78rem;
-        color: #94a3b8;
+        color: var(--muted);
     }
 
     .upload-add-account-btn {
-        background: #3b82f6;
-        color: #fff;
+        background: var(--brass);
+        color: var(--ink);
         border: none;
-        border-radius: 6px;
+        border-radius: 2px;
         padding: 9px 16px;
         font-size: 0.85rem;
         font-weight: 600;
@@ -273,7 +272,7 @@
     }
 
     .upload-add-account-btn:hover {
-        background: #2563eb;
+        background: var(--brass-bright);
     }
 
     /* Modal */
@@ -293,14 +292,14 @@
     .upload-modal-backdrop {
         position: absolute;
         inset: 0;
-        background: rgba(2, 6, 23, 0.7);
+        background: rgba(0, 0, 0, 0.7);
     }
 
     .upload-modal-panel {
         position: relative;
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 10px;
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 2px;
         width: min(640px, 92vw);
         max-height: 88vh;
         overflow-y: auto;
@@ -315,14 +314,14 @@
     }
 
     .upload-modal-header h3 {
-        color: #f1f5f9;
+        color: var(--text);
         font-size: 1.05rem;
     }
 
     .upload-modal-close {
         background: none;
         border: none;
-        color: #94a3b8;
+        color: var(--muted);
         font-size: 1.4rem;
         line-height: 1;
         cursor: pointer;
@@ -331,8 +330,8 @@
     .upload-preview-table-wrap {
         overflow-x: auto;
         margin-bottom: 16px;
-        border: 1px solid #334155;
-        border-radius: 6px;
+        border: 1px solid var(--rule);
+        border-radius: 2px;
     }
 
     /* Density modifiers on top of the shared .data-table component */
@@ -350,7 +349,7 @@
 
     .upload-preview-table td {
         font-size: 0.75rem;
-        color: #cbd5e1;
+        color: var(--text);
     }
 
     .upload-form-row {
@@ -365,29 +364,29 @@
         display: flex;
         flex-direction: column;
         gap: 4px;
-        color: #94a3b8;
+        color: var(--muted);
         font-size: 0.78rem;
     }
 
     .upload-form-row input,
     .upload-form-row select {
-        background: #0f172a;
-        border: 1px solid #334155;
-        color: #e2e8f0;
-        border-radius: 5px;
+        background: var(--ink);
+        border: 1px solid var(--rule);
+        color: var(--text);
+        border-radius: 2px;
         padding: 6px 8px;
         font-size: 0.85rem;
     }
 
     .upload-sign-fieldset {
-        border: 1px solid #334155;
-        border-radius: 6px;
+        border: 1px solid var(--rule);
+        border-radius: 2px;
         padding: 8px 12px;
         flex: 1 1 100%;
     }
 
     .upload-sign-fieldset legend {
-        color: #94a3b8;
+        color: var(--muted);
         font-size: 0.78rem;
         padding: 0 4px;
     }
@@ -398,7 +397,7 @@
         align-items: center;
         gap: 6px;
         margin-right: 16px;
-        color: #cbd5e1 !important;
+        color: var(--text) !important;
         font-size: 0.82rem !important;
     }
 
@@ -410,10 +409,10 @@
     }
 
     .upload-submit-btn {
-        background: #3b82f6;
-        color: #fff;
+        background: var(--brass);
+        color: var(--ink);
         border: none;
-        border-radius: 6px;
+        border-radius: 2px;
         padding: 9px 16px;
         font-size: 0.85rem;
         font-weight: 600;
