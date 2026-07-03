@@ -1174,7 +1174,17 @@
         <div class="card">
             <h3>Income This Month</h3>
             <p class="value">{{ summary.income_this_month | currency }}</p>
+            {% if summary.income_this_month_shifted_from %}
+            <p class="sub">
+                {% if summary.income_this_month_shifted_from | length == 1 %}
+                includes {{ summary.income_this_month_shifted_from[0].date | to_short_date }} paycheck
+                {% else %}
+                includes {{ summary.income_this_month_shifted_from | length }} early paychecks
+                {% endif %}
+            </p>
+            {% else %}
             <p class="sub">{{ summary.total_accounts }} account{{ 's' if summary.total_accounts != 1 }}</p>
+            {% endif %}
         </div>
         <div class="card">
             <h3>Savings Rate</h3>

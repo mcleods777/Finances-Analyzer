@@ -69,6 +69,29 @@ class BudgetOverrides:
     second_half: float | None = None
 
 
+def _default_paycheck_keywords() -> list[str]:
+    return ["payroll", "direct deposit", "salary"]
+
+
+@dataclass
+class IncomeAttributionConfig:
+    """
+    Controls "early paycheck" attribution: paychecks that post in the last
+    few days of a month get counted toward the FOLLOWING month's income
+    (biweekly pay often lands a few days early against the calendar).
+
+    paycheck_shift_days: how many days from month-end count as "early".
+        0 (default) disables the feature entirely — all income attributes
+        to its literal posting month.
+    paycheck_keywords: lowercase substrings matched against transaction
+        descriptions to identify which income transactions are paychecks
+        (as opposed to interest, dividends, refunds, etc., which never
+        shift).
+    """
+    paycheck_shift_days: int = 0
+    paycheck_keywords: list[str] = field(default_factory=_default_paycheck_keywords)
+
+
 @dataclass
 class AppConfig:
     pay_period: PayPeriodConfig
@@ -78,6 +101,7 @@ class AppConfig:
     recurring_bills: list[RecurringBill] = field(default_factory=list)
     temporary_expenses: list[TemporaryExpense] = field(default_factory=list)
     budget_overrides: BudgetOverrides = field(default_factory=BudgetOverrides)
+    income_attribution: IncomeAttributionConfig = field(default_factory=IncomeAttributionConfig)
 
 
 def _parse_column_mapping(raw: dict) -> ColumnMapping:
@@ -182,6 +206,18 @@ def _parse_budget_overrides(raw: dict | None) -> BudgetOverrides:
     )
 
 
+def _parse_income_attribution(raw: dict | None) -> IncomeAttributionConfig:
+    if not raw:
+        return IncomeAttributionConfig()
+    keywords = raw.get("paycheck_keywords")
+    return IncomeAttributionConfig(
+        paycheck_shift_days=int(raw.get("paycheck_shift_days", 0)),
+        paycheck_keywords=(
+            [kw.lower() for kw in keywords] if keywords else _default_paycheck_keywords()
+        ),
+    )
+
+
 def load_config(config_path: str) -> AppConfig:
     """Load and parse config.yaml into typed dataclasses."""
     with open(config_path, "r", encoding="utf-8") as f:
@@ -194,6 +230,7 @@ def load_config(config_path: str) -> AppConfig:
     recurring_bills = _parse_recurring_bills(raw.get("recurring_bills"))
     temporary_expenses = _parse_temporary_expenses(raw.get("temporary_expenses"))
     budget_overrides = _parse_budget_overrides(raw.get("budget_overrides"))
+    income_attribution = _parse_income_attribution(raw.get("income_attribution"))
 
     return AppConfig(
         pay_period=pay_period,
@@ -203,6 +240,7 @@ def load_config(config_path: str) -> AppConfig:
         recurring_bills=recurring_bills,
         temporary_expenses=temporary_expenses,
         budget_overrides=budget_overrides,
+        income_attribution=income_attribution,
     )
 
 

@@ -137,6 +137,7 @@ def refresh_data() -> dict:
         df if not df.empty else empty_classified_df(),
         nw_series,
         biweekly_df if biweekly_df is not None else empty_biweekly_df(),
+        config.income_attribution,
     )
 
     _cache.clear()

@@ -8,6 +8,7 @@ import calendar
 
 from finance.config_loader import (
     BudgetOverrides,
+    IncomeAttributionConfig,
     PayPeriodConfig,
     RecurringBill,
     TemporaryExpense,
@@ -149,15 +150,78 @@ def compute_runway(
     }
 
 
+def attribute_income_months(
+    df: pd.DataFrame,
+    income_attribution: IncomeAttributionConfig,
+) -> pd.Series:
+    """
+    Pure function: compute the calendar month (pandas Period[M]) each row's
+    income is attributed to for MONTHLY summary purposes only.
+
+    Rule: an income transaction (category == "income") whose description
+    matches one of `income_attribution.paycheck_keywords` (lowercase
+    substring match) AND whose date falls within the last
+    `paycheck_shift_days` days of its calendar month is attributed to the
+    FOLLOWING month (year boundary handled by Period arithmetic, e.g.
+    Dec 29 -> January of the next year). Every other row — non-income
+    transactions, non-paycheck income (interest, dividends, refunds, etc.),
+    and paychecks outside the shift window — is attributed to its own
+    literal posting month.
+
+    `paycheck_shift_days <= 0` (including the default, unconfigured state)
+    disables shifting entirely: every row attributes to its own month.
+
+    This is a computed view only — it never mutates `df` or any transaction
+    row, and it intentionally does NOT affect pay-period/biweekly analytics
+    (biweekly_income, runway, forecast), which stay period-based.
+
+    Returns a Series of pandas Period[M] aligned to df.index.
+    """
+    if df.empty:
+        return pd.Series([], dtype="period[M]", index=df.index)
+
+    own_month = df["date"].dt.to_period("M")
+
+    if income_attribution.paycheck_shift_days <= 0:
+        return own_month
+
+    shift_days = income_attribution.paycheck_shift_days
+    keywords = income_attribution.paycheck_keywords
+
+    if not keywords:
+        return own_month
+
+    is_income = df["category"] == "income"
+    desc_lower = df["description"].fillna("").str.lower()
+    is_paycheck = desc_lower.apply(lambda d: any(kw in d for kw in keywords))
+
+    days_in_month = df["date"].dt.days_in_month
+    day_of_month = df["date"].dt.day
+    in_shift_window = (days_in_month - day_of_month) < shift_days
+
+    shift_mask = is_income & is_paycheck & in_shift_window
+
+    attributed = own_month.copy()
+    attributed[shift_mask] = own_month[shift_mask] + 1
+    return attributed
+
+
 def summary_statistics(
     df: pd.DataFrame,
     net_worth_series: pd.DataFrame,
     biweekly_df: pd.DataFrame,
+    income_attribution: IncomeAttributionConfig | None = None,
 ) -> dict:
     """
     Compile summary stats for the dashboard header cards.
+
+    `income_attribution` controls early-paycheck attribution for
+    `income_this_month` and the trailing-3-month `savings_rate` (see
+    `attribute_income_months`). Defaults to disabled (pure calendar months)
+    when omitted.
     """
     today = pd.Timestamp(date.today())
+    income_attribution = income_attribution or IncomeAttributionConfig()
     result = {}
 
     # Net worth
@@ -188,15 +252,45 @@ def summary_statistics(
     month_expenses = df[(df["date"] >= month_start) & (df["category"] == "expense")]
     result["current_month_spending"] = round(float(month_expenses["amount"].abs().sum()), 2)
 
-    # This month income
-    month_income = df[(df["date"] >= month_start) & (df["category"] == "income")]
+    # This month income (early-paycheck attribution applied)
+    attributed_month = attribute_income_months(df, income_attribution)
+    current_period = today.to_period("M")
+
+    income_mask = (df["category"] == "income") & (attributed_month == current_period)
+    month_income = df[income_mask]
     result["income_this_month"] = round(float(month_income["amount"].sum()), 2)
 
-    # Savings rate (trailing 3 months)
-    three_months_ago = today - pd.Timedelta(days=90)
-    recent = df[df["date"] >= three_months_ago]
-    income_3m = float(recent[recent["category"] == "income"]["amount"].sum())
-    expenses_3m = float(recent[recent["category"] == "expense"]["amount"].abs().sum())
+    # Paychecks pulled INTO this month from a prior posting month, so the UI
+    # can explain the total (empty when no shift occurred).
+    if df.empty:
+        own_month = pd.Series([], dtype="period[M]", index=df.index)
+    else:
+        own_month = df["date"].dt.to_period("M")
+    shifted_in_mask = income_mask & (own_month != current_period)
+    shifted_in = df[shifted_in_mask].sort_values("date")
+    result["income_this_month_shifted_from"] = [
+        {
+            "date": row["date"].strftime("%Y-%m-%d"),
+            "amount": round(float(row["amount"]), 2),
+            "description": row["description"],
+        }
+        for _, row in shifted_in.iterrows()
+    ]
+
+    # Savings rate (trailing 3 calendar months, income attributed per
+    # `income_attribution` so the numerator's income and the months it
+    # divides over line up consistently — a rolling day-count window can't
+    # be reconciled with a monthly shift rule, so this uses 3 calendar
+    # months: the current (partial) month plus the two before it).
+    three_month_periods = pd.period_range(end=current_period, periods=3, freq="M")
+    window_start = three_month_periods[0].start_time
+
+    income_3m_mask = (df["category"] == "income") & attributed_month.isin(three_month_periods)
+    income_3m = float(df.loc[income_3m_mask, "amount"].sum())
+
+    expenses_3m_mask = (df["category"] == "expense") & (df["date"] >= window_start)
+    expenses_3m = float(df.loc[expenses_3m_mask, "amount"].abs().sum())
+
     if income_3m > 0:
         result["savings_rate"] = round((income_3m - expenses_3m) / income_3m * 100, 1)
     else:

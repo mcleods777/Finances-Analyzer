@@ -50,3 +50,15 @@ temporary_expenses: []
 budget_overrides:
   first_half: null
   second_half: null
+
+# Optional: attribute paychecks that post in the last few days of a month
+# to the FOLLOWING month's income (biweekly pay often lands a few days
+# early against the calendar). paycheck_shift_days: 0 (or omitting this
+# block) disables the feature — all income counts toward its literal
+# posting month.
+income_attribution:
+  paycheck_shift_days: 0
+  paycheck_keywords:
+  - payroll
+  - direct deposit
+  - salary

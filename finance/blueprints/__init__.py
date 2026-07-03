@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from flask import Flask
 
 from finance.blueprints.accounts import accounts_bp
@@ -24,6 +26,16 @@ def register_blueprints(app: Flask) -> None:
         if value < 0:
             return f"-${abs(value):,.2f}"
         return f"${value:,.2f}"
+
+    @app.template_filter("to_short_date")
+    def to_short_date_filter(value):
+        """'2026-06-29' -> 'Jun 29'"""
+        if not value:
+            return ""
+        try:
+            return datetime.strptime(value, "%Y-%m-%d").strftime("%b %d")
+        except (TypeError, ValueError):
+            return str(value)
 
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(transactions_bp)
