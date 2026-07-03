@@ -384,6 +384,26 @@ def sync_item(
         logger.error("Plaid sync failed for item %s: %s", item_id, error)
         return {"item_id": item_id, "added": 0, "modified": 0, "removed": 0, "error": error}
 
+    # /transactions/sync's accounts field is unreliable (often empty even when
+    # the item has accounts), so fetch the item's accounts explicitly for
+    # balance snapshots and new-account discovery. Best-effort: a balance
+    # failure must never fail the transaction sync itself.
+    try:
+        from plaid.model.accounts_get_request import AccountsGetRequest
+
+        accounts_response = client.accounts_get(
+            AccountsGetRequest(access_token=access_token)
+        )
+        fetched_accounts = list(getattr(accounts_response, "accounts", []) or [])
+        if fetched_accounts:
+            plaid_accounts = fetched_accounts
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "Could not fetch account balances for item %s: %s",
+            item_id,
+            describe_error(exc),
+        )
+
     # Make sure every referenced account exists (covers accounts added after link).
     if plaid_accounts:
         _upsert_plaid_accounts(conn, item_id, plaid_accounts)

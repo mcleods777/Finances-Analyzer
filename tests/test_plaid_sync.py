@@ -290,6 +290,23 @@ def test_sync_inserts_plaid_balance_snapshot(conn, classification, linked_item):
     assert snapshots[0]["balance"] == pytest.approx(1000.00)
 
 
+def test_sync_snapshots_balances_via_accounts_get_when_page_accounts_empty(
+    conn, classification, linked_item
+):
+    """Regression: real /transactions/sync responses come back with an empty
+    accounts list, so balances must be fetched via accounts_get."""
+    client = FakePlaidClient(
+        pages=[sync_page(accounts=[])],
+        accounts=[fake_account(current=3590.48)],
+    )
+    run_sync(conn, linked_item, client, classification)
+    snapshots = conn.execute(
+        "SELECT * FROM balance_snapshots WHERE source = 'plaid'"
+    ).fetchall()
+    assert len(snapshots) == 1
+    assert snapshots[0]["balance"] == pytest.approx(3590.48)
+
+
 def test_sync_creates_accounts_discovered_mid_sync(conn, classification, linked_item):
     """Accounts added at the institution after link get created on the fly."""
     client = FakePlaidClient(pages=[sync_page(
