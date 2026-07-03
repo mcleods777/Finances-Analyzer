@@ -71,6 +71,11 @@
             opacity: 0.8;
         }
 
+        .uncategorized-badge {
+            color: var(--muted);
+            font-style: italic;
+        }
+
         .cat-cell {
             cursor: pointer;
         }
@@ -686,6 +691,130 @@
             color: var(--text);
         }
 
+        /* Categorize Similar modal content */
+        .similar-modal-card {
+            max-width: 560px;
+        }
+
+        .similar-preview-stats {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .similar-stat-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            font-family: var(--mono);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--brass);
+            background: rgba(217, 160, 63, 0.06);
+        }
+
+        .similar-stat-pill.similar-stat-muted {
+            color: var(--muted);
+            background: transparent;
+        }
+
+        .similar-samples {
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            background: var(--ink);
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .similar-sample-row {
+            display: grid;
+            grid-template-columns: 68px 1fr 84px;
+            gap: 10px;
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            color: var(--muted);
+            border-bottom: 1px solid var(--rule);
+        }
+
+        .similar-sample-row:last-child {
+            border-bottom: none;
+        }
+
+        .similar-sample-desc {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--text);
+        }
+
+        .similar-sample-amount {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .similar-sample-more {
+            padding: 6px 10px;
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-style: italic;
+        }
+
+        .similar-samples-empty {
+            padding: 14px 10px;
+            color: var(--muted);
+            font-size: 0.82rem;
+            text-align: center;
+        }
+
+        .similar-rule-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 14px;
+            font-size: 0.85rem;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .similar-rule-checkbox input[type="checkbox"] {
+            accent-color: var(--brass);
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+        }
+
+        .similar-result-line {
+            margin-top: 10px;
+            font-size: 0.82rem;
+            color: var(--ledger-green);
+        }
+
+        /* Bulk bar "make this a category rule" checkbox */
+        .bulk-rule-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--mono);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .bulk-rule-checkbox input[type="checkbox"] {
+            accent-color: var(--brass);
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
         /* Expandable Transaction Detail Row */
         .tx-row {
             cursor: pointer;
@@ -1016,6 +1145,50 @@
             </div>
         </div>
 
+        <!-- Categorize Similar Modal -->
+        <div id="similarModal" class="tx-modal-overlay">
+            <div class="tx-modal-card similar-modal-card">
+                <div class="modal-header">
+                    <h2>Categorize Similar</h2>
+                    <button onclick="closeSimilarModal()" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="similarKeyword">If description contains:</label>
+                        <input type="text" id="similarKeyword" class="form-input" placeholder="e.g. starbucks"
+                            oninput="onSimilarKeywordInput()" autocomplete="off">
+                    </div>
+
+                    <div class="similar-preview-stats" id="similarStats" style="display: none;">
+                        <span class="similar-stat-pill" id="similarUncatPill">Uncategorized: 0</span>
+                        <span class="similar-stat-pill similar-stat-muted" id="similarCatPill">Already categorized: 0
+                            (won't be touched)</span>
+                    </div>
+
+                    <div class="similar-samples" id="similarSamples">
+                        <div class="similar-samples-empty">Type a keyword to preview matches.</div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 16px;">
+                        <label for="similarCategory">Set category to:</label>
+                        <input type="text" id="similarCategory" class="form-input" list="allCategoriesDatalist"
+                            placeholder="e.g. Coffee" oninput="updateSimilarApplyLabel()">
+                    </div>
+
+                    <label class="similar-rule-checkbox">
+                        <input type="checkbox" id="similarCreateRule" checked>
+                        <span>Create rule so future imports auto-categorize</span>
+                    </label>
+
+                    <div class="similar-result-line" id="similarResultLine" style="display: none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="closeSimilarModal()" class="btn-secondary">Cancel</button>
+                    <button onclick="applySimilar()" class="btn-primary" id="similarApplyBtn">Categorize</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Controls: Search and Status Filters (Default View) -->
         <div id="controlsContainer" class="controls-container">
             <div class="filter-tabs">
@@ -1087,12 +1260,19 @@
                     </div>
                 </div>
 
+                <label class="bulk-rule-checkbox" title="Also save a rule so future imports auto-categorize matching transactions">
+                    <input type="checkbox" id="bulkCreateRule">
+                    <span>Make this a category rule</span>
+                </label>
+
                 <button onclick="applyBulkCategory()" class="btn-primary">Apply</button>
                 <div style="width: 1px; height: 24px; background: var(--elevated); margin: 0 8px;"></div>
                 <button onclick="openRecurringModal()" class="btn-secondary"
                     style="border-color: var(--brass); color: var(--brass);">Make Recurring</button>
             </div>
         </div>
+
+        <div id="bulkResultLine" class="similar-result-line" style="display: none; margin-bottom: 16px;"></div>
 
         <div class="content-wrapper">
             <div class="main-content">
@@ -1428,7 +1608,7 @@
                                         onclick="event.stopPropagation(); startCategoryEdit(this.parentElement); return false;">{{
                                         t.subcategory }}</a>
                                     {% else %}
-                                    <span style="color: var(--muted);">-</span>
+                                    <span class="category-badge uncategorized-badge">Uncategorized</span>
                                     {% endif %}
                                 </span>
                             </td>
@@ -1468,7 +1648,11 @@
                                     </div>
                                     <div class="detail-field">
                                         <span class="detail-label">Category</span>
-                                        <span class="detail-value">{{ t.subcategory if t.subcategory else '—' }}</span>
+                                        {% if t.subcategory %}
+                                        <span class="detail-value">{{ t.subcategory }}</span>
+                                        {% else %}
+                                        <span class="detail-value muted" style="font-style: italic;">Uncategorized</span>
+                                        {% endif %}
                                     </div>
                                     <div class="detail-field">
                                         <span class="detail-label">Description</span>
@@ -1492,10 +1676,10 @@
                                     </div>
                                     {% endif %}
                                     <div class="detail-field detail-actions">
-                                        <a href="/transactions?search={{ t.description | urlencode }}&status=all"
-                                            class="detail-action-btn" onclick="event.stopPropagation();">
-                                            Find Similar
-                                        </a>
+                                        <button class="detail-action-btn" data-keyword="{{ t.description | normalize_merchant }}"
+                                            onclick="event.stopPropagation(); openSimilarModal(this.dataset.keyword);">
+                                            Categorize Similar
+                                        </button>
                                         {% if not t.recurring_bill %}
                                         <button class="detail-action-btn recurring-btn" data-desc="{{ t.description }}"
                                             data-amount="{{ t.amount | abs }}" data-day="{{ t.date.day }}"
@@ -1856,22 +2040,38 @@
 
             if (ids.length === 0) return;
 
-            if (confirm(`Categorize ${ids.length} transactions as '${category}'?`)) {
-                await submitBulkCategory(ids, category);
+            const createRule = document.getElementById("bulkCreateRule").checked;
+            const confirmMsg = `Categorize ${ids.length} transactions as '${category}'`
+                + (createRule ? " and create a category rule?" : "?");
+
+            if (confirm(confirmMsg)) {
+                await submitBulkCategory(ids, category, createRule);
             }
         }
 
-        async function submitBulkCategory(ids, category) {
+        async function submitBulkCategory(ids, category, createRule) {
             try {
                 const response = await fetch('/api/transactions/bulk-category', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ids, category }),
+                    body: JSON.stringify({ ids, category, create_rule: !!createRule }),
                 });
 
                 const result = await response.json();
 
                 if (result.status === 'ok') {
+                    let msg = `${result.updated} transaction${result.updated === 1 ? '' : 's'} set to ${category}`;
+                    if (createRule) {
+                        const created = result.rules_created || [];
+                        const skipped = result.rules_skipped || [];
+                        if (created.length > 0) {
+                            msg += ` · ${created.length} rule${created.length === 1 ? '' : 's'} created (${created.join(', ')})`;
+                        }
+                        if (skipped.length > 0) {
+                            msg += ` · ${skipped.length} skipped, already ruled (${skipped.join(', ')})`;
+                        }
+                    }
+                    sessionStorage.setItem('txBulkResultMsg', msg);
                     window.location.reload();
                 } else {
                     alert('Error categorizing transactions: ' + result.message);
@@ -1881,6 +2081,206 @@
                 alert('Failed to bulk categorize.');
             }
         }
+
+        // --- Categorize Similar ---
+        const similarModalEl = document.getElementById("similarModal");
+        let similarKeywordDebounce = null;
+        let similarRequestSeq = 0;
+        let lastSimilarPreview = null;
+
+        function openSimilarModal(keyword) {
+            document.getElementById("similarKeyword").value = keyword || "";
+            document.getElementById("similarCategory").value = "";
+            document.getElementById("similarCreateRule").checked = true;
+            document.getElementById("similarResultLine").style.display = "none";
+            lastSimilarPreview = null;
+            similarModalEl.style.display = "flex";
+            fetchSimilarPreview();
+            document.getElementById("similarKeyword").focus();
+        }
+
+        function closeSimilarModal() {
+            similarModalEl.style.display = "none";
+            if (similarKeywordDebounce) clearTimeout(similarKeywordDebounce);
+        }
+
+        function onSimilarKeywordInput() {
+            if (similarKeywordDebounce) clearTimeout(similarKeywordDebounce);
+            similarKeywordDebounce = setTimeout(fetchSimilarPreview, 350);
+        }
+
+        function formatSimilarAmount(amount) {
+            const sign = amount < 0 ? "-" : "";
+            return sign + "$" + Math.abs(amount).toLocaleString(undefined, {
+                minimumFractionDigits: 2, maximumFractionDigits: 2
+            });
+        }
+
+        async function fetchSimilarPreview() {
+            const keyword = document.getElementById("similarKeyword").value.trim();
+            const statsEl = document.getElementById("similarStats");
+            const samplesEl = document.getElementById("similarSamples");
+
+            if (!keyword) {
+                statsEl.style.display = "none";
+                samplesEl.innerHTML = '<div class="similar-samples-empty">Type a keyword to preview matches.</div>';
+                lastSimilarPreview = null;
+                updateSimilarApplyLabel();
+                return;
+            }
+
+            const seq = ++similarRequestSeq;
+            try {
+                const response = await fetch(`/api/transactions/similar?keyword=${encodeURIComponent(keyword)}`);
+                const data = await response.json();
+                if (seq !== similarRequestSeq) return; // stale response — a newer keystroke already fired
+
+                if (data.error) {
+                    samplesEl.innerHTML = '<div class="similar-samples-empty">' + data.error + '</div>';
+                    statsEl.style.display = "none";
+                    lastSimilarPreview = null;
+                    updateSimilarApplyLabel();
+                    return;
+                }
+
+                lastSimilarPreview = data;
+
+                statsEl.style.display = "flex";
+                document.getElementById("similarUncatPill").textContent = `Uncategorized: ${data.uncategorized}`;
+                updateSimilarCatPill();
+
+                samplesEl.innerHTML = "";
+                if (data.samples.length === 0) {
+                    samplesEl.innerHTML = '<div class="similar-samples-empty">No matching transactions.</div>';
+                } else {
+                    data.samples.forEach(s => {
+                        const row = document.createElement("div");
+                        row.className = "similar-sample-row";
+
+                        const dateSpan = document.createElement("span");
+                        dateSpan.textContent = s.date;
+
+                        const descSpan = document.createElement("span");
+                        descSpan.className = "similar-sample-desc";
+                        descSpan.textContent = s.description;
+                        descSpan.title = s.description;
+
+                        const amountSpan = document.createElement("span");
+                        amountSpan.className = "similar-sample-amount";
+                        amountSpan.textContent = formatSimilarAmount(s.amount);
+
+                        row.appendChild(dateSpan);
+                        row.appendChild(descSpan);
+                        row.appendChild(amountSpan);
+                        samplesEl.appendChild(row);
+                    });
+                    if (data.total > data.samples.length) {
+                        const more = document.createElement("div");
+                        more.className = "similar-sample-more";
+                        more.textContent = `+ ${data.total - data.samples.length} more`;
+                        samplesEl.appendChild(more);
+                    }
+                }
+
+                updateSimilarApplyLabel();
+            } catch (error) {
+                console.error("Error:", error);
+                if (seq === similarRequestSeq) {
+                    samplesEl.innerHTML = '<div class="similar-samples-empty">Failed to load preview.</div>';
+                }
+            }
+        }
+
+        function updateSimilarCatPill() {
+            if (!lastSimilarPreview) return;
+            const createRule = document.getElementById("similarCreateRule").checked;
+            const d = lastSimilarPreview;
+            document.getElementById("similarCatPill").textContent = createRule
+                ? `Already categorized: ${d.categorized} (rule may recategorize ${Math.max(0, d.categorized - d.user_edited)}; your ${d.user_edited} manual edit${d.user_edited === 1 ? "" : "s"} protected)`
+                : `Already categorized: ${d.categorized} (won't be touched)`;
+        }
+
+        function updateSimilarApplyLabel() {
+            const btn = document.getElementById("similarApplyBtn");
+            if (!lastSimilarPreview) {
+                btn.textContent = "Categorize";
+                return;
+            }
+            const createRule = document.getElementById("similarCreateRule").checked;
+            const count = createRule
+                ? lastSimilarPreview.total - lastSimilarPreview.user_edited
+                : lastSimilarPreview.uncategorized;
+            btn.textContent = `Categorize ${count} transaction${count === 1 ? "" : "s"}`;
+        }
+
+        document.getElementById("similarCreateRule").addEventListener("change", () => {
+            updateSimilarApplyLabel();
+            updateSimilarCatPill();
+        });
+
+        async function applySimilar() {
+            const keyword = document.getElementById("similarKeyword").value.trim();
+            const category = document.getElementById("similarCategory").value.trim();
+            const createRule = document.getElementById("similarCreateRule").checked;
+
+            if (!keyword) {
+                alert("Please enter a keyword.");
+                return;
+            }
+            if (!category) {
+                alert("Please select or enter a category.");
+                return;
+            }
+
+            const count = lastSimilarPreview
+                ? (createRule ? lastSimilarPreview.total - lastSimilarPreview.user_edited : lastSimilarPreview.uncategorized)
+                : null;
+
+            if (count === 0) {
+                alert("No transactions would be affected by this keyword.");
+                return;
+            }
+
+            const confirmMsg = `Categorize ${count !== null ? count : "these"} transactions as '${category}'`
+                + (createRule ? " and create a rule?" : "?");
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                const response = await fetch('/api/categorize-group', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keyword, category, create_rule: createRule }),
+                });
+                const result = await response.json();
+
+                if (result.status === 'ok') {
+                    const msg = `${result.updated} categorized${createRule ? ' · rule created' : ''}`;
+                    sessionStorage.setItem('txBulkResultMsg', msg);
+                    window.location.reload();
+                } else {
+                    alert('Error categorizing transactions: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to categorize transactions.');
+            }
+        }
+
+        document.addEventListener("click", function (event) {
+            if (event.target === similarModalEl) closeSimilarModal();
+        });
+
+        (function showBulkResultMessage() {
+            const msg = sessionStorage.getItem('txBulkResultMsg');
+            if (msg) {
+                sessionStorage.removeItem('txBulkResultMsg');
+                const line = document.getElementById('bulkResultLine');
+                if (line) {
+                    line.textContent = msg;
+                    line.style.display = 'block';
+                }
+            }
+        })();
 
         // --- Inline single-row category edit ---
 

@@ -6,13 +6,29 @@ import sqlite3
 import pandas as pd
 from flask import Blueprint, jsonify, render_template, request
 
+from finance import db
+from finance.blueprints.rules import normalize_merchant
 from finance.config_loader import load_config
 from finance.data_service import get_cache, get_config_path, get_db_connection, refresh_data
-from finance.importer import compute_dedup_hash
+from finance.importer import compute_dedup_hash, reapply_rules
 
 logger = logging.getLogger(__name__)
 
 transactions_bp = Blueprint("transactions", __name__)
+
+
+def _normalize_uncategorized(rows: list[dict]) -> None:
+    """
+    pandas NaN survives DataFrame.to_dict(orient="records") as a bare
+    float('nan'), which is truthy in Python -- so template guards like
+    `{% if t.subcategory %}` render the literal string "nan" instead of
+    falling through to the "Uncategorized" branch. Coerce a NaN subcategory
+    to None in place so every render-layer check downstream (row chip,
+    expanded detail panel) treats an uncategorized row as falsy, consistently.
+    """
+    for row in rows:
+        if pd.isna(row.get("subcategory")):
+            row["subcategory"] = None
 
 
 def _attach_transaction_ids(conn: sqlite3.Connection, rows: list[dict]) -> None:
@@ -148,6 +164,10 @@ def transactions():
     else:
         transactions = filtered_df.sort_values(col, ascending=asc).to_dict(orient="records")
 
+    # Coerce NaN subcategory -> None so the template's truthiness checks
+    # never render the literal string "nan" (see _normalize_uncategorized docstring)
+    _normalize_uncategorized(transactions)
+
     # Attach real DB ids for inline/bulk category editing (see docstring above)
     conn = get_db_connection()
     try:
@@ -270,16 +290,87 @@ def api_set_transaction_category(txn_id: int):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@transactions_bp.route("/api/transactions/similar", methods=["GET"])
+def api_transactions_similar():
+    """
+    Read-only preview for the "Categorize Similar" panel: case-insensitive
+    substring match of `keyword` against the raw transaction description
+    (the same matching apply_rules_to_description/categorize_row use), split
+    into uncategorized / already-categorized counts plus how many of the
+    matches are user_edited (and therefore protected from rule reapply).
+    Excludes transfers and inactive accounts -- mirrors /api/uncategorized-groups.
+
+    Query: ?keyword=amazon+mktpl
+    Response: {total, uncategorized, categorized, user_edited, samples: [{date, description, amount}]}
+    """
+    keyword = request.args.get("keyword", "").strip().lower()
+    if not keyword:
+        return jsonify({"error": "keyword is required"}), 400
+
+    try:
+        conn = get_db_connection()
+        try:
+            # Escape LIKE wildcards so a keyword containing % or _ is matched
+            # literally, as a substring, not as a pattern.
+            escaped = keyword.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            rows = conn.execute(
+                "SELECT t.date, t.description, t.amount, t.category, t.user_edited "
+                "FROM transactions t JOIN accounts a ON a.id = t.account_id "
+                "WHERE a.active = 1 AND t.txn_type != 'transfer' "
+                "AND LOWER(t.description) LIKE ? ESCAPE '\\' "
+                "ORDER BY t.date DESC",
+                (f"%{escaped}%",),
+            ).fetchall()
+        finally:
+            conn.close()
+
+        total = len(rows)
+        uncategorized = sum(1 for r in rows if not r["category"])
+        categorized = total - uncategorized
+        user_edited = sum(1 for r in rows if r["user_edited"])
+        samples = [
+            {"date": r["date"], "description": r["description"], "amount": r["amount"]}
+            for r in rows[:5]
+        ]
+
+        return jsonify({
+            "total": total,
+            "uncategorized": uncategorized,
+            "categorized": categorized,
+            "user_edited": user_edited,
+            "samples": samples,
+        })
+
+    except Exception as e:
+        logger.exception("Failed to load similar-transaction preview")
+        return jsonify({"error": str(e)}), 500
+
+
 @transactions_bp.route("/api/transactions/bulk-category", methods=["POST"])
 def api_bulk_set_category():
     """
     Set category on many transactions at once (row-checkbox bulk action).
     Marks user_edited=1 on all affected rows.
-    Body: { "ids": [1, 2, 3], "category": "Groceries" }
+    Body: { "ids": [1, 2, 3], "category": "Groceries", "create_rule": false }
+
+    create_rule=true additionally:
+      (a) sets the selected ids' category + user_edited=1, exactly as above
+      (b) derives the DISTINCT normalize_merchant() keywords from the
+          selected transactions' descriptions
+      (c) inserts one categorization_rules row per distinct keyword, skipping
+          (and reporting) any keyword that already has a rule under ANY
+          category -- never stacks a conflicting rule
+      (d) reapply_rules() so other matching, non-user_edited transactions
+          pick up the new rule(s) too
+      (e) refresh_data()
+
+    Response (create_rule=true adds rules_created/rules_skipped/reapplied):
+      { "status": "ok", "updated": n, "rules_created": [...], "rules_skipped": [...], "reapplied": n }
     """
     data = request.get_json(silent=True) or {}
     category = str(data.get("category", "")).strip()
     raw_ids = data.get("ids", [])
+    create_rule = bool(data.get("create_rule", False))
 
     if not category:
         return jsonify({"status": "error", "message": "category is required"}), 400
@@ -295,17 +386,61 @@ def api_bulk_set_category():
         conn = get_db_connection()
         try:
             placeholders = ",".join("?" * len(txn_ids))
+
+            rules_created: list[str] = []
+            rules_skipped: list[str] = []
+            reapplied = 0
+            keywords: list[str] = []
+
+            if create_rule:
+                desc_rows = conn.execute(
+                    f"SELECT description FROM transactions WHERE id IN ({placeholders})",
+                    txn_ids,
+                ).fetchall()
+                keywords = sorted({
+                    kw for kw in (normalize_merchant(r["description"]) for r in desc_rows) if kw
+                })
+
             with conn:
                 cur = conn.execute(
                     f"UPDATE transactions SET category = ?, user_edited = 1 WHERE id IN ({placeholders})",
                     (category, *txn_ids),
                 )
                 updated = cur.rowcount
+
+                if create_rule and keywords:
+                    priority = db.next_rule_priority(conn)
+                    conn.execute(
+                        "UPDATE categorization_rules SET priority = ? WHERE category = ?",
+                        (priority, category),
+                    )
+                    for keyword in keywords:
+                        existing = conn.execute(
+                            "SELECT category FROM categorization_rules WHERE keyword = ?",
+                            (keyword,),
+                        ).fetchone()
+                        if existing is not None:
+                            rules_skipped.append(keyword)
+                            continue
+                        conn.execute(
+                            "INSERT OR IGNORE INTO categorization_rules (category, keyword, priority) "
+                            "VALUES (?, ?, ?)",
+                            (category, keyword, priority),
+                        )
+                        rules_created.append(keyword)
+
+            if create_rule:
+                reapplied = reapply_rules(conn)
         finally:
             conn.close()
 
         refresh_data()
-        return jsonify({"status": "ok", "updated": updated})
+        response = {"status": "ok", "updated": updated}
+        if create_rule:
+            response["rules_created"] = rules_created
+            response["rules_skipped"] = rules_skipped
+            response["reapplied"] = reapplied
+        return jsonify(response)
 
     except Exception as e:
         logger.exception("Failed to bulk set category")

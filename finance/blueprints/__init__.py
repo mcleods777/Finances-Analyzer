@@ -8,7 +8,7 @@ from finance.blueprints.accounts import accounts_bp
 from finance.blueprints.dashboard import dashboard_bp
 from finance.blueprints.forecast import forecast_bp
 from finance.blueprints.plaid import plaid_bp
-from finance.blueprints.rules import rules_bp
+from finance.blueprints.rules import normalize_merchant, rules_bp
 from finance.blueprints.transactions import transactions_bp
 
 
@@ -42,6 +42,12 @@ def register_blueprints(app: Flask) -> None:
             return datetime.strptime(value, "%Y-%m-%d").strftime("%b %d")
         except (TypeError, ValueError):
             return str(value)
+
+    @app.template_filter("normalize_merchant")
+    def normalize_merchant_filter(value):
+        """Merchant grouping key (see finance.blueprints.rules.normalize_merchant), for
+        pre-filling the "Categorize Similar" keyword field from a transaction description."""
+        return normalize_merchant(value)
 
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(transactions_bp)
