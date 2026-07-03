@@ -329,6 +329,19 @@ def test_llm_path_used_when_key_present(wire, monkeypatch):
     assert briefing_state.get_daily_count(wire.data_dir, today=TODAY) == 1
 
 
+def test_llm_prose_strips_echoed_data_tags(wire, monkeypatch):
+    """Regression: the model echoed the injection wrapping into its prose
+    ("...at <data>Maverik</data>...") on the first real-key run."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    wire.client = FakeClient(
+        text="New pattern at <data>Maverik &amp; Sons</data> is worth a look."
+    )
+    wire.patterns = [make_pattern()]
+    result = generate(wire)
+    assert result["source"] == "llm"
+    assert result["prose"] == "New pattern at Maverik & Sons is worth a look."
+
+
 def test_daily_cap_short_circuits_to_cached_briefing(wire, monkeypatch, caplog):
     wire.patterns = [make_pattern()]
     first = generate(wire)  # templated briefing lands in the cache
