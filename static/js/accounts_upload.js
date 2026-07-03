@@ -101,7 +101,7 @@ async function loadImportsList(accountId) {
             </tr>
         `).join('');
         listEl.innerHTML = `
-            <table>
+            <table class="data-table">
                 <thead><tr><th>When</th><th>File</th><th>Imported</th><th>Dupes</th></tr></thead>
                 <tbody>${rows}</tbody>
             </table>

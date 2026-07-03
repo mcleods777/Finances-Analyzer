@@ -32,6 +32,73 @@ textarea {
     font-variant-numeric: tabular-nums;
 }
 
+/* ===== Shared table system =====
+   Every data table in the app uses .data-table (plus a per-table modifier
+   class for table-specific bits like column widths or density). */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.data-table th,
+.data-table td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid #334155;
+    font-variant-numeric: tabular-nums;
+}
+
+.data-table th {
+    background: #0f172a;
+    color: #94a3b8;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.data-table td {
+    color: #e2e8f0;
+    font-size: 0.9rem;
+}
+
+.data-table tbody tr:hover {
+    background: rgba(148, 163, 184, 0.05);
+}
+
+.data-table tr:last-child td {
+    border-bottom: none;
+}
+
+.data-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.data-table .cell-nowrap {
+    white-space: nowrap;
+}
+
+.data-table .cell-truncate {
+    max-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Money coloring — consistent in every table that shows amounts */
+.amount-positive {
+    color: #4ade80;
+}
+
+.amount-negative {
+    color: #f87171;
+}
+
 header {
     display: flex;
     justify-content: space-between;

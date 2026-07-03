@@ -308,7 +308,7 @@
                 const rows = data.sample_overlaps.map((o) => `
                     <tr>
                         <td>${esc(o.date)}</td>
-                        <td>${Number(o.amount).toFixed(2)}</td>
+                        <td class="num ${Number(o.amount) < 0 ? 'amount-negative' : 'amount-positive'}">${Number(o.amount).toFixed(2)}</td>
                         <td>${esc(o.desc_source)}</td>
                         <td>${esc(o.desc_target)}</td>
                     </tr>

@@ -52,7 +52,7 @@
                 <!-- Step 2: mapping form (populated by JS after preview) -->
                 <div id="add-account-step-mapping" hidden>
                     <div class="upload-preview-table-wrap">
-                        <table class="upload-preview-table" id="add-account-preview-table"></table>
+                        <table class="upload-preview-table data-table" id="add-account-preview-table"></table>
                     </div>
 
                     <form id="add-account-form" class="upload-form">
@@ -250,16 +250,15 @@
         color: #94a3b8;
     }
 
-    .upload-imports-list table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
+    /* Density modifiers on top of the shared .data-table component */
     .upload-imports-list th,
     .upload-imports-list td {
-        text-align: left;
-        padding: 4px 6px;
-        border-bottom: 1px solid #334155;
+        padding: 4px 8px;
+    }
+
+    .upload-imports-list td {
+        font-size: 0.78rem;
+        color: #94a3b8;
     }
 
     .upload-add-account-btn {
@@ -336,23 +335,22 @@
         border-radius: 6px;
     }
 
+    /* Density modifiers on top of the shared .data-table component */
     .upload-preview-table {
-        border-collapse: collapse;
         font-size: 0.75rem;
-        width: 100%;
+        border: none;
+        /* the .upload-preview-table-wrap provides the border/radius */
     }
 
     .upload-preview-table th,
     .upload-preview-table td {
         padding: 5px 8px;
-        border-bottom: 1px solid #334155;
         white-space: nowrap;
-        color: #cbd5e1;
     }
 
-    .upload-preview-table th {
-        background: #0f172a;
-        color: #94a3b8;
+    .upload-preview-table td {
+        font-size: 0.75rem;
+        color: #cbd5e1;
     }
 
     .upload-form-row {
