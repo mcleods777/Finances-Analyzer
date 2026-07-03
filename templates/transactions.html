@@ -51,13 +51,19 @@
             display: inline-block;
             padding: 2px 8px;
             border-radius: 9999px;
-            font-size: 0.85em;
+            font-size: 0.75rem;
             font-weight: 500;
+            line-height: 1.5;
             background-color: #334155;
             color: #e2e8f0;
             text-decoration: none;
             cursor: pointer;
             transition: opacity 0.15s;
+            white-space: nowrap;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: middle;
         }
 
         .category-badge:hover {
@@ -220,6 +226,13 @@
 
         .sort-header:hover {
             color: #f1f5f9;
+        }
+
+        /* Fixed-width arrow slot so toggling sort doesn't shift the header text */
+        .sort-arrow {
+            display: inline-block;
+            width: 1em;
+            text-align: left;
         }
 
         .sort-header.sort-active {
@@ -1338,43 +1351,43 @@
                             <th style="width: 150px;">
                                 <a href="/transactions?sort={{ 'date_asc' if current_sort == 'date_desc' else 'date_desc' }}{{ base }}"
                                     class="sort-header {{ 'sort-active' if current_sort in ['date_asc', 'date_desc'] }}">
-                                    Date {{ '↓' if current_sort == 'date_desc' else '↑' if current_sort == 'date_asc'
-                                    else '' }}
+                                    Date <span class="sort-arrow">{{ '↓' if current_sort == 'date_desc' else '↑' if
+                                        current_sort == 'date_asc' else '' }}</span>
                                 </a>
                             </th>
                             <th>
                                 <a href="/transactions?sort={{ 'description_asc' if current_sort == 'description_desc' else 'description_desc' }}{{ base }}"
                                     class="sort-header {{ 'sort-active' if current_sort in ['description_asc', 'description_desc'] }}">
-                                    Description {{ '↓' if current_sort == 'description_desc' else '↑' if current_sort ==
-                                    'description_asc' else '' }}
+                                    Description <span class="sort-arrow">{{ '↓' if current_sort == 'description_desc'
+                                        else '↑' if current_sort == 'description_asc' else '' }}</span>
                                 </a>
                             </th>
                             <th style="width: 110px;">
                                 <a href="/transactions?sort={{ 'type_asc' if current_sort == 'type_desc' else 'type_desc' }}{{ base }}"
                                     class="sort-header {{ 'sort-active' if current_sort in ['type_asc', 'type_desc'] }}">
-                                    Type {{ '↓' if current_sort == 'type_desc' else '↑' if current_sort == 'type_asc'
-                                    else '' }}
+                                    Type <span class="sort-arrow">{{ '↓' if current_sort == 'type_desc' else '↑' if
+                                        current_sort == 'type_asc' else '' }}</span>
                                 </a>
                             </th>
                             <th style="width: 120px;">
                                 <a href="/transactions?sort={{ 'category_asc' if current_sort == 'category_desc' else 'category_desc' }}{{ base }}"
                                     class="sort-header {{ 'sort-active' if current_sort in ['category_asc', 'category_desc'] }}">
-                                    Category {{ '↓' if current_sort == 'category_desc' else '↑' if current_sort ==
-                                    'category_asc' else '' }}
+                                    Category <span class="sort-arrow">{{ '↓' if current_sort == 'category_desc' else
+                                        '↑' if current_sort == 'category_asc' else '' }}</span>
                                 </a>
                             </th>
                             <th style="width: 150px;">
                                 <a href="/transactions?sort={{ 'account_asc' if current_sort == 'account_desc' else 'account_desc' }}{{ base }}"
                                     class="sort-header {{ 'sort-active' if current_sort in ['account_asc', 'account_desc'] }}">
-                                    Account {{ '↓' if current_sort == 'account_desc' else '↑' if current_sort ==
-                                    'account_asc' else '' }}
+                                    Account <span class="sort-arrow">{{ '↓' if current_sort == 'account_desc' else '↑'
+                                        if current_sort == 'account_asc' else '' }}</span>
                                 </a>
                             </th>
                             <th style="width: 100px; text-align: right;">
                                 <a href="/transactions?sort={{ 'amount_asc' if current_sort == 'amount_desc' else 'amount_desc' }}{{ base }}"
                                     class="sort-header {{ 'sort-active' if current_sort in ['amount_asc', 'amount_desc'] }}">
-                                    Amount {{ '↓' if current_sort == 'amount_desc' else '↑' if current_sort ==
-                                    'amount_asc' else '' }}
+                                    Amount <span class="sort-arrow">{{ '↓' if current_sort == 'amount_desc' else '↑'
+                                        if current_sort == 'amount_asc' else '' }}</span>
                                 </a>
                             </th>
                         </tr>
