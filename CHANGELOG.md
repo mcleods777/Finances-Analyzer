@@ -5,6 +5,33 @@ All notable changes to the Personal Finance Dashboard.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses 4-digit semantic versioning (MAJOR.MINOR.PATCH.MICRO).
 
+## [0.4.0.0] - 2026-07-03
+
+The Private Wire — the app gets a designed identity. Full design system
+created via /design-consultation (DESIGN.md is now the source of truth).
+
+### Added
+- **DESIGN.md**: "The Private Wire" editorial-dispatch design system —
+  three-voice typography (Newsreader serif for prose, IBM Plex Sans for
+  data, IBM Plex Mono microtype), ink & newsprint palette with a single
+  brass accent, ledger-green/red-ink money colors, hairline rules over
+  card boxes, square corners, three intentional motions.
+- **Front-page dashboard**: masthead with dateline, the daily briefing as
+  a serif lede with brass drop cap and entity links, TODAY rail (net
+  worth + sparkline, upcoming bills, income), all sections as numbered
+  captioned figures (FIG. 1 — BUDGET RUNWAY …).
+- Ink-settle briefing animation (once per day), hover underline draw,
+  runway fill on first view — all disabled under prefers-reduced-motion.
+
+### Changed
+- Complete retheme of every page from blue slate to the ink & newsprint
+  token layer (CSS variables); charts moved to brass/earth palettes;
+  serif section headings; mono table headers; app retitled from
+  "Personal Finance Dashboard" to "The Private Wire".
+- Tables: fixed date-column truncation, client-side pagination
+  (100/page) replacing the 7,578-row render, shared .data-table system,
+  IBM Plex Sans with tabular numerals, 45px row density.
+
 ## [0.3.0.0] - 2026-07-02
 
 The AI co-pilot release — implements the approved "Pattern Revelation"
