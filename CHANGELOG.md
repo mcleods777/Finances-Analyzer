@@ -5,6 +5,39 @@ All notable changes to the Personal Finance Dashboard.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses 4-digit semantic versioning (MAJOR.MINOR.PATCH.MICRO).
 
+## [0.3.0.0] - 2026-07-02
+
+The AI co-pilot release — implements the approved "Pattern Revelation"
+design: the dashboard now briefs you on your own money.
+
+### Added
+- **Daily Briefing card**: 3-5 sentences of hallway-CFO prose at the top
+  of the dashboard, built from deterministically detected patterns with
+  drill-down chips to the underlying transactions. Uses the Claude API
+  when `ANTHROPIC_API_KEY` is set (prompt caching, injection-hardened,
+  20-call/day cap, ~$0.30/mo on Haiku); falls back to templated prose
+  without a key.
+- **7 pattern detectors** (`finance/pattern_detector.py`): category delta
+  vs prior pay period, spending anomalies (with same-day refund netting),
+  new recurring charges, missing recurring bills, runway variance, top
+  movers, uncategorized creep.
+- **Briefing state** (`data/briefing_state.json`): seen-merchant tracking,
+  rolling 7-briefing freshness window, daily API-call cap.
+- Early-paycheck income attribution: paychecks posting in the last N days
+  of a month count toward the next month's income card and savings rate.
+- Account management: rename/retype accounts, merge with overlap-dedup
+  preview, hide/archive, exclude-from-net-worth, delete with cascade
+  counts, per-bank Plaid unlink with keep-data option.
+- Upcoming-bills dashboard section split into half-month groups with
+  per-half committed subtotals.
+
+### Fixed
+- Bill matching survives bank descriptor changes (Plaid-era clean names):
+  dual-era keywords, amount-closest disambiguation, drill-downs search
+  the keyword that matches current data.
+- Plaid balance snapshots now fetched via accounts_get on every sync
+  (/transactions/sync returns an empty accounts list in production).
+
 ## [0.2.0.0] - 2026-07-02
 
 Mint/PocketSmith-style release: the app moves from a stateless CSV/YAML
