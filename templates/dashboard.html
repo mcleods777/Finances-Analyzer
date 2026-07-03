@@ -1,71 +1,67 @@
 {% extends "base.html" %}
 
-{% block title %}Personal Finance Dashboard{% endblock %}
+{% block title %}The Private Wire{% endblock %}
 
 {% block head %}
     <style>
-        .header-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
+        /* ===== The Front Page: THE LEDE (cols 1-8) + TODAY rail (cols 9-12) ===== */
+        .front-page {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            column-gap: 56px;
+            margin: 4px 0 28px;
         }
 
-        .btn-link {
-            text-decoration: none;
-            background-color: var(--brass);
-            color: var(--ink);
-            padding: 8px 16px;
-            border-radius: 2px;
-            font-size: 14px;
-            font-weight: 500;
+        .front-page .lede {
+            grid-column: 1 / 9;
+            min-width: 0;
         }
 
-        .btn-link:hover {
-            background-color: var(--brass-bright);
+        .front-page .today-rail {
+            grid-column: 9 / 13;
+            min-width: 0;
+            margin-top: 26px;
         }
 
-        /* Daily Briefing card */
-        .briefing-card {
-            background: transparent;
-            border-top: 1px solid var(--rule);
-            position: relative;
-            padding: 18px 0;
-            margin-bottom: 20px;
+        /* Hairline bounding the lede block below (scotch rule above comes
+           from the masthead) */
+        .front-page-end {
+            margin-bottom: 28px;
         }
 
-        .briefing-card::before {
-            content: '';
-            position: absolute;
-            top: 3px;
-            left: 0;
-            right: 0;
-            border-top: 1px solid var(--rule);
+        @media (max-width: 900px) {
+            .front-page {
+                /* Collapse the 12 tracks: their 11 column gaps would force
+                   horizontal overflow on small screens */
+                grid-template-columns: 1fr;
+                column-gap: 0;
+            }
+
+            .front-page .lede,
+            .front-page .today-rail {
+                grid-column: 1 / -1;
+            }
+
+            .front-page .today-rail {
+                margin-top: 36px;
+            }
         }
 
+        /* --- The Briefing (the lede) --- */
         .briefing-header {
             display: flex;
             justify-content: space-between;
             align-items: baseline;
             gap: 12px;
-            margin-bottom: 10px;
+            margin: 26px 0 16px;
         }
 
         .briefing-header h3 {
-            font-size: 11px;
-            font-family: var(--mono);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--muted);
-            font-weight: 400;
             margin: 0;
+            font-weight: 400;
         }
 
         .briefing-meta {
-            font-family: var(--mono);
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--muted);
             white-space: nowrap;
         }
 
@@ -78,10 +74,30 @@
             text-decoration: underline;
         }
 
+        /* Newsreader 20px/1.58, 62ch, on raw ink — NOT a card */
         .briefing-body {
             font-size: 0.92rem;
             color: var(--text);
             line-height: 1.6;
+            max-width: 62ch;
+        }
+
+        .briefing-body.lede-prose {
+            font-family: var(--serif);
+            font-size: 20px;
+            font-weight: 400;
+            line-height: 1.58;
+            font-optical-sizing: auto;
+        }
+
+        /* Brass drop cap on the first letter of the loaded prose */
+        .briefing-body.lede-prose::first-letter {
+            font-weight: 500;
+            font-size: 64px;
+            float: left;
+            line-height: 0.86;
+            padding: 6px 10px 0 0;
+            color: var(--brass);
         }
 
         .briefing-body.briefing-error {
@@ -89,61 +105,197 @@
             font-size: 0.85rem;
         }
 
+        /* Loading skeleton — plain surface bars */
         .briefing-skeleton-line {
             height: 12px;
-            border-radius: 2px;
-            margin: 9px 0;
+            border-radius: 0;
+            margin: 12px 0;
             background: var(--surface);
         }
 
+        /* Motion #1 — ink settles: first briefing render of the day only.
+           Sentences rise 4px and fade in, staggered (delay set inline). */
+        @media (prefers-reduced-motion: no-preference) {
+            .lede-prose .ink-sentence {
+                position: relative;
+                opacity: 0;
+                animation: ink-settle 500ms ease-out forwards;
+            }
+
+            @keyframes ink-settle {
+                from {
+                    opacity: 0;
+                    top: 4px;
+                }
+
+                to {
+                    opacity: 1;
+                    top: 0;
+                }
+            }
+        }
+
+        /* Drill-down entity links — quiet brass-underlined text, no pills.
+           Motion #2: the full-brass underline draws left-to-right on hover. */
         .briefing-chips {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 12px;
+            gap: 6px 22px;
+            margin-top: 16px;
+            max-width: 62ch;
         }
 
         .briefing-chips:empty {
             display: none;
         }
 
-        .briefing-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            max-width: 320px;
-            padding: 4px 12px;
-            border-radius: 2px;
-            border: 1px solid var(--rule);
-            background: rgba(217, 160, 63, 0.06);
-            color: var(--brass);
-            font-size: 0.76rem;
-            font-weight: 500;
+        .entity-link {
+            font-family: var(--serif);
+            font-size: 14.5px;
+            color: var(--text);
             text-decoration: none;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            transition: border-color 0.2s, background 0.2s;
+            padding-bottom: 2px;
+            background-image:
+                linear-gradient(var(--brass), var(--brass)),
+                linear-gradient(rgba(217, 160, 63, 0.4), rgba(217, 160, 63, 0.4));
+            background-repeat: no-repeat;
+            background-position: 0 100%, 0 100%;
+            background-size: 0% 1px, 100% 1px;
         }
 
-        .briefing-chip:hover {
-            border-color: var(--brass);
-            background: rgba(217, 160, 63, 0.14);
+        @media (prefers-reduced-motion: no-preference) {
+            .entity-link {
+                transition: background-size 160ms ease-out;
+            }
         }
 
-        .briefing-chip .chip-arrow {
-            color: var(--muted);
-            flex-shrink: 0;
+        .entity-link:hover {
+            background-size: 100% 1px, 100% 1px;
+        }
+
+        .lede-signoff {
+            margin-top: 18px;
+        }
+
+        .lede-signoff:empty {
+            display: none;
         }
 
         .briefing-hint {
-            font-size: 0.72rem;
-            color: var(--muted);
             margin-top: 10px;
         }
 
         .briefing-hint:empty {
             display: none;
+        }
+
+        /* --- TODAY rail --- */
+        .rail-section {
+            margin-bottom: 28px;
+        }
+
+        .rail-section>.microtype {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .rail-networth {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+        }
+
+        .rail-networth .value {
+            font-size: 22px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .rail-networth .delta {
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .rail-networth .delta.positive {
+            color: var(--ledger-green);
+        }
+
+        .rail-networth .delta.negative {
+            color: var(--red-ink);
+        }
+
+        .rail-sparkline {
+            width: 100%;
+            height: 30px;
+            margin-top: 8px;
+            display: block;
+        }
+
+        .rail-bill {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 10px;
+            padding: 8px 0;
+            border-top: 1px solid var(--rule);
+            font-size: 13.5px;
+        }
+
+        .rail-bill:first-child {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .rail-bill .name {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .rail-bill .when {
+            font-family: var(--mono);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+
+        .rail-bill .amt {
+            font-variant-numeric: tabular-nums;
+            font-weight: 500;
+        }
+
+        .rail-income-value {
+            font-size: 18px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .rail-income-sub {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .rail-actions {
+            display: flex;
+            gap: 18px;
+            align-items: baseline;
+            border-top: 1px solid var(--rule);
+            padding-top: 10px;
+        }
+
+        .rail-actions a {
+            color: var(--muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .rail-actions a:hover {
+            color: var(--brass);
         }
 
         /* Spending Breakdown Layout */
@@ -1256,25 +1408,75 @@
 {% endblock %}
 
 {% block content %}
-    <header>
-        <h1>Personal Finance Dashboard</h1>
-        <div class="header-actions">
-            <a href="/transactions" class="btn-link">View Transactions</a>
-            <a href="/categories" class="btn-link secondary">Categories</a>
-            <a href="/rules" class="btn-link secondary">Rules</a>
-            <a href="/transactions?status=uncategorized" class="btn-link secondary">View Uncategorized</a>
-            <button id="refresh-btn" onclick="refreshData()">Refresh Data</button>
-        </div>
-    </header>
-
     {% if error %}
     <div class="error-banner">
         <p>{{ error }}</p>
+        <button id="refresh-btn" class="microtype" onclick="refreshData()">Refresh Data</button>
     </div>
     {% endif %}
 
     {% if summary %}
-    <!-- Summary Cards -->
+    <!-- The Front Page: THE LEDE (briefing) + TODAY rail -->
+    <div class="front-page">
+        <article class="lede" id="briefing-card">
+            <div class="briefing-header">
+                <h3 class="microtype">The Briefing</h3>
+                <span class="briefing-meta microtype" id="briefing-meta"></span>
+            </div>
+            <div class="briefing-body" id="briefing-body">
+                <div class="briefing-skeleton">
+                    <div class="briefing-skeleton-line" style="width: 92%;"></div>
+                    <div class="briefing-skeleton-line" style="width: 84%;"></div>
+                    <div class="briefing-skeleton-line" style="width: 61%;"></div>
+                </div>
+            </div>
+            <div class="briefing-chips" id="briefing-chips"></div>
+            <div class="lede-signoff microtype" id="briefing-signoff"></div>
+            <div class="briefing-hint microtype" id="briefing-hint"></div>
+        </article>
+
+        <aside class="today-rail">
+            <div class="rail-section">
+                <span class="microtype">Today</span>
+                <div class="rail-networth">
+                    <span class="value">{{ summary.current_net_worth | currency }}</span>
+                    <span class="delta
+                        {%- if summary.net_worth_change_30d >= 0 %} positive{% else %} negative{% endif %}">
+                        {% if summary.net_worth_change_30d >= 0 %}&#9650;{% else %}&#9660;{% endif %}
+                        {{ summary.net_worth_change_pct_30d }}% / 30d
+                    </span>
+                </div>
+                <svg id="rail-sparkline" class="rail-sparkline" viewBox="0 0 300 36" preserveAspectRatio="none"
+                    aria-hidden="true"></svg>
+            </div>
+            <div class="rail-section" id="rail-upcoming" style="display: none;">
+                <span class="microtype">Upcoming</span>
+                <div id="rail-bills"></div>
+            </div>
+            <div class="rail-section">
+                <span class="microtype">Income this month</span>
+                <div class="rail-income-value">{{ summary.income_this_month | currency }}</div>
+                {% if summary.income_this_month_shifted_from %}
+                <div class="rail-income-sub">
+                    {% if summary.income_this_month_shifted_from | length == 1 %}
+                    includes {{ summary.income_this_month_shifted_from[0].date | to_short_date }} paycheck
+                    {% else %}
+                    includes {{ summary.income_this_month_shifted_from | length }} early paychecks
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="rail-income-sub">{{ summary.total_accounts }} account{{ 's' if summary.total_accounts != 1 }}</div>
+                {% endif %}
+            </div>
+            <div class="rail-section rail-actions microtype">
+                <a href="/transactions?status=uncategorized">Uncategorized</a>
+                <button id="refresh-btn" class="microtype" onclick="refreshData()">Refresh Data</button>
+            </div>
+        </aside>
+    </div>
+    <div class="hairline front-page-end"></div>
+
+    <!-- Summary Cards (demoted below the front page) -->
     <div class="summary-cards">
         <div class="card">
             <h3>Net Worth</h3>
@@ -1315,34 +1517,16 @@
         </div>
     </div>
 
-    <!-- Daily Briefing -->
-    <div class="briefing-card" id="briefing-card">
-        <div class="briefing-header">
-            <h3>Daily Briefing</h3>
-            <span class="briefing-meta" id="briefing-meta"></span>
-        </div>
-        <div class="briefing-body" id="briefing-body">
-            <div class="briefing-skeleton">
-                <div class="briefing-skeleton-line" style="width: 92%;"></div>
-                <div class="briefing-skeleton-line" style="width: 84%;"></div>
-                <div class="briefing-skeleton-line" style="width: 61%;"></div>
-            </div>
-        </div>
-        <div class="briefing-chips" id="briefing-chips"></div>
-        <div class="briefing-hint" id="briefing-hint"></div>
-    </div>
-
     <!-- Runway Section -->
     <div class="runway-section" id="runway-section">
-        <!-- Header with explanation -->
-        <div class="runway-header">
-            <div class="runway-info">
-                <h3>Budget Runway</h3>
-                <p class="runway-explainer">
-                    How your budget is allocated each half of the month. Gray is already spent, colored segments are upcoming bills, and the remaining space is your free cash.
-                </p>
-            </div>
+        <!-- Fig. 1 caption -->
+        <div class="figure-caption">
+            <span class="microtype">Fig. 1 &mdash; Budget Runway</span>
+            <span class="microtype tabular-nums" id="runway-fig-stat"></span>
         </div>
+        <p class="runway-explainer">
+            How your budget is allocated each half of the month. Gray is already spent, colored segments are upcoming bills, and the remaining space is your free cash.
+        </p>
 
         <!-- Monthly Half Runway Bars -->
         <div class="monthly-halves-grid" id="monthly-halves-grid">
@@ -1393,9 +1577,9 @@
 
         <!-- Pending Recurring Bills -->
         <div id="pending-bills-container" style="display: none; margin-top: 16px;">
-            <div class="pending-bills-header">
-                <h3 class="pending-bills-title">Upcoming Bills This Month</h3>
-                <span id="pending-bills-total" class="pending-bills-total"></span>
+            <div class="figure-caption">
+                <span class="microtype">Fig. 2 &mdash; Upcoming Bills</span>
+                <span id="pending-bills-total" class="microtype tabular-nums"></span>
             </div>
             <div id="pending-bills-list" class="pending-bills-list">
                 <!-- Populated by JS -->
@@ -1580,8 +1764,8 @@ Fidelity Roth IRA, 2024-04-01, 18750.00"></textarea>
 
     <!-- Charts -->
     <div class="chart-container">
-        <div class="chart-header">
-            <h2>Net Worth</h2>
+        <div class="figure-caption">
+            <span class="microtype">Fig. 3 &mdash; Net Worth</span>
             <div class="chart-controls" id="nw-range-controls">
                 <button class="chart-btn" data-range="3m" onclick="updateNetWorthRange('3m')">3M</button>
                 <button class="chart-btn" data-range="6m" onclick="updateNetWorthRange('6m')">6M</button>
@@ -1605,8 +1789,8 @@ Fidelity Roth IRA, 2024-04-01, 18750.00"></textarea>
     </div>
 
     <div class="chart-container">
-        <div class="chart-header">
-            <h2>Spending Breakdown</h2>
+        <div class="figure-caption">
+            <span class="microtype">Fig. 4 &mdash; Spending Breakdown</span>
             <div class="chart-controls">
                 <button class="chart-btn active" onclick="updateSpendingChart(30)">30 Days</button>
                 <button class="chart-btn" onclick="updateSpendingChart(60)">60 Days</button>
@@ -1624,8 +1808,8 @@ Fidelity Roth IRA, 2024-04-01, 18750.00"></textarea>
     </div>
 
     <div class="chart-container">
-        <div class="chart-header">
-            <h2>Category Spending Trends</h2>
+        <div class="figure-caption">
+            <span class="microtype">Fig. 5 &mdash; Category Trends</span>
             <div class="chart-controls category-trends-controls">
                 <button class="chart-btn" data-months="2" onclick="updateCategoryTrends(2)">2 Mo</button>
                 <button class="chart-btn" data-months="3" onclick="updateCategoryTrends(3)">3 Mo</button>
@@ -1639,12 +1823,19 @@ Fidelity Roth IRA, 2024-04-01, 18750.00"></textarea>
     </div>
 
     <div class="chart-container">
-        <h2>Income vs Expenses</h2>
+        <div class="figure-caption">
+            <span class="microtype">Fig. 6 &mdash; Income vs Expenses</span>
+        </div>
         <canvas id="incomeVsExpenseChart"></canvas>
     </div>
 
     <div class="chart-container">
-        <h2>Biweekly Spending</h2>
+        <div class="figure-caption">
+            <span class="microtype">Fig. 7 &mdash; Biweekly Spending</span>
+            {% if summary %}
+            <span class="microtype tabular-nums">Avg {{ summary.avg_biweekly_spending | currency }} / period</span>
+            {% endif %}
+        </div>
         <canvas id="biweeklySpendingChart"></canvas>
     </div>
 

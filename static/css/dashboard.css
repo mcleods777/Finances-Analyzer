@@ -48,6 +48,30 @@ textarea {
     font-variant-numeric: tabular-nums;
 }
 
+/* Numbers typeset into serif prose — Plex Sans at 0.95em, tabular */
+.figure {
+    font-family: var(--sans);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.95em;
+}
+
+/* 1px hairline separator */
+.hairline {
+    border-top: 1px solid var(--rule);
+}
+
+/* Figure caption header: 'FIG. N — TITLE' microtype left, contextual stat
+   (or controls) right, hairline rule under. */
+.figure-caption {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 14px;
+}
+
 /* Wire voice — mono microtype for labels, column headers, timestamps */
 .microtype {
     font-family: var(--mono);
@@ -153,20 +177,18 @@ header h1 {
     color: var(--text);
 }
 
+/* Quiet wire-voice action (rail): mono microtype, no box */
 #refresh-btn {
-    background: var(--brass);
-    color: var(--ink);
+    background: none;
+    color: var(--muted);
     border: none;
-    padding: 8px 16px;
-    border-radius: 2px;
+    padding: 0;
     cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: background 0.2s;
+    transition: color 0.2s;
 }
 
 #refresh-btn:hover {
-    background: var(--brass-bright);
+    color: var(--brass);
 }
 
 .btn-link.secondary {
@@ -181,7 +203,8 @@ header h1 {
 }
 
 #refresh-btn:disabled {
-    background: var(--elevated);
+    color: var(--muted);
+    opacity: 0.6;
     cursor: not-allowed;
 }
 
@@ -248,10 +271,9 @@ header h1 {
     color: var(--red-ink);
 }
 
-/* Runway Section */
+/* Runway Section — figure caption supplies the top rule */
 .runway-section {
     background: transparent;
-    border-top: 1px solid var(--rule);
     padding: 20px 0;
     margin-bottom: 24px;
 }
@@ -739,10 +761,9 @@ header h1 {
     cursor: not-allowed;
 }
 
-/* Charts */
+/* Charts — figure caption supplies the top rule */
 .chart-container {
     background: transparent;
-    border-top: 1px solid var(--rule);
     padding: 20px 0;
     margin-bottom: 24px;
 }

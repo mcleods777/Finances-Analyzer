@@ -15,6 +15,12 @@ from finance.blueprints.transactions import transactions_bp
 def register_blueprints(app: Flask) -> None:
     """Register all blueprints and shared template filters."""
 
+    @app.context_processor
+    def inject_dateline():
+        """Masthead dateline, e.g. 'Thursday · July 3 · 2026' (uppercased by CSS)."""
+        now = datetime.now()
+        return {"dateline": f"{now:%A} · {now:%B} {now.day} · {now.year}"}
+
     @app.template_filter("currency")
     def currency_filter(value):
         if value is None:

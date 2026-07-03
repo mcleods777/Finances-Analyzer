@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderSpendingChart(breakdownData, 30);
         updateMonthlyRunwayBars(monthlyRunwayData);
         renderCategoryTrendsChart(categoryTrendsData, 12);
+        renderRailSparkline(netWorthData);
     } catch (err) {
         console.error('Failed to load dashboard data:', err);
     }
@@ -38,9 +39,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadBriefing();
 });
 
-// --- Daily Briefing ---
+// --- Daily Briefing (THE LEDE) ---
 
 const BRIEFING_TIMEOUT_MS = 10000;
+const INK_SETTLE_KEY = 'pw-ink-settle';
+
+function prefersReducedMotion() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+// Typeset numbers inside serif prose in Plex Sans tabular (the "data voice").
+// Runs on HTML-escaped text; escapeHtml only emits &amp;/&lt;/&gt; so no
+// digit-bearing entities can be corrupted.
+function wrapProseFigures(escapedText) {
+    return escapedText.replace(
+        /(\$[\d,]+(?:\.\d+)?|\d[\d,]*(?:\.\d+)?%?)/g,
+        '<span class="figure">$1</span>'
+    );
+}
+
+function splitSentences(text) {
+    return text.match(/[^.!?]+[.!?]+["')\]]*\s*|[^.!?]+\s*$/g) || [text];
+}
+
+// Motion #1 — ink settles. Sentences fade in staggered 60ms apart (500ms
+// each, 4px rise) on the FIRST render of a given day's briefing only
+// (localStorage flag keyed to date + generated_at, which is stable across
+// cache hits and changes when the briefing regenerates).
+function renderBriefingProse(prose, generatedAt) {
+    const body = document.getElementById('briefing-body');
+    body.className = 'briefing-body lede-prose';
+
+    const flag = new Date().toDateString() + '::' + (generatedAt || '');
+    let firstViewOfDay = false;
+    try {
+        firstViewOfDay = localStorage.getItem(INK_SETTLE_KEY) !== flag;
+        if (firstViewOfDay) localStorage.setItem(INK_SETTLE_KEY, flag);
+    } catch (e) { /* localStorage unavailable — skip the motion */ }
+
+    if (firstViewOfDay && !prefersReducedMotion()) {
+        body.innerHTML = splitSentences(prose).map((s, i) =>
+            `<span class="ink-sentence" style="animation-delay: ${i * 60}ms">${wrapProseFigures(escapeHtml(s))}</span>`
+        ).join('');
+    } else {
+        body.innerHTML = wrapProseFigures(escapeHtml(prose));
+    }
+}
 
 function briefingSkeletonHtml() {
     return `<div class="briefing-skeleton">
@@ -76,14 +120,16 @@ async function loadBriefing(force = false) {
     const chips = document.getElementById('briefing-chips');
     const meta = document.getElementById('briefing-meta');
     const hint = document.getElementById('briefing-hint');
+    const signoff = document.getElementById('briefing-signoff');
 
-    // Loading state: skeleton shimmer
+    // Loading state: plain surface bars
     card.style.display = '';
     body.className = 'briefing-body';
     body.innerHTML = briefingSkeletonHtml();
     chips.innerHTML = '';
     meta.innerHTML = '';
     hint.innerHTML = '';
+    if (signoff) signoff.textContent = '';
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), BRIEFING_TIMEOUT_MS);
@@ -117,24 +163,87 @@ async function loadBriefing(force = false) {
         return;
     }
 
-    // Loaded state
-    body.innerHTML = escapeHtml(data.prose);
+    // Loaded state — serif lede with drop cap, figures typeset in Plex Sans
+    renderBriefingProse(data.prose, data.generated_at);
 
     const asOf = data.generated_at
         ? new Date(data.generated_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
         : '';
     meta.innerHTML = `${asOf ? 'as of ' + escapeHtml(asOf) + ' · ' : ''}<a href="#" onclick="loadBriefing(true); return false;" title="Regenerate the briefing">refresh</a>`;
 
+    // Drill-down entity links — quiet brass-underlined headline snippets
     chips.innerHTML = data.patterns.map(p => {
-        const label = p.headline.length > 48 ? p.headline.slice(0, 48).trimEnd() + '…' : p.headline;
-        return `<a class="briefing-chip" href="${escapeAttr(briefingDrillDownUrl(p.drill_down_filter))}" title="${escapeAttr(p.headline)}">
-            ${escapeHtml(label)}<span class="chip-arrow">→</span>
-        </a>`;
+        const label = p.headline.length > 64 ? p.headline.slice(0, 64).trimEnd() + '…' : p.headline;
+        return `<a class="entity-link" href="${escapeAttr(briefingDrillDownUrl(p.drill_down_filter))}" title="${escapeAttr(p.headline)}">${escapeHtml(label)}</a>`;
     }).join('');
+
+    // Sign-off: '— YOUR CFO, 06:00' (time from generated_at)
+    if (signoff) {
+        const signoffTime = data.generated_at
+            ? new Date(data.generated_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false })
+            : '';
+        signoff.textContent = `— Your CFO${signoffTime ? ', ' + signoffTime : ''}`;
+    }
 
     if (data.source === 'template') {
         hint.textContent = 'add ANTHROPIC_API_KEY to .env for AI briefings';
     }
+}
+
+// --- TODAY rail ---
+
+// Tiny net-worth sparkline: last ~30 points of the series already fetched
+// for the main chart, drawn as a plain SVG polyline (no Chart.js).
+function renderRailSparkline(data) {
+    const svg = document.getElementById('rail-sparkline');
+    if (!svg || !data || !data.net_worth || data.net_worth.length < 2) return;
+
+    const series = data.net_worth.slice(-30);
+    const min = Math.min(...series);
+    const max = Math.max(...series);
+    const range = (max - min) || 1;
+    const W = 300, H = 36, pad = 3;
+
+    const points = series.map((v, i) => {
+        const x = (i / (series.length - 1)) * W;
+        const y = pad + (1 - (v - min) / range) * (H - pad * 2);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+
+    svg.innerHTML = `<polyline fill="none" stroke="#7CAF7E" stroke-width="1.2" points="${points}"/>`;
+}
+
+// UPCOMING: next 3-4 pending bills, from the same monthly-runway data the
+// Budget Runway section uses.
+function populateTodayRail(data) {
+    const section = document.getElementById('rail-upcoming');
+    const list = document.getElementById('rail-bills');
+    if (!section || !list || !data || !data.halves) return;
+
+    const bills = [];
+    data.halves.forEach(h => {
+        (h.pending_bills || []).forEach(b => {
+            if (b.status === 'pending') bills.push(b);
+        });
+    });
+    bills.sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)));
+
+    const next = bills.slice(0, 4);
+    if (!next.length) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = '';
+    list.innerHTML = next.map(b => {
+        const due = new Date(b.due_date + 'T00:00:00');
+        const when = due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        return `<div class="rail-bill">
+            <span class="name" title="${escapeAttr(b.name)}">${escapeHtml(b.name)}</span>
+            <span class="when">${when}</span>
+            <span class="amt">$${b.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        </div>`;
+    }).join('');
 }
 
 async function updateNetWorthRange(range) {
@@ -267,6 +376,18 @@ function updateMonthlyRunwayBars(data) {
         // Render segmented bar
         renderHalfBar(bar, legendEl, half);
     });
+
+    // Fig. 1 contextual stat: current half committed percentage
+    const currentHalf = halves.find(h => h.is_current);
+    const figStat = document.getElementById('runway-fig-stat');
+    if (figStat && currentHalf && currentHalf.budget > 0) {
+        const pct = Math.round(Math.min(100, Math.max(0,
+            ((currentHalf.spent_so_far + currentHalf.committed) / currentHalf.budget) * 100)));
+        figStat.textContent = `${currentHalf.label} · ${pct}% committed`;
+    }
+
+    // TODAY rail: upcoming bills
+    populateTodayRail(data);
 
     // Populate pending bills cards across both halves
     populatePendingBillCards(halves);
@@ -433,8 +554,8 @@ function populatePendingBillCards(halves) {
     container.style.display = 'block';
 
     if (totalEl) {
-        totalEl.textContent = `${pendingBills.length} pending \u2022 $${pendingTotal.toFixed(2)} committed`;
-        totalEl.style.color = 'var(--brass)';
+        // Figure-caption stat \u2014 stays in muted microtype (no brass override)
+        totalEl.textContent = `${pendingBills.length} pending \u00b7 $${pendingTotal.toFixed(2)} committed`;
     }
 
     const pendingCardHtml = (b) => {
