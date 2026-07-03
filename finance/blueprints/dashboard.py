@@ -6,6 +6,7 @@ import pandas as pd
 import yaml
 from flask import Blueprint, jsonify, render_template, request
 
+from finance import briefing_writer
 from finance.analytics import get_category_trends, get_spending_breakdown
 from finance.data_service import get_cache, get_config_path, get_data_dir, refresh_data
 from finance.manual_balances import get_manual_account_names
@@ -271,6 +272,34 @@ def api_category_trends():
         categories = top
 
     return jsonify(get_category_trends(df, categories, months))
+
+
+@dashboard_bp.route("/api/briefing")
+def api_briefing():
+    """
+    Today's AI briefing (cached once per day; `?force=1` bypasses the cache
+    and regenerates). Returns 503 rather than 500 in every failure mode so a
+    briefing problem can never take down the dashboard.
+    """
+    if get_cache().get("df") is None:
+        return jsonify(
+            {
+                "error": "no_data_loaded",
+                "message": "No transaction data available. Configure CSV imports in config.yaml.",
+            }
+        ), 503
+
+    force = request.args.get("force") in ("1", "true")
+    try:
+        return jsonify(briefing_writer.generate_briefing(force=force))
+    except Exception:
+        logger.exception("Briefing generation failed")
+        return jsonify(
+            {
+                "error": "briefing_failed",
+                "message": "Briefing unavailable. Refresh to retry.",
+            }
+        ), 503
 
 
 @dashboard_bp.route("/api/refresh", methods=["POST"])

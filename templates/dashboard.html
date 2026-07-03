@@ -24,6 +24,122 @@
             background-color: #2563eb;
         }
 
+        /* Daily Briefing card */
+        .briefing-card {
+            background: linear-gradient(145deg, #0f172a 0%, #131d33 100%);
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+        }
+
+        .briefing-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .briefing-header h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .briefing-meta {
+            font-size: 0.75rem;
+            color: #64748b;
+            white-space: nowrap;
+        }
+
+        .briefing-meta a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        .briefing-meta a:hover {
+            text-decoration: underline;
+        }
+
+        .briefing-body {
+            font-size: 0.92rem;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        .briefing-body.briefing-error {
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+
+        .briefing-skeleton-line {
+            height: 12px;
+            border-radius: 6px;
+            margin: 9px 0;
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 200% 100%;
+            animation: briefing-shimmer 1.4s ease-in-out infinite;
+        }
+
+        @keyframes briefing-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .briefing-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .briefing-chips:empty {
+            display: none;
+        }
+
+        .briefing-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            max-width: 320px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid #334155;
+            background: rgba(59, 130, 246, 0.06);
+            color: #93c5fd;
+            font-size: 0.76rem;
+            font-weight: 500;
+            text-decoration: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .briefing-chip:hover {
+            border-color: #60a5fa;
+            background: rgba(59, 130, 246, 0.14);
+        }
+
+        .briefing-chip .chip-arrow {
+            color: #475569;
+            flex-shrink: 0;
+        }
+
+        .briefing-hint {
+            font-size: 0.72rem;
+            color: #475569;
+            margin-top: 10px;
+        }
+
+        .briefing-hint:empty {
+            display: none;
+        }
+
         /* Spending Breakdown Layout */
         .spending-layout {
             display: flex;
@@ -1194,6 +1310,23 @@
             </p>
             <p class="sub">Trailing 3 months</p>
         </div>
+    </div>
+
+    <!-- Daily Briefing -->
+    <div class="briefing-card" id="briefing-card">
+        <div class="briefing-header">
+            <h3>Daily Briefing</h3>
+            <span class="briefing-meta" id="briefing-meta"></span>
+        </div>
+        <div class="briefing-body" id="briefing-body">
+            <div class="briefing-skeleton">
+                <div class="briefing-skeleton-line" style="width: 92%;"></div>
+                <div class="briefing-skeleton-line" style="width: 84%;"></div>
+                <div class="briefing-skeleton-line" style="width: 61%;"></div>
+            </div>
+        </div>
+        <div class="briefing-chips" id="briefing-chips"></div>
+        <div class="briefing-hint" id="briefing-hint"></div>
     </div>
 
     <!-- Runway Section -->

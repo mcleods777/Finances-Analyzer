@@ -156,15 +156,21 @@ def get_recent_briefings(data_dir: str) -> list[dict]:
 
 
 def set_cached_briefing(
-    data_dir: str, cache_key: str, prose: str, patterns: list[dict]
+    data_dir: str, cache_key: str, prose: str, patterns: list[dict],
+    source: str = "template",
 ) -> None:
-    """Prepend a new briefing entry and trim the list to MAX_RECENT_BRIEFINGS."""
+    """
+    Prepend a new briefing entry and trim the list to MAX_RECENT_BRIEFINGS.
+    `source` records how the prose was produced ("llm" or "template") so the
+    UI can indicate it on cache hits.
+    """
     state = load_state(data_dir)
     entry = {
         "cache_key": cache_key,
         "rendered_at": datetime.now().isoformat(timespec="seconds"),
         "patterns": patterns,
         "prose": prose,
+        "source": source,
     }
     state["recent_briefings"] = (
         [entry] + state["recent_briefings"][: MAX_RECENT_BRIEFINGS - 1]

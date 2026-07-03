@@ -29,7 +29,110 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Load manual balance history
     loadManualBalances();
+
+    // Daily briefing — independent fetch, deliberately NOT in the Promise.all
+    // above (a cache-miss LLM call can take seconds and must not gate charts)
+    loadBriefing();
 });
+
+// --- Daily Briefing ---
+
+const BRIEFING_TIMEOUT_MS = 10000;
+
+function briefingSkeletonHtml() {
+    return `<div class="briefing-skeleton">
+        <div class="briefing-skeleton-line" style="width: 92%;"></div>
+        <div class="briefing-skeleton-line" style="width: 84%;"></div>
+        <div class="briefing-skeleton-line" style="width: 61%;"></div>
+    </div>`;
+}
+
+function briefingDrillDownUrl(filter) {
+    const params = new URLSearchParams();
+    if (!filter) return '/transactions';
+    if (filter.category && filter.category.length) params.set('category', filter.category.join(','));
+    if (filter.account && filter.account.length) params.set('account', filter.account.join(','));
+    if (filter.start_date) params.set('start', filter.start_date);
+    if (filter.end_date) params.set('end', filter.end_date);
+    if (filter.search) params.set('search', filter.search);
+    const qs = params.toString();
+    return '/transactions' + (qs ? `?${qs}` : '');
+}
+
+function renderBriefingError(message) {
+    const body = document.getElementById('briefing-body');
+    body.className = 'briefing-body briefing-error';
+    body.innerHTML = `${escapeHtml(message)} <a href="#" onclick="loadBriefing(true); return false;" style="color:#60a5fa; text-decoration:none;">Retry</a>`;
+}
+
+async function loadBriefing(force = false) {
+    const card = document.getElementById('briefing-card');
+    if (!card) return;
+
+    const body = document.getElementById('briefing-body');
+    const chips = document.getElementById('briefing-chips');
+    const meta = document.getElementById('briefing-meta');
+    const hint = document.getElementById('briefing-hint');
+
+    // Loading state: skeleton shimmer
+    card.style.display = '';
+    body.className = 'briefing-body';
+    body.innerHTML = briefingSkeletonHtml();
+    chips.innerHTML = '';
+    meta.innerHTML = '';
+    hint.innerHTML = '';
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), BRIEFING_TIMEOUT_MS);
+
+    let data;
+    try {
+        const resp = await fetch('/api/briefing' + (force ? '?force=1' : ''), {
+            signal: controller.signal,
+        });
+        data = await resp.json();
+        if (!resp.ok) {
+            // 503 no_data_loaded / briefing_failed
+            renderBriefingError(data.message || 'Briefing unavailable, refresh to retry.');
+            return;
+        }
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            renderBriefingError('Briefing timed out.');
+        } else {
+            console.error('Failed to load briefing:', err);
+            renderBriefingError('Briefing unavailable, refresh to retry.');
+        }
+        return;
+    } finally {
+        clearTimeout(timer);
+    }
+
+    // Empty state: zero patterns — hide the card entirely
+    if (!data.patterns || data.patterns.length === 0) {
+        card.style.display = 'none';
+        return;
+    }
+
+    // Loaded state
+    body.innerHTML = escapeHtml(data.prose);
+
+    const asOf = data.generated_at
+        ? new Date(data.generated_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+        : '';
+    meta.innerHTML = `${asOf ? 'as of ' + escapeHtml(asOf) + ' · ' : ''}<a href="#" onclick="loadBriefing(true); return false;" title="Regenerate the briefing">refresh</a>`;
+
+    chips.innerHTML = data.patterns.map(p => {
+        const label = p.headline.length > 48 ? p.headline.slice(0, 48).trimEnd() + '…' : p.headline;
+        return `<a class="briefing-chip" href="${escapeAttr(briefingDrillDownUrl(p.drill_down_filter))}" title="${escapeAttr(p.headline)}">
+            ${escapeHtml(label)}<span class="chip-arrow">→</span>
+        </a>`;
+    }).join('');
+
+    if (data.source === 'template') {
+        hint.textContent = 'add ANTHROPIC_API_KEY to .env for AI briefings';
+    }
+}
 
 async function updateNetWorthRange(range) {
     // Update active button state
