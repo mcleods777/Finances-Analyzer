@@ -219,14 +219,26 @@
             }
             row.appendChild(info);
 
+            var btns = document.createElement("div");
+            btns.className = "plaid-actions";
+
             var syncBtn = document.createElement("button");
             syncBtn.className = "plaid-btn plaid-btn-secondary";
             syncBtn.textContent = "Sync now";
             syncBtn.addEventListener("click", function () {
                 runSync({ item_id: item.item_id }, syncBtn);
             });
-            row.appendChild(syncBtn);
+            btns.appendChild(syncBtn);
 
+            var unlinkBtn = document.createElement("button");
+            unlinkBtn.className = "plaid-btn plaid-btn-secondary";
+            unlinkBtn.textContent = "Unlink";
+            unlinkBtn.addEventListener("click", function () {
+                unlinkItem(item, unlinkBtn);
+            });
+            btns.appendChild(unlinkBtn);
+
+            row.appendChild(btns);
             itemsEl.appendChild(row);
         });
     }
@@ -267,6 +279,42 @@
                 btn.disabled = false;
                 btn.textContent = original;
             });
+    }
+
+    function unlinkItem(item, btn) {
+        var name = item.institution_name || "this bank";
+        if (!window.confirm("Unlink " + name + "? It will stop syncing new transactions.")) {
+            return;
+        }
+        // Default (Cancel / Esc) keeps the data — deleting requires an explicit OK.
+        var keepData = !window.confirm(
+            "Also delete its " + item.account_count + " account(s) and ALL their downloaded "
+            + "transactions and balances?\n\nOK = delete everything\nCancel = keep the "
+            + "accounts and history (they become manual/upload accounts)"
+        );
+        btn.disabled = true;
+        btn.textContent = "Unlinking…";
+        showMessage("");
+        fetch("/api/plaid/items/" + encodeURIComponent(item.item_id), {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ keep_data: keepData })
+        }).then(function (res) {
+            return res.json().then(function (data) {
+                if (!res.ok || data.status === "error") {
+                    throw new Error(data.message || ("Request failed (" + res.status + ")"));
+                }
+                showMessage(
+                    name + " unlinked" + (keepData ? " — accounts and history kept." : " — accounts and data deleted.")
+                    + " Reloading…", "ok");
+                setTimeout(function () { window.location.reload(); }, 900);
+            });
+        }).catch(function (err) {
+            showMessage(err.message, "error");
+            btn.disabled = false;
+            btn.textContent = "Unlink";
+            refreshStatus();
+        });
     }
 
     function openPlaidLink() {

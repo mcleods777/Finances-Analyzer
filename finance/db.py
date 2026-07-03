@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 DB_FILENAME = "finance.db"
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -23,8 +23,19 @@ CREATE TABLE IF NOT EXISTS accounts (
     type TEXT NOT NULL,
     source TEXT NOT NULL DEFAULT 'csv',
     plaid_account_id TEXT,
+    plaid_item_id TEXT,
     column_mapping TEXT,
-    active INTEGER NOT NULL DEFAULT 1
+    active INTEGER NOT NULL DEFAULT 1,
+    hidden INTEGER NOT NULL DEFAULT 0,
+    exclude_from_net_worth INTEGER NOT NULL DEFAULT 0,
+    institution TEXT
+);
+
+-- Config-file identities (column_mapping "file") of config.yaml accounts the
+-- user deleted or merged away via the UI; the startup migration skips these
+-- so it never resurrects them (see finance/migrate.py).
+CREATE TABLE IF NOT EXISTS config_tombstones (
+    file TEXT PRIMARY KEY
 );
 
 CREATE TABLE IF NOT EXISTS transactions (
@@ -106,13 +117,42 @@ def get_connection(db_path: str) -> sqlite3.Connection:
 def init_db(conn: sqlite3.Connection) -> None:
     """Create all tables/indexes if missing and record the schema version. Idempotent."""
     conn.executescript(_SCHEMA)
+    _ensure_v2_account_columns(conn)
     row = conn.execute("SELECT version FROM schema_version").fetchone()
     if row is None:
         conn.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
     elif row["version"] < SCHEMA_VERSION:
-        # Future migrations go here, keyed off row["version"].
         conn.execute("UPDATE schema_version SET version = ?", (SCHEMA_VERSION,))
     conn.commit()
+
+
+def _ensure_v2_account_columns(conn: sqlite3.Connection) -> None:
+    """
+    v2 account-management columns (additive, idempotent ALTERs). Checked on
+    every init rather than keyed off schema_version alone so a database left
+    in a partial state still heals; plaid_item_id may already exist because
+    plaid_sync.ensure_schema added it ad hoc on v1 databases.
+    """
+    account_cols = {row["name"] for row in conn.execute("PRAGMA table_info(accounts)")}
+    added = False
+    for column, ddl in (
+        ("plaid_item_id", "ALTER TABLE accounts ADD COLUMN plaid_item_id TEXT"),
+        ("hidden", "ALTER TABLE accounts ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0"),
+        ("exclude_from_net_worth",
+         "ALTER TABLE accounts ADD COLUMN exclude_from_net_worth INTEGER NOT NULL DEFAULT 0"),
+        ("institution", "ALTER TABLE accounts ADD COLUMN institution TEXT"),
+    ):
+        if column not in account_cols:
+            conn.execute(ddl)
+            added = True
+    # Backfill institution from the linked Plaid item where possible.
+    conn.execute(
+        "UPDATE accounts SET institution = "
+        "  (SELECT i.institution_name FROM plaid_items i WHERE i.item_id = accounts.plaid_item_id) "
+        "WHERE institution IS NULL AND plaid_item_id IS NOT NULL"
+    )
+    if added:
+        logger.info("Added v2 account-management columns to accounts table")
 
 
 # --- Account helpers ---
@@ -144,6 +184,14 @@ def upsert_account(
 
 def list_accounts(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     return conn.execute("SELECT * FROM accounts WHERE active = 1 ORDER BY name").fetchall()
+
+
+def excluded_net_worth_account_names(conn: sqlite3.Connection) -> set[str]:
+    """Names of accounts flagged exclude_from_net_worth (net-worth math skips them)."""
+    rows = conn.execute(
+        "SELECT name FROM accounts WHERE exclude_from_net_worth = 1"
+    ).fetchall()
+    return {row["name"] for row in rows}
 
 
 # --- Categorization rule helpers ---
@@ -206,7 +254,7 @@ def load_transactions_df(conn: sqlite3.Connection) -> pd.DataFrame:
                t.raw_balance, t.txn_type AS category, t.category AS subcategory
         FROM transactions t
         JOIN accounts a ON a.id = t.account_id
-        WHERE a.active = 1
+        WHERE a.active = 1 AND a.hidden = 0
         ORDER BY t.date
     """
     df = pd.read_sql_query(query, conn)
@@ -229,10 +277,11 @@ def load_balance_snapshots_df(
         SELECT s.date, a.name AS account_name, s.balance, s.source
         FROM balance_snapshots s
         JOIN accounts a ON a.id = s.account_id
+        WHERE a.hidden = 0
     """
     params: tuple = ()
     if source is not None:
-        query += " WHERE s.source = ?"
+        query += " AND s.source = ?"
         params = (source,)
     query += " ORDER BY s.date"
     df = pd.read_sql_query(query, conn, params=params)

@@ -192,7 +192,10 @@ def compute_daily_balances(
     return pd.concat(results, ignore_index=True)
 
 
-def compute_net_worth_series(daily_balances: pd.DataFrame) -> pd.DataFrame:
+def compute_net_worth_series(
+    daily_balances: pd.DataFrame,
+    excluded_accounts: set[str] | None = None,
+) -> pd.DataFrame:
     """
     For each day, compute total net worth, split into assets vs liabilities.
 
@@ -203,9 +206,16 @@ def compute_net_worth_series(daily_balances: pd.DataFrame) -> pd.DataFrame:
     - every other account type (checking, savings, investment,
       manual_balance, ...) counts as an asset.
 
+    Accounts named in `excluded_accounts` (exclude_from_net_worth flag) are
+    dropped entirely: no per-account column and no contribution to the totals.
+
     Returns DataFrame with columns: date, net_worth, assets_total,
     liabilities_total, plus one column per account (original signed balance).
     """
+    if excluded_accounts:
+        daily_balances = daily_balances[
+            ~daily_balances["account_name"].isin(excluded_accounts)
+        ]
     if daily_balances.empty:
         return pd.DataFrame(columns=["date", "net_worth", "assets_total", "liabilities_total"])
 

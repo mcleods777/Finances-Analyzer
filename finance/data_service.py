@@ -71,6 +71,9 @@ def refresh_data() -> dict:
         # Manual balance snapshots (formerly manual_balances.json)
         snapshots = db.load_balance_snapshots_df(conn, source="manual")
         manual_df = snapshots[["date", "account_name", "balance"]] if not snapshots.empty else snapshots
+
+        # Accounts flagged "exclude from net worth" (net-worth math only)
+        nw_excluded = db.excluded_net_worth_account_names(conn)
     finally:
         conn.close()
 
@@ -81,7 +84,7 @@ def refresh_data() -> dict:
 
     # Compute daily balances (merges CSV + manual accounts)
     daily_bal = compute_daily_balances(df, config, manual_df)
-    nw_series = compute_net_worth_series(daily_bal)
+    nw_series = compute_net_worth_series(daily_bal, excluded_accounts=nw_excluded)
 
     # Analytics (spending/income is only from CSV transactions, not manual accounts)
     biweekly_df = biweekly_spending(df, config.pay_period) if not df.empty else None

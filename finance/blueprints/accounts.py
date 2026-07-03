@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, jsonify, render_template, request
 from werkzeug.utils import secure_filename
 
-from finance import csv_reader, db, importer
+from finance import account_ops, csv_reader, db, importer
 from finance.config_loader import load_config
 from finance.data_service import get_config_path, get_data_dir, get_db_connection, refresh_data
 from finance.manual_balances import (
@@ -29,6 +29,9 @@ UPLOAD_SUBDIR = "uploads"
 VALID_ACCOUNT_TYPES = {"checking", "savings", "credit_card", "credit", "investment", "loan"}
 # UI-facing alias -> internal account.type stored in the DB
 _TYPE_ALIASES = {"credit": "credit_card"}
+# Types accepted when editing an existing account (manual_balance rows exist
+# from the manual-balances migration and must stay editable).
+EDITABLE_ACCOUNT_TYPES = VALID_ACCOUNT_TYPES | {"manual_balance"}
 
 
 @accounts_bp.route("/accounts")
@@ -43,7 +46,11 @@ def accounts_page():
         rows = conn.execute(
             """
             SELECT a.id, a.name, a.type, a.source, a.column_mapping,
+                   a.hidden, a.exclude_from_net_worth, a.institution,
+                   a.plaid_account_id, a.plaid_item_id,
                    (SELECT COUNT(*) FROM transactions t WHERE t.account_id = a.id) AS txn_count,
+                   (SELECT COUNT(*) FROM balance_snapshots s WHERE s.account_id = a.id) AS snapshot_count,
+                   (SELECT COUNT(*) FROM imports i WHERE i.account_id = a.id) AS import_count,
                    (SELECT s.balance FROM balance_snapshots s
                      WHERE s.account_id = a.id ORDER BY s.date DESC, s.id DESC LIMIT 1) AS snapshot_balance,
                    (SELECT s.date FROM balance_snapshots s
@@ -85,13 +92,26 @@ def accounts_page():
             "name": row["name"],
             "type": row["type"],
             "source": row["source"],
+            "institution": row["institution"],
+            "hidden": bool(row["hidden"]),
+            "exclude_from_net_worth": bool(row["exclude_from_net_worth"]),
+            "is_plaid_linked": row["plaid_account_id"] is not None,
             "txn_count": row["txn_count"],
+            "snapshot_count": row["snapshot_count"],
+            "import_count": row["import_count"],
             "balance": balance,
             "as_of": as_of,
             "has_mapping": row["column_mapping"] is not None,
         })
 
-    return render_template("accounts.html", accounts=accounts, error=None)
+    visible_accounts = [a for a in accounts if not a["hidden"]]
+    hidden_accounts = [a for a in accounts if a["hidden"]]
+    return render_template(
+        "accounts.html",
+        accounts=visible_accounts,
+        hidden_accounts=hidden_accounts,
+        error=None,
+    )
 
 
 # --- Manual balance API routes ---
@@ -452,6 +472,185 @@ def api_create_account():
         "duplicates": result.duplicates,
         "errors": [],
     }), 201
+
+
+# --- Account management API routes (edit / hide / merge / delete) ---
+
+
+def _account_response(row) -> dict:
+    """Public JSON shape for one accounts row."""
+    return {
+        "id": row["id"],
+        "name": row["name"],
+        "type": row["type"],
+        "source": row["source"],
+        "institution": row["institution"],
+        "hidden": bool(row["hidden"]),
+        "exclude_from_net_worth": bool(row["exclude_from_net_worth"]),
+        "is_plaid_linked": row["plaid_account_id"] is not None,
+    }
+
+
+def _parse_account_patch(data: dict, conn, account) -> tuple[dict, list[str]]:
+    """Validate a PATCH body against one account. Returns (updates, errors)."""
+    updates: dict = {}
+    errors: list[str] = []
+
+    if "name" in data:
+        name = str(data["name"] or "").strip()
+        if not name:
+            errors.append("Account name cannot be empty")
+        elif name != account["name"]:
+            existing = db.get_account_by_name(conn, name)
+            if existing is not None and existing["id"] != account["id"]:
+                errors.append(f"An account named '{name}' already exists")
+            else:
+                updates["name"] = name
+
+    if "type" in data:
+        account_type = _TYPE_ALIASES.get(str(data["type"] or "").strip(),
+                                         str(data["type"] or "").strip())
+        if account_type not in EDITABLE_ACCOUNT_TYPES:
+            errors.append(
+                f"Account type must be one of: {', '.join(sorted(EDITABLE_ACCOUNT_TYPES))}"
+            )
+        else:
+            updates["type"] = account_type
+
+    if "institution" in data:
+        institution = data["institution"]
+        updates["institution"] = (str(institution).strip() or None) if institution is not None else None
+
+    for flag in ("hidden", "exclude_from_net_worth"):
+        if flag in data:
+            value = data[flag]
+            if not isinstance(value, bool):
+                errors.append(f"{flag} must be true or false")
+            else:
+                updates[flag] = 1 if value else 0
+
+    return updates, errors
+
+
+@accounts_bp.route("/api/accounts/<int:account_id>", methods=["PATCH"])
+def api_update_account(account_id: int):
+    """
+    Edit an account: {name?, type?, institution?, hidden?, exclude_from_net_worth?}.
+    Renames survive restarts (the startup migration matches config accounts by
+    their config-file identity, not by name). Returns the updated account.
+    """
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "No JSON body"}), 400
+
+    conn = get_db_connection()
+    try:
+        account = conn.execute(
+            "SELECT * FROM accounts WHERE id = ?", (account_id,)
+        ).fetchone()
+        if account is None:
+            return jsonify({"error": f"Account {account_id} not found"}), 404
+
+        updates, errors = _parse_account_patch(data, conn, account)
+        if errors:
+            return jsonify({"error": "; ".join(errors), "errors": errors}), 400
+
+        if updates:
+            assignments = ", ".join(f"{col} = ?" for col in updates)
+            with conn:
+                conn.execute(
+                    f"UPDATE accounts SET {assignments} WHERE id = ?",
+                    (*updates.values(), account_id),
+                )
+        updated = conn.execute(
+            "SELECT * FROM accounts WHERE id = ?", (account_id,)
+        ).fetchone()
+    finally:
+        conn.close()
+
+    refresh_data()
+    return jsonify(_account_response(updated))
+
+
+def _merge_ids_or_error(account_id: int):
+    """Parse {target_id} from the request body. Returns (target_id, error_response)."""
+    data = request.get_json(silent=True) or {}
+    try:
+        target_id = int(data.get("target_id"))
+    except (TypeError, ValueError):
+        return None, (jsonify({"error": "target_id is required"}), 400)
+    if target_id == account_id:
+        return None, (jsonify({"error": "Cannot merge an account into itself"}), 400)
+    return target_id, None
+
+
+@accounts_bp.route("/api/accounts/<int:account_id>/merge-preview", methods=["POST"])
+def api_merge_preview(account_id: int):
+    """
+    Dry-run for merging this account into {target_id}:
+    {moving, overlaps, snapshots_moving, sample_overlaps: [up to 5]}.
+    """
+    target_id, err = _merge_ids_or_error(account_id)
+    if err:
+        return err
+
+    conn = get_db_connection()
+    try:
+        preview = account_ops.merge_preview(conn, account_id, target_id)
+    except account_ops.AccountNotFound as e:
+        return jsonify({"error": str(e)}), 404
+    except account_ops.AccountOpsError as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        conn.close()
+    return jsonify(preview)
+
+
+@accounts_bp.route("/api/accounts/<int:account_id>/merge", methods=["POST"])
+def api_merge_account(account_id: int):
+    """
+    Merge this account into {target_id} atomically.
+    Returns {moved, duplicates_skipped, snapshots_moved}.
+    """
+    target_id, err = _merge_ids_or_error(account_id)
+    if err:
+        return err
+
+    conn = get_db_connection()
+    try:
+        result = account_ops.merge_accounts(conn, account_id, target_id)
+    except account_ops.AccountNotFound as e:
+        return jsonify({"error": str(e)}), 404
+    except account_ops.AccountOpsError as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        conn.close()
+
+    refresh_data()
+    return jsonify(result)
+
+
+@accounts_bp.route("/api/accounts/<int:account_id>", methods=["DELETE"])
+def api_delete_account(account_id: int):
+    """
+    Delete an account and all its data. Requires JSON {"confirm": true}.
+    Response includes deleted counts; if the account was the last one on a
+    Plaid item, the item is removed too and reported as unlinked_item.
+    """
+    data = request.get_json(silent=True) or {}
+    if data.get("confirm") is not True:
+        return jsonify({"error": "Deletion requires JSON body {\"confirm\": true}"}), 400
+
+    conn = get_db_connection()
+    try:
+        result = account_ops.delete_account(conn, account_id)
+    except account_ops.AccountNotFound as e:
+        return jsonify({"error": str(e)}), 404
+    finally:
+        conn.close()
+
+    refresh_data()
+    return jsonify(result)
 
 
 @accounts_bp.route("/api/accounts/<int:account_id>/imports")

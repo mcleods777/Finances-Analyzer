@@ -4,8 +4,8 @@ import logging
 
 from flask import Blueprint, jsonify, request
 
-from finance import plaid_sync
-from finance.data_service import get_db_connection
+from finance import account_ops, plaid_sync
+from finance.data_service import get_db_connection, refresh_data
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +97,32 @@ def api_sync():
 
     ok = all(r.get("error") is None for r in results)
     return jsonify({"status": "ok" if ok else "partial", "results": results})
+
+
+@plaid_bp.route("/api/plaid/items/<item_id>", methods=["DELETE"])
+def api_unlink_item(item_id: str):
+    """
+    Unlink a bank (remove its plaid_items row). JSON body {"keep_data": bool}
+    (default true): keep_data=true detaches the item's accounts (history kept,
+    they become upload-style accounts); false deletes them and their data.
+    item/remove is attempted against the Plaid API best-effort.
+    """
+    data = request.get_json(silent=True) or {}
+    keep_data = data.get("keep_data", True)
+    if not isinstance(keep_data, bool):
+        return jsonify({"status": "error", "message": "keep_data must be true or false"}), 400
+
+    conn = get_db_connection()
+    try:
+        result = account_ops.unlink_item(conn, item_id, keep_data=keep_data)
+    except account_ops.AccountNotFound as e:
+        return jsonify({"status": "error", "message": str(e)}), 404
+    finally:
+        conn.close()
+
+    refresh_data()
+    result["status"] = "ok"
+    return jsonify(result)
 
 
 @plaid_bp.route("/api/plaid/status")

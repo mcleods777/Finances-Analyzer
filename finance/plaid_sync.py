@@ -266,6 +266,26 @@ def _upsert_plaid_accounts(
     return count
 
 
+def remove_item(access_token: str, client=None) -> bool:
+    """
+    Best-effort /item/remove — invalidates the access token server-side when
+    unlinking a bank. Never raises (offline / bad token / unconfigured are all
+    fine: the local rows are already gone, this is just remote hygiene).
+    """
+    try:
+        if client is None:
+            if not is_configured():
+                return False
+            client = _get_client()
+        from plaid.model.item_remove_request import ItemRemoveRequest
+
+        client.item_remove(ItemRemoveRequest(access_token=access_token))
+        return True
+    except Exception as exc:  # noqa: BLE001 — best-effort by design
+        logger.warning("Plaid item/remove failed (ignored): %s", describe_error(exc))
+        return False
+
+
 # --- Transaction sync ---
 
 

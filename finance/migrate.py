@@ -33,11 +33,58 @@ def _column_mapping_json(account: AccountConfig) -> str:
     })
 
 
+def _config_tombstones(conn: sqlite3.Connection) -> set[str]:
+    """Config files whose accounts were deleted/merged away via the UI — never re-seed."""
+    return {row["file"] for row in conn.execute("SELECT file FROM config_tombstones")}
+
+
+def _accounts_by_config_file(conn: sqlite3.Connection) -> dict[str, sqlite3.Row]:
+    """
+    Map of column_mapping "file" -> accounts row. This is the stable identity
+    of a config.yaml-seeded account: matching on it (instead of name) means a
+    rename via the UI survives restarts without the old name being re-created.
+    """
+    result: dict[str, sqlite3.Row] = {}
+    for row in conn.execute("SELECT * FROM accounts WHERE column_mapping IS NOT NULL"):
+        try:
+            file = json.loads(row["column_mapping"]).get("file")
+        except (TypeError, ValueError):
+            continue
+        if file:
+            result.setdefault(file, row)
+    return result
+
+
+def _find_config_account(
+    conn: sqlite3.Connection, account: AccountConfig, by_file: dict[str, sqlite3.Row]
+) -> sqlite3.Row | None:
+    """Existing accounts row for a config account: by file identity, then by name."""
+    existing = by_file.get(account.file)
+    if existing is not None:
+        return existing
+    return db.get_account_by_name(conn, account.name)
+
+
 def seed_accounts_from_config(conn: sqlite3.Connection, config: AppConfig) -> dict[str, int]:
-    """Ensure an accounts row exists per configured CSV account. Returns name -> id."""
+    """
+    Ensure an accounts row exists per configured CSV account. Returns name -> id.
+
+    Matching order: config-file identity (column_mapping "file") first — so
+    accounts renamed via the UI are recognized and NOT re-created under their
+    config.yaml name — then legacy match by name. Tombstoned files (accounts
+    deleted via the UI) are skipped entirely.
+    """
     ids: dict[str, int] = {}
+    tombstones = _config_tombstones(conn)
+    by_file = _accounts_by_config_file(conn)
     with conn:
         for account in config.accounts:
+            if account.file in tombstones:
+                continue
+            existing = _find_config_account(conn, account, by_file)
+            if existing is not None:
+                ids[account.name] = int(existing["id"])
+                continue
             ids[account.name] = db.upsert_account(
                 conn,
                 name=account.name,
@@ -124,7 +171,11 @@ def sync_csv_files(conn: sqlite3.Connection, config: AppConfig, data_dir: str) -
     Idempotent: dedup makes re-runs no-ops.
     """
     results = []
+    tombstones = _config_tombstones(conn)
+    by_file = _accounts_by_config_file(conn)
     for account in config.accounts:
+        if account.file in tombstones:
+            continue  # account was deleted/merged away via the UI — don't resurrect
         filepath = os.path.join(data_dir, account.file)
         if not os.path.exists(filepath):
             logger.warning("Skipping missing CSV: %s", filepath)
@@ -134,14 +185,18 @@ def sync_csv_files(conn: sqlite3.Connection, config: AppConfig, data_dir: str) -
         except Exception as e:
             logger.error("Failed to read %s: %s", account.file, e)
             continue
-        account_id = db.upsert_account(
-            conn,
-            name=account.name,
-            account_type=account.type,
-            source="csv",
-            column_mapping=_column_mapping_json(account),
-        )
-        conn.commit()
+        existing = _find_config_account(conn, account, by_file)
+        if existing is not None:
+            account_id = int(existing["id"])
+        else:
+            account_id = db.upsert_account(
+                conn,
+                name=account.name,
+                account_type=account.type,
+                source="csv",
+                column_mapping=_column_mapping_json(account),
+            )
+            conn.commit()
         results.append(
             importer.import_rows(
                 conn,
