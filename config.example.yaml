@@ -69,3 +69,11 @@ briefing:
   model: claude-haiku-4-5   # one of: claude-haiku-4-5, claude-sonnet-4-6, claude-opus-4-7
   max_per_day: 20           # cost-amp guard: per-day LLM call cap before short-circuit to cache
   enabled: true             # if false, briefing degrades to templated pattern headlines
+
+# Conversational CFO — The Desk (/desk chat). All keys optional; omitting the
+# whole block uses these defaults. Requires ANTHROPIC_API_KEY in .env.
+advisor:
+  default_model: claude-sonnet-5   # one of: claude-haiku-4-5, claude-sonnet-5, claude-opus-4-8
+  max_per_day: 100                 # cost-amp guard: per-day advisor API-call cap (its own counter)
+  max_loop_iterations: 8           # agentic tool-loop cap per question
+  enabled: true                    # if false, /api/chat returns a setup hint instead of calling the API

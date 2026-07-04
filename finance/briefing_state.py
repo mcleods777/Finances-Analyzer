@@ -15,7 +15,8 @@ Schema (see the AI co-pilot design doc):
           "prose": "..."
         }
       ],
-      "daily_cap": {"date": "YYYY-MM-DD", "count": 0}
+      "daily_cap": {"date": "YYYY-MM-DD", "count": 0},
+      "advisor_daily_cap": {"date": "YYYY-MM-DD", "count": 0}
     }
 
 - `recent_briefings` is bounded at MAX_RECENT_BRIEFINGS entries, newest at
@@ -53,6 +54,7 @@ def _default_state() -> dict:
         "seen_recurring_merchants": {},
         "recent_briefings": [],
         "daily_cap": {"date": None, "count": 0},
+        "advisor_daily_cap": {"date": None, "count": 0},
     }
 
 
@@ -89,13 +91,14 @@ def load_state(data_dir: str) -> dict:
         state["seen_recurring_merchants"] = raw["seen_recurring_merchants"]
     if isinstance(raw.get("recent_briefings"), list):
         state["recent_briefings"] = raw["recent_briefings"][:MAX_RECENT_BRIEFINGS]
-    daily_cap = raw.get("daily_cap")
-    if isinstance(daily_cap, dict):
-        try:
-            count = int(daily_cap.get("count", 0))
-        except (TypeError, ValueError):
-            count = 0
-        state["daily_cap"] = {"date": daily_cap.get("date"), "count": count}
+    for cap_key in ("daily_cap", "advisor_daily_cap"):
+        cap = raw.get(cap_key)
+        if isinstance(cap, dict):
+            try:
+                count = int(cap.get("count", 0))
+            except (TypeError, ValueError):
+                count = 0
+            state[cap_key] = {"date": cap.get("date"), "count": count}
     return state
 
 
@@ -178,28 +181,48 @@ def set_cached_briefing(
     _write_state(data_dir, state)
 
 
-# --- Daily LLM-call cap counter (survives Flask restart) ---
+# --- Daily LLM-call cap counters (survive Flask restart) ---
+# The briefing writer and the chat advisor each get their own key
+# ("daily_cap" / "advisor_daily_cap") with identical rollover mechanics.
+
+
+def _get_count(data_dir: str, cap_key: str, today: date | None) -> int:
+    today_str = (today or date.today()).isoformat()
+    cap = load_state(data_dir)[cap_key]
+    return cap["count"] if cap.get("date") == today_str else 0
+
+
+def _increment_count(data_dir: str, cap_key: str, today: date | None) -> int:
+    today_str = (today or date.today()).isoformat()
+    state = load_state(data_dir)
+    cap = state[cap_key]
+    count = cap["count"] + 1 if cap.get("date") == today_str else 1
+    state[cap_key] = {"date": today_str, "count": count}
+    _write_state(data_dir, state)
+    return count
 
 
 def get_daily_count(data_dir: str, today: date | None = None) -> int:
     """
-    Current LLM-call count for `today`. A stored date that doesn't match
-    today reads as 0 (date rollover), without writing anything.
+    Current briefing LLM-call count for `today`. A stored date that doesn't
+    match today reads as 0 (date rollover), without writing anything.
     """
-    today_str = (today or date.today()).isoformat()
-    cap = load_state(data_dir)["daily_cap"]
-    return cap["count"] if cap.get("date") == today_str else 0
+    return _get_count(data_dir, "daily_cap", today)
 
 
 def increment_daily_count(data_dir: str, today: date | None = None) -> int:
     """
-    Increment the daily counter (resetting to 1 on date rollover) and return
-    the new count.
+    Increment the briefing daily counter (resetting to 1 on date rollover)
+    and return the new count.
     """
-    today_str = (today or date.today()).isoformat()
-    state = load_state(data_dir)
-    cap = state["daily_cap"]
-    count = cap["count"] + 1 if cap.get("date") == today_str else 1
-    state["daily_cap"] = {"date": today_str, "count": count}
-    _write_state(data_dir, state)
-    return count
+    return _increment_count(data_dir, "daily_cap", today)
+
+
+def get_advisor_daily_count(data_dir: str, today: date | None = None) -> int:
+    """Current chat-advisor API-call count for `today` (own key, same rollover)."""
+    return _get_count(data_dir, "advisor_daily_cap", today)
+
+
+def increment_advisor_daily_count(data_dir: str, today: date | None = None) -> int:
+    """Increment the chat-advisor daily counter and return the new count."""
+    return _increment_count(data_dir, "advisor_daily_cap", today)

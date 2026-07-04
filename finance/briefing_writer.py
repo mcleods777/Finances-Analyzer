@@ -9,7 +9,8 @@ Flow (generate_briefing):
            (no two patterns of the same pattern_type) + freshness (skip a
            pattern whose fingerprint appeared in the last 7 briefings unless
            its magnitude shifted by >= 15%) -> write prose (Claude, or the
-           templated fallback) -> persist briefing + newly-seen merchants.
+           templated fallback) -> persist briefing + newly-seen merchants
+           -> append the briefing to the insights archive (The Archive).
 
 Cache key: sha256 over (today's date, transaction-identity hash, rules hash,
 recurring-bills hash). The transaction identity is the sorted list of
@@ -371,6 +372,34 @@ def _write_prose(selected: list[dict], config, data_dir: str, today: date):
 # --- Orchestration ---
 
 
+def _append_to_archive(
+    data_dir: str, prose: str, patterns: list[dict], source: str, config
+) -> None:
+    """
+    Every generated briefing (LLM or template) is ALSO appended to the
+    insights table — the permanent Archive. briefing_state.json stays for
+    cache/dedup mechanics only. Best-effort: an archive failure never breaks
+    the briefing itself.
+    """
+    if not prose:
+        return
+    try:
+        conn = db.get_connection(db.get_db_path(data_dir))
+        try:
+            db.init_db(conn)
+            db.insert_insight(
+                conn,
+                source="briefing",
+                text=prose,
+                fingerprints=[p["fingerprint"] for p in patterns],
+                model=config.briefing.model if source == "llm" else None,
+            )
+        finally:
+            conn.close()
+    except Exception:
+        logger.exception("Failed to append briefing to the insights archive")
+
+
 def _from_cached(entry: dict, cache_hit: bool) -> dict:
     return {
         "prose": entry.get("prose", ""),
@@ -419,6 +448,7 @@ def generate_briefing(force: bool = False, today: date | None = None) -> dict:
     briefing_state.set_cached_briefing(
         data_dir, cache_key, prose, stored_patterns, source=source
     )
+    _append_to_archive(data_dir, prose, stored_patterns, source, config)
 
     # Surfaced new-recurring merchants enter the seen-set here (the detector
     # is pure and never persists).

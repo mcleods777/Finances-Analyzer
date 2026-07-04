@@ -21,6 +21,7 @@ def test_cold_start_load_state_defaults(tmp_path):
         "seen_recurring_merchants": {},
         "recent_briefings": [],
         "daily_cap": {"date": None, "count": 0},
+        "advisor_daily_cap": {"date": None, "count": 0},
     }
 
 
@@ -142,7 +143,10 @@ def test_writes_leave_no_tmp_files_and_valid_json(tmp_path):
     leftovers = [name for name in os.listdir(data_dir) if name.endswith(".tmp")]
     assert leftovers == []
     raw = _read_raw(data_dir)  # must parse as valid JSON
-    assert set(raw) == {"seen_recurring_merchants", "recent_briefings", "daily_cap"}
+    assert set(raw) == {
+        "seen_recurring_merchants", "recent_briefings", "daily_cap",
+        "advisor_daily_cap",
+    }
 
 
 def test_add_seen_merchant_overwrites_existing_key(tmp_path):
@@ -215,3 +219,17 @@ def test_daily_count_defaults_to_real_today(tmp_path):
     assert briefing_state.increment_daily_count(data_dir) == 1
     assert briefing_state.get_daily_count(data_dir) == 1
     assert _read_raw(data_dir)["daily_cap"]["date"] == date.today().isoformat()
+
+
+def test_advisor_daily_count_is_independent_of_briefing_count(tmp_path):
+    data_dir = str(tmp_path)
+    today = date(2026, 6, 15)
+    assert briefing_state.increment_advisor_daily_count(data_dir, today=today) == 1
+    assert briefing_state.increment_advisor_daily_count(data_dir, today=today) == 2
+    assert briefing_state.get_advisor_daily_count(data_dir, today=today) == 2
+    # The briefing counter never moved, and vice versa.
+    assert briefing_state.get_daily_count(data_dir, today=today) == 0
+    briefing_state.increment_daily_count(data_dir, today=today)
+    assert briefing_state.get_advisor_daily_count(data_dir, today=today) == 2
+    # Rollover behaves the same for the advisor key.
+    assert briefing_state.get_advisor_daily_count(data_dir, today=date(2026, 6, 16)) == 0

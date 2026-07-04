@@ -121,7 +121,10 @@ def test_schema_v2_columns_and_institution_backfill(tmp_path):
 
     cols = {row["name"] for row in conn.execute("PRAGMA table_info(accounts)")}
     assert {"hidden", "exclude_from_net_worth", "institution", "plaid_item_id"} <= cols
-    assert conn.execute("SELECT version FROM schema_version").fetchone()["version"] == 2
+    assert (
+        conn.execute("SELECT version FROM schema_version").fetchone()["version"]
+        == db.SCHEMA_VERSION
+    )
     row = conn.execute("SELECT * FROM accounts WHERE name = 'Linked'").fetchone()
     assert row["institution"] == "Backfill Bank"
     assert row["hidden"] == 0 and row["exclude_from_net_worth"] == 0

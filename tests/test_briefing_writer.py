@@ -450,6 +450,56 @@ def test_unsurfaced_new_recurring_merchant_is_not_persisted(wire):
     assert set(briefing_state.get_seen_merchants(wire.data_dir)) == {"flo"}
 
 
+# --- The Archive: every generated briefing is appended to insights ---
+
+
+def _insights(data_dir: str) -> list:
+    from finance import db
+
+    conn = db.get_connection(db.get_db_path(data_dir))
+    try:
+        db.init_db(conn)
+        return db.list_insights(conn)
+    finally:
+        conn.close()
+
+
+def test_generated_briefing_appended_to_insights(wire, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    wire.patterns = [make_pattern()]
+    result = generate(wire)
+    rows = _insights(wire.data_dir)
+    assert len(rows) == 1
+    assert rows[0]["source"] == "briefing"
+    assert rows[0]["text"] == result["prose"]
+    assert rows[0]["model"] == "claude-haiku-4-5"  # llm-sourced briefing
+    import json as _json
+
+    assert _json.loads(rows[0]["fingerprints_json"]) == ["category_delta:Dining"]
+
+
+def test_template_briefing_appended_without_model(wire):
+    wire.patterns = [make_pattern()]
+    generate(wire)  # no API key -> template prose
+    rows = _insights(wire.data_dir)
+    assert len(rows) == 1
+    assert rows[0]["source"] == "briefing"
+    assert rows[0]["model"] is None
+
+
+def test_cache_hit_does_not_append_to_insights(wire):
+    wire.patterns = [make_pattern()]
+    generate(wire)
+    generate(wire)  # cache hit: no regeneration, no second archive entry
+    assert len(_insights(wire.data_dir)) == 1
+
+
+def test_empty_briefing_not_appended_to_insights(wire):
+    wire.patterns = []
+    generate(wire)
+    assert _insights(wire.data_dir) == []
+
+
 # --- Empty patterns ---
 
 

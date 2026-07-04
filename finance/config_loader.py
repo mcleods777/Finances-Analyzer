@@ -109,6 +109,25 @@ class BriefingConfig:
 
 
 @dataclass
+class AdvisorConfig:
+    """
+    Conversational CFO (The Desk) settings.
+
+    default_model: Claude model used when a request doesn't name one
+        (persisted per conversation once chosen).
+    max_per_day: cost-amp guard — per-day advisor API-call cap (its own
+        counter in briefing_state, separate from the briefing's).
+    max_loop_iterations: agentic tool-loop iteration cap per question.
+    enabled: if false, /api/chat returns the setup hint instead of calling
+        the API.
+    """
+    default_model: str = "claude-sonnet-5"
+    max_per_day: int = 100
+    max_loop_iterations: int = 8
+    enabled: bool = True
+
+
+@dataclass
 class AppConfig:
     pay_period: PayPeriodConfig
     accounts: list[AccountConfig]
@@ -119,6 +138,7 @@ class AppConfig:
     budget_overrides: BudgetOverrides = field(default_factory=BudgetOverrides)
     income_attribution: IncomeAttributionConfig = field(default_factory=IncomeAttributionConfig)
     briefing: BriefingConfig = field(default_factory=BriefingConfig)
+    advisor: AdvisorConfig = field(default_factory=AdvisorConfig)
 
 
 def _parse_column_mapping(raw: dict) -> ColumnMapping:
@@ -245,6 +265,17 @@ def _parse_briefing(raw: dict | None) -> BriefingConfig:
     )
 
 
+def _parse_advisor(raw: dict | None) -> AdvisorConfig:
+    if not raw:
+        return AdvisorConfig()
+    return AdvisorConfig(
+        default_model=str(raw.get("default_model", "claude-sonnet-5")),
+        max_per_day=int(raw.get("max_per_day", 100)),
+        max_loop_iterations=int(raw.get("max_loop_iterations", 8)),
+        enabled=bool(raw.get("enabled", True)),
+    )
+
+
 def load_config(config_path: str) -> AppConfig:
     """Load and parse config.yaml into typed dataclasses."""
     with open(config_path, "r", encoding="utf-8") as f:
@@ -259,6 +290,7 @@ def load_config(config_path: str) -> AppConfig:
     budget_overrides = _parse_budget_overrides(raw.get("budget_overrides"))
     income_attribution = _parse_income_attribution(raw.get("income_attribution"))
     briefing = _parse_briefing(raw.get("briefing"))
+    advisor = _parse_advisor(raw.get("advisor"))
 
     return AppConfig(
         pay_period=pay_period,
@@ -270,6 +302,7 @@ def load_config(config_path: str) -> AppConfig:
         budget_overrides=budget_overrides,
         income_attribution=income_attribution,
         briefing=briefing,
+        advisor=advisor,
     )
 
 
