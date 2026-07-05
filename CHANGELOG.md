@@ -5,6 +5,32 @@ All notable changes to the Personal Finance Dashboard.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses 4-digit semantic versioning (MAJOR.MINOR.PATCH.MICRO).
 
+## [0.5.0.0] - 2026-07-04
+
+The Desk — talk to your CFO.
+
+### Added
+- **The Desk (`/desk`)**: real-time chat with the AI CFO. Answers come from an
+  agentic tool loop over your live data (11 tools: overview, aggregations,
+  transaction search, bills, forecast, pattern detectors, archive, dossier).
+  Per-conversation model picker (Haiku ~1¢ / Sonnet ~5¢ / Opus ~20¢ per
+  question, Sonnet default) and intelligence toggle (Standard / Deep =
+  extended reasoning). Conversations persist; tool activity shown per reply.
+- **The Archive (`/archive`)**: permanent log of every insight — daily
+  briefings and chat findings — searchable, filterable, curatable. Both the
+  briefing writer and the chat advisor read it before generating, so insights
+  stay novel instead of repeating.
+- **The Dossier**: the advisor's memory of you — goals, weaknesses, debts,
+  notes. Editable on the Archive page; the AI adds entries from conversations
+  (badged "AI", one-click undo) and factors them into every briefing and chat.
+- Daily API-call cap for chat (config `advisor.max_per_day`), injection-
+  hardened tool results, prompt-cached system prompt, 73 new tests (374).
+
+### Changed
+- Nav gains Desk and Archive; briefing card links to the archive.
+- Schema v3 (conversations, chat_messages, insights, profile_entries);
+  briefing history backfilled into the archive.
+
 ## [0.4.0.0] - 2026-07-03
 
 The Private Wire — the app gets a designed identity. Full design system

@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}Desk — The Private Wire{% endblock %}
+
+{% block head %}
+<style>
+    /* ===== The Desk — conversation rail + message pane ===== */
+    .desk-layout {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 32px;
+        min-height: calc(100vh - 140px);
+    }
+
+    /* --- Conversation rail --- */
+    .conv-rail {
+        border-right: 1px solid var(--rule);
+        padding-right: 20px;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .conv-rail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--rule);
+        margin-bottom: 8px;
+    }
+
+    #conv-new {
+        background: none;
+        border: none;
+        color: var(--brass);
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .conv-row {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        padding: 8px 6px;
+        border-bottom: 1px solid var(--rule);
+        cursor: pointer;
+        min-width: 0;
+    }
+
+    .conv-row:hover {
+        background: var(--surface);
+    }
+
+    .conv-row.active .conv-title {
+        color: var(--brass);
+    }
+
+    .conv-title {
+        flex: 1;
+        font-size: 0.85rem;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+    }
+
+    .conv-title input {
+        width: 100%;
+        background: var(--elevated);
+        border: 1px solid var(--rule);
+        color: var(--text);
+        font-size: 0.85rem;
+        padding: 2px 4px;
+        border-radius: 0;
+    }
+
+    .conv-date {
+        white-space: nowrap;
+    }
+
+    .conv-delete {
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 0 2px;
+        font-size: 0.9rem;
+        visibility: hidden;
+    }
+
+    .conv-row:hover .conv-delete {
+        visibility: visible;
+    }
+
+    .conv-delete:hover {
+        color: var(--red-ink);
+    }
+
+    .conv-empty {
+        padding: 12px 6px;
+    }
+
+    /* --- Message pane --- */
+    .desk-main {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    #desk-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding-bottom: 24px;
+    }
+
+    .desk-turn {
+        margin: 0 0 20px;
+    }
+
+    /* User turns — quiet, pushed right */
+    .desk-turn.user {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .desk-turn.user .turn-body {
+        max-width: 66%;
+        color: var(--muted);
+        font-size: 0.9rem;
+        text-align: right;
+        border-right: 2px solid var(--rule);
+        padding-right: 12px;
+        white-space: pre-wrap;
+    }
+
+    /* CFO turns — the reading voice */
+    .desk-turn.assistant .turn-body {
+        font-family: var(--serif);
+        font-size: 17.5px;
+        line-height: 1.58;
+        max-width: 62ch;
+        white-space: pre-wrap;
+    }
+
+    .turn-tools {
+        margin-top: 6px;
+        cursor: default;
+    }
+
+    .turn-chips {
+        margin-top: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .desk-chip {
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--brass);
+    }
+
+    .desk-chip .chip-undo {
+        color: var(--muted);
+        text-decoration: none;
+        text-transform: uppercase;
+        cursor: pointer;
+    }
+
+    .desk-chip .chip-undo:hover {
+        color: var(--text);
+    }
+
+    .desk-thinking {
+        margin: 0 0 20px;
+    }
+
+    .desk-error {
+        color: var(--red-ink);
+        font-size: 0.85rem;
+        margin: 0 0 20px;
+    }
+
+    .desk-error a {
+        color: var(--brass);
+        text-decoration: none;
+    }
+
+    .desk-hint {
+        font-family: var(--serif);
+        font-size: 16px;
+        color: var(--muted);
+        max-width: 52ch;
+        margin: 32px auto;
+        text-align: center;
+        font-style: italic;
+    }
+
+    /* --- Composer --- */
+    .desk-composer {
+        border-top: 1px solid var(--rule);
+        padding-top: 12px;
+        position: relative;
+    }
+
+    .desk-composer::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 3px;
+        border-top: 1px solid var(--rule);
+    }
+
+    .composer-row {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+    }
+
+    #composer-input {
+        flex: 1;
+        background: transparent;
+        border: 1px solid var(--rule);
+        border-radius: 0;
+        color: var(--text);
+        font-size: 0.95rem;
+        padding: 10px 12px;
+        resize: none;
+        min-height: 42px;
+        max-height: 180px;
+        line-height: 1.4;
+    }
+
+    #composer-send {
+        background: var(--brass);
+        color: var(--ink);
+        border: none;
+        border-radius: 0;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 12px 18px;
+        cursor: pointer;
+    }
+
+    #composer-send:disabled {
+        background: var(--rule);
+        color: var(--muted);
+        cursor: default;
+    }
+
+    .composer-controls {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+    }
+
+    .seg-control {
+        display: inline-flex;
+        border: 1px solid var(--rule);
+    }
+
+    .seg-control button {
+        background: none;
+        border: none;
+        border-radius: 0;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 4px 10px;
+        cursor: pointer;
+    }
+
+    .seg-control button+button {
+        border-left: 1px solid var(--rule);
+    }
+
+    .seg-control button.active {
+        color: var(--brass);
+        background: var(--surface);
+    }
+
+    #cost-hint {
+        margin-left: auto;
+    }
+
+    @media (max-width: 700px) {
+        .desk-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .conv-rail {
+            border-right: none;
+            border-bottom: 1px solid var(--rule);
+            padding-right: 0;
+            padding-bottom: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="desk-layout">
+    <aside class="conv-rail">
+        <div class="conv-rail-header">
+            <span class="microtype">Conversations</span>
+            <button id="conv-new" title="New conversation">+ New</button>
+        </div>
+        <div id="conv-list"></div>
+    </aside>
+
+    <section class="desk-main">
+        <div id="desk-messages">
+            <div class="desk-hint" id="desk-empty-hint">Ask the CFO anything about your money — spending, bills,
+                runway, what changed. Answers come from your live ledger.</div>
+        </div>
+
+        <div class="desk-composer">
+            <div class="composer-row">
+                <textarea id="composer-input" rows="1" placeholder="Ask the CFO…"></textarea>
+                <button id="composer-send">Send</button>
+            </div>
+            <div class="composer-controls">
+                <span class="microtype">Model</span>
+                <div class="seg-control" id="model-control">
+                    <button data-model="claude-haiku-4-5">Haiku</button>
+                    <button data-model="claude-sonnet-5">Sonnet</button>
+                    <button data-model="claude-opus-4-8">Opus</button>
+                </div>
+                <span class="microtype">Intelligence</span>
+                <div class="seg-control" id="intel-control">
+                    <button data-intel="standard">Standard</button>
+                    <button data-intel="deep">Deep</button>
+                </div>
+                <span class="microtype" id="cost-hint"></span>
+            </div>
+        </div>
+    </section>
+</div>
+<script src="/static/js/desk.js"></script>
+{% endblock %}

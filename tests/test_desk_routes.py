@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import date
 from types import SimpleNamespace
 
@@ -81,6 +82,47 @@ def harness(monkeypatch, tmp_path):
 
     state.conn_factory = conn_factory
     return state
+
+
+# --- Page routes ---
+
+
+@pytest.fixture
+def page_client():
+    """Client with real template/static folders so /desk and /archive render."""
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    flask_app = Flask(
+        __name__,
+        template_folder=os.path.join(root, "templates"),
+        static_folder=os.path.join(root, "static"),
+    )
+    flask_app.register_blueprint(desk_module.desk_bp)
+
+    @flask_app.context_processor
+    def inject_dateline():
+        return {"dateline": "Saturday · July 4 · 2026"}
+
+    return flask_app.test_client()
+
+
+def test_desk_page_renders(page_client):
+    resp = page_client.get("/desk")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert "Desk — The Private Wire" in html
+    assert "desk.js" in html
+    assert "conv-list" in html  # conversation rail
+    assert "composer-input" in html  # composer
+
+
+def test_archive_page_renders(page_client):
+    resp = page_client.get("/archive")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert "Archive — The Private Wire" in html
+    assert "archive.js" in html
+    assert "The Dossier" in html
+    assert "The Insight Log" in html
 
 
 # --- POST /api/chat ---

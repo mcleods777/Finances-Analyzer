@@ -84,9 +84,11 @@
     <nav class="main-nav">
         <a href="/" class="nav-brand">The Private Wire</a>
         <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Dashboard</a>
+        <a href="/desk" class="nav-link {% if request.path == '/desk' %}active{% endif %}">Desk</a>
         <a href="/transactions" class="nav-link {% if request.path == '/transactions' %}active{% endif %}">Transactions</a>
-        <a href="/accounts" class="nav-link {% if request.path == '/accounts' %}active{% endif %}">Accounts</a>
         <a href="/forecast" class="nav-link {% if request.path == '/forecast' %}active{% endif %}">Forecast</a>
+        <a href="/accounts" class="nav-link {% if request.path == '/accounts' %}active{% endif %}">Accounts</a>
+        <a href="/archive" class="nav-link {% if request.path == '/archive' %}active{% endif %}">Archive</a>
         <a href="/categories" class="nav-link {% if request.path == '/categories' %}active{% endif %}">Categories</a>
         <a href="/rules" class="nav-link {% if request.path == '/rules' %}active{% endif %}">Rules</a>
         <span class="nav-dateline microtype">{{ dateline }}</span>

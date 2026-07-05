@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 import os
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, render_template, request
 
 from finance import advisor, db
 from finance.data_service import get_cache, get_db_connection
@@ -64,6 +64,21 @@ def _profile_entry_dict(row) -> dict:
         "updated_at": row["updated_at"],
         "active": bool(row["active"]),
     }
+
+
+# --- Pages ---
+
+
+@desk_bp.route("/desk")
+def desk_page():
+    """The Desk — conversational CFO chat page."""
+    return render_template("desk.html")
+
+
+@desk_bp.route("/archive")
+def archive_page():
+    """The Archive — dossier + permanent insight log."""
+    return render_template("archive.html")
 
 
 # --- Chat ---

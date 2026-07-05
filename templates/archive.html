@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Archive — The Private Wire{% endblock %}
+
+{% block head %}
+<style>
+    /* ===== The Archive — dossier + permanent insight log ===== */
+    .archive-page {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .archive-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--rule);
+        position: relative;
+        margin-bottom: 16px;
+    }
+
+    .archive-section-header::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -4px;
+        border-bottom: 1px solid var(--rule);
+    }
+
+    /* --- Dossier --- */
+    .dossier-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0 40px;
+        margin-bottom: 44px;
+    }
+
+    .dossier-section {
+        min-width: 0;
+        padding-bottom: 16px;
+    }
+
+    .dossier-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 10px 0 6px;
+        border-bottom: 1px solid var(--rule);
+    }
+
+    .dossier-add-btn {
+        background: none;
+        border: none;
+        color: var(--brass);
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .dossier-row {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--rule);
+    }
+
+    .dossier-text {
+        flex: 1;
+        font-size: 0.9rem;
+        color: var(--text);
+        cursor: text;
+        min-width: 0;
+        overflow-wrap: break-word;
+    }
+
+    .dossier-row input {
+        flex: 1;
+        background: var(--elevated);
+        border: 1px solid var(--rule);
+        border-radius: 0;
+        color: var(--text);
+        font-size: 0.9rem;
+        padding: 4px 6px;
+        min-width: 0;
+    }
+
+    .ai-mark {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--brass);
+        border: 1px solid var(--brass);
+        padding: 0 3px;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+    }
+
+    .dossier-delete {
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 0 2px;
+        font-size: 0.9rem;
+        visibility: hidden;
+    }
+
+    .dossier-row:hover .dossier-delete {
+        visibility: visible;
+    }
+
+    .dossier-delete:hover {
+        color: var(--red-ink);
+    }
+
+    .dossier-empty {
+        padding: 8px 0;
+    }
+
+    .dossier-undo-chip a {
+        color: var(--brass);
+        text-decoration: none;
+        text-transform: uppercase;
+        cursor: pointer;
+    }
+
+    /* --- Insight log --- */
+    .log-controls {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    #log-search {
+        background: transparent;
+        border: 1px solid var(--rule);
+        border-radius: 0;
+        color: var(--text);
+        font-size: 0.85rem;
+        padding: 6px 10px;
+        width: 260px;
+    }
+
+    .source-tabs {
+        display: inline-flex;
+        border: 1px solid var(--rule);
+    }
+
+    .source-tabs button {
+        background: none;
+        border: none;
+        border-radius: 0;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 5px 12px;
+        cursor: pointer;
+    }
+
+    .source-tabs button+button {
+        border-left: 1px solid var(--rule);
+    }
+
+    .source-tabs button.active {
+        color: var(--brass);
+        background: var(--surface);
+    }
+
+    .log-dateline {
+        padding: 16px 0 6px;
+        border-bottom: 1px solid var(--rule);
+    }
+
+    .log-entry {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--rule);
+    }
+
+    .log-source {
+        white-space: nowrap;
+        width: 72px;
+        flex-shrink: 0;
+    }
+
+    .log-source.chat {
+        color: var(--brass);
+    }
+
+    .log-text {
+        flex: 1;
+        font-family: var(--serif);
+        font-size: 16.5px;
+        line-height: 1.5;
+        min-width: 0;
+        overflow-wrap: break-word;
+    }
+
+    .log-conv-link {
+        color: var(--muted);
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .log-conv-link:hover {
+        color: var(--brass);
+    }
+
+    .log-delete {
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 0 2px;
+        font-size: 0.9rem;
+        visibility: hidden;
+    }
+
+    .log-entry:hover .log-delete {
+        visibility: visible;
+    }
+
+    .log-delete:hover {
+        color: var(--red-ink);
+    }
+
+    .log-pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 16px 0;
+    }
+
+    .log-pagination a {
+        color: var(--brass);
+        text-decoration: none;
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .log-pagination a.disabled {
+        color: var(--rule);
+        pointer-events: none;
+    }
+
+    .log-empty {
+        padding: 24px 0;
+        font-family: var(--serif);
+        font-style: italic;
+        color: var(--muted);
+    }
+
+    @media (max-width: 700px) {
+        .dossier-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="archive-page">
+    <section>
+        <div class="archive-section-header">
+            <span class="microtype">The Dossier</span>
+            <span class="microtype">What the CFO knows about you</span>
+        </div>
+        <div class="dossier-grid" id="dossier-grid">
+            <div class="dossier-section" data-section="goal">
+                <div class="dossier-section-header">
+                    <span class="microtype">Goals</span>
+                    <button class="dossier-add-btn" data-section="goal">+ Add</button>
+                </div>
+                <div class="dossier-rows"></div>
+            </div>
+            <div class="dossier-section" data-section="weakness">
+                <div class="dossier-section-header">
+                    <span class="microtype">Weaknesses</span>
+                    <button class="dossier-add-btn" data-section="weakness">+ Add</button>
+                </div>
+                <div class="dossier-rows"></div>
+            </div>
+            <div class="dossier-section" data-section="debt">
+                <div class="dossier-section-header">
+                    <span class="microtype">Debts</span>
+                    <button class="dossier-add-btn" data-section="debt">+ Add</button>
+                </div>
+                <div class="dossier-rows"></div>
+            </div>
+            <div class="dossier-section" data-section="note">
+                <div class="dossier-section-header">
+                    <span class="microtype">Notes</span>
+                    <button class="dossier-add-btn" data-section="note">+ Add</button>
+                </div>
+                <div class="dossier-rows"></div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="archive-section-header">
+            <span class="microtype">The Insight Log</span>
+            <span class="microtype" id="log-count"></span>
+        </div>
+        <div class="log-controls">
+            <input type="search" id="log-search" placeholder="Search the archive…">
+            <div class="source-tabs" id="source-tabs">
+                <button data-source="" class="active">All</button>
+                <button data-source="briefing">Briefing</button>
+                <button data-source="chat">Desk</button>
+            </div>
+        </div>
+        <div id="log-entries"></div>
+        <div class="log-pagination" id="log-pagination" style="display: none;">
+            <a href="#" id="log-prev">&larr; Newer</a>
+            <span class="microtype" id="log-page-info"></span>
+            <a href="#" id="log-next">Older &rarr;</a>
+        </div>
+    </section>
+</div>
+<script src="/static/js/archive.js"></script>
+{% endblock %}
